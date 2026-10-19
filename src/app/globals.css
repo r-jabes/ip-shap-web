@@ -278,6 +278,71 @@
   }
 }
 
+/*
+ * Product gallery: photo aspect, scaled so the full sticky arch fits under
+ * the header on laptop / large viewports.
+ */
+.product-gallery {
+  /* Unitless photo size from ProductGallery — used to derive width from max height. */
+  --gallery-w: 4;
+  --gallery-h: 5;
+  --gallery-max-h: none;
+  width: 100%;
+  max-width: min(100%, 22rem);
+}
+
+@media (min-width: 1024px) {
+  .product-gallery {
+    /* Sticky top uses header only (announcement scrolls away). */
+    --gallery-max-h: calc(100dvh - var(--header-h) - 2.25rem);
+    max-width: min(
+      100%,
+      24.5rem,
+      calc(var(--gallery-max-h) * var(--gallery-w) / var(--gallery-h))
+    );
+  }
+}
+
+/* Column stretches with the buy box so sticky has room to travel. */
+.product-purchase__media {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .product-purchase__media-sticky {
+    position: sticky;
+    top: calc(var(--header-h) + 1rem);
+    z-index: 1;
+  }
+}
+
+.product-gallery-stage {
+  padding: 0 0.65rem 0.65rem 0;
+}
+
+.product-gallery-arch {
+  border-radius: var(--radius-arch);
+  border: 2px solid var(--brand-charcoal);
+  box-shadow: 0.65rem 0.65rem 0 0 var(--brand-charcoal);
+}
+
+/* Match the photo ratio so cover fills without cropping top/bottom. */
+.product-gallery-arch .aspect-\[4\/5\] {
+  aspect-ratio: var(--gallery-aspect, 4 / 5);
+  width: 100%;
+  height: auto;
+  max-height: var(--gallery-max-h);
+}
+
+/* Shop cards: slightly shorter than full 4:5 so more products fit above the fold. */
+.product-card-media .aspect-\[4\/5\] {
+  aspect-ratio: 4 / 4.6;
+}
+
+.product-gallery-lens {
+  background-color: var(--brand-warm-white);
+}
+
 .product-arch-stage__sticker {
   border: 2px solid var(--brand-charcoal);
   border-radius: 1.1rem;

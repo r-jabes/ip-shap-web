@@ -20,6 +20,8 @@ type ProductImageFrameProps = {
   sizes?: string;
   /** When true, uses cover; default contain for label safety on shop photos. */
   objectFit?: "contain" | "cover";
+  /** CSS object-position, e.g. "50% 40%". */
+  position?: string;
 };
 
 export function ProductImageFrame({
@@ -31,6 +33,7 @@ export function ProductImageFrame({
   imageClassName = "",
   sizes,
   objectFit = "contain",
+  position = "center",
 }: ProductImageFrameProps) {
   const [failed, setFailed] = useState(false);
   const effectiveRole = image?.role ?? role;
@@ -62,10 +65,9 @@ export function ProductImageFrame({
         quality={qualityForRole(effectiveRole)}
         sizes={sizes ?? sizesForRole(effectiveRole)}
         onError={() => setFailed(true)}
+        style={{ objectPosition: position }}
         className={`h-full w-full ${
-          objectFit === "cover"
-            ? "object-cover object-center"
-            : "object-contain"
+          objectFit === "cover" ? "object-cover" : "object-contain"
         } ${imageClassName}`}
       />
     </div>

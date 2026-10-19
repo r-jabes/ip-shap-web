@@ -1,8 +1,11 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R3 (foundations, shell, home, shop)
+## Unreleased — UI redesign R0–R4 (foundations, shell, home, shop, product)
 
 - Shop (R3): product cards with 4:5 frame, hover shift, stock pill, quick add + quick view; sticky filter sidebar and mobile sheet with “Show N results”; multi-select range/brand chips with facet counts; price bounds; applied-filter chips; URL state; sort, pagination, skeletons and empty state
+- Product (R4): arch gallery with desktop magnifier and full-screen zoom (wheel/pinch/drag/double-tap + keyboard); buy box with WhatsApp CTA and brand sibling chips; details accordion; related products that skip shared photos; mobile sticky add-to-cart bar
+- Shop/product polish: viewport-capped image carousel; card Add/View fixed (no Ask-us pill); sample sale UI + stronger orange prices; details no longer slide under CTAs
+- Product gallery: arch matched to photo aspect (cover fills); sticky media scaled to fit laptop viewport height; buy box fills the row (no empty right column); carousel loops (next/prev + autoplay wrap); autoplay every 5s (pauses on hover/zoom/reduced motion)
 
 - Logo: reversed asset for dark surfaces, `BrandLogo` now requires `tone`; ivory header, charcoal footer/menu
 - Tokens and type: Archivo + DM Sans, new radii/shadows/motion tokens, pointer cursors and focus rings restored under Tailwind v4

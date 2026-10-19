@@ -9,6 +9,7 @@ import {
   DEMO_PRODUCTS,
 } from "@/fixtures/demo/catalogue";
 import { isDemoMode } from "@/lib/env";
+import { primaryCatalogueImage } from "@/lib/product-image";
 import { availabilityLabel } from "@/lib/shop-query";
 
 export function getCategories() {
@@ -234,4 +235,44 @@ export function getFilterFacets(filters: CatalogueFilters = {}): FilterFacets {
 
 export function getFeaturedProducts(limit = 4): DemoProduct[] {
   return listProducts({ sort: "name_asc" }).slice(0, limit);
+}
+
+function primarySrc(product: DemoProduct): string | undefined {
+  return primaryCatalogueImage(product.images)?.src;
+}
+
+/** Same brand, other bottles — used as flavour/label chips on the product page. */
+export function getBrandSiblings(product: DemoProduct): DemoProduct[] {
+  return listProducts({ brandSlugs: [product.brandSlug] }).filter(
+    (row) => row.id !== product.id,
+  );
+}
+
+/**
+ * Related drinks: prefer the same range, then fill from the wider catalogue.
+ * Always skips bottles that reuse this product's primary photo.
+ */
+export function getRelatedProducts(
+  product: DemoProduct,
+  limit = 4,
+): DemoProduct[] {
+  const ownSrc = primarySrc(product);
+  const notSelf = (row: DemoProduct) => row.id !== product.id;
+  const notSharedPhoto = (row: DemoProduct) =>
+    !ownSrc || primarySrc(row) !== ownSrc;
+
+  const sameRange = product.categorySlug
+    ? listProducts({ categorySlugs: [product.categorySlug] }).filter(
+        (row) => notSelf(row) && notSharedPhoto(row),
+      )
+    : [];
+
+  if (sameRange.length >= limit) return sameRange.slice(0, limit);
+
+  const seen = new Set(sameRange.map((row) => row.id));
+  const fillers = listProducts()
+    .filter((row) => notSelf(row) && notSharedPhoto(row) && !seen.has(row.id))
+    .slice(0, limit - sameRange.length);
+
+  return [...sameRange, ...fillers];
 }

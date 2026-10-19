@@ -62,6 +62,30 @@ describe("listProducts", () => {
     expect(inStock?.count).toBe(0);
   });
 
+  it("returns brand siblings and related products without shared photos", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
+    vi.stubEnv("NEXT_PUBLIC_DEMO_MODE", "true");
+    const { getBrandSiblings, getProductBySlug, getRelatedProducts } =
+      await import("./catalogue");
+    const chocolate = getProductBySlug("product-001-rozzita-chocolate");
+    expect(chocolate).toBeTruthy();
+    const siblings = getBrandSiblings(chocolate!);
+    expect(siblings.length).toBeGreaterThan(0);
+    expect(siblings.every((row) => row.brandSlug === "rozzita")).toBe(true);
+    expect(siblings.some((row) => row.id === chocolate!.id)).toBe(false);
+
+    const whisky = getProductBySlug("product-012-johnnie-walker-black-label");
+    // Black / Double / Red share one photo — related must skip those duplicates
+    // (and may fill from other ranges when the same shelf has nothing left).
+    if (whisky) {
+      const related = getRelatedProducts(whisky, 8);
+      const ownSrc = whisky.images[0]?.src;
+      expect(related.length).toBeGreaterThan(0);
+      expect(related.every((row) => row.images[0]?.src !== ownSrc)).toBe(true);
+      expect(related.some((row) => row.id === whisky.id)).toBe(false);
+    }
+  });
+
   it("paginates small and large result sets", async () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
     vi.stubEnv("NEXT_PUBLIC_DEMO_MODE", "true");

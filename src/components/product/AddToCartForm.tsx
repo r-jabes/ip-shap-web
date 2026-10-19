@@ -19,7 +19,7 @@ export function AddToCartForm({
 
   return (
     <form
-      className="flex flex-wrap items-center gap-3"
+      className="flex flex-wrap items-stretch gap-3"
       onSubmit={(event) => {
         event.preventDefault();
         addItem(productId, quantity);
@@ -31,7 +31,12 @@ export function AddToCartForm({
         onChange={setQuantity}
         disabled={disabled}
       />
-      <Button type="submit" size="lg" disabled={disabled}>
+      <Button
+        type="submit"
+        size="lg"
+        disabled={disabled}
+        className="min-w-[10rem] flex-1"
+      >
         Add to cart
       </Button>
     </form>

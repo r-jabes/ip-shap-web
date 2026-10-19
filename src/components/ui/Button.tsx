@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { MouseEvent } from "react";
 
 /**
  * Sticker button: pill shape, 2px ink border, hard offset shadow that "presses"
@@ -42,7 +43,7 @@ export type ButtonProps = {
   size?: ButtonSize;
   className?: string;
   type?: "button" | "submit";
-  onClick?: () => void;
+  onClick?: (event: MouseEvent<HTMLElement>) => void;
   disabled?: boolean;
   /** Shows a spinner and blocks interaction; announce state elsewhere. */
   loading?: boolean;

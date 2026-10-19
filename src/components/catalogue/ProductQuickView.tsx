@@ -9,23 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Overlay } from "@/components/ui/Overlay";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
-import { availabilityLabel } from "@/lib/shop-query";
 import { getCategories } from "@/lib/catalogue";
-
-function stockTone(
-  availability: DemoProduct["availability"],
-): "accent" | "neutral" | "outline" | "ink" {
-  switch (availability) {
-    case "in_stock":
-      return "accent";
-    case "low_stock":
-      return "outline";
-    case "out_of_stock":
-      return "ink";
-    default:
-      return "neutral";
-  }
-}
+import { sampleCompareAtPrice } from "@/lib/sample-pricing";
 
 export function ProductQuickView({
   product,
@@ -44,6 +29,7 @@ export function ProductQuickView({
     (category) => category.slug === product.categorySlug,
   )?.name;
   const unavailable = product.availability === "out_of_stock";
+  const onSale = !!sampleCompareAtPrice(product.price);
 
   return (
     <Overlay
@@ -66,9 +52,7 @@ export function ProductQuickView({
         <div className="flex flex-col gap-4 p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2">
             {categoryName ? <Badge tone="outline">{categoryName}</Badge> : null}
-            <Badge tone={stockTone(product.availability)}>
-              {availabilityLabel(product.availability)}
-            </Badge>
+            {onSale ? <Badge tone="accent">Sale</Badge> : null}
           </div>
           <div>
             <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
@@ -78,7 +62,7 @@ export function ProductQuickView({
               {product.name}
             </h2>
           </div>
-          <PriceTag price={product.price} size="lg" />
+          <PriceTag price={product.price} size="lg" showSampleSale />
           <p className="line-clamp-3 text-sm text-ink-muted">
             {product.description}
           </p>

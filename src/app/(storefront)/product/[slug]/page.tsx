@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AddToCartForm } from "@/components/product/AddToCartForm";
+import { ProductBuyBox } from "@/components/product/ProductBuyBox";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { ProductRelated } from "@/components/product/ProductRelated";
+import { ProductStickyBar } from "@/components/product/ProductStickyBar";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { formatDemoPrice } from "@/domain/catalogue";
-import { getCategories, getProductBySlug, listProducts } from "@/lib/catalogue";
-import { chatHref } from "@/lib/site-config";
+import {
+  getBrandSiblings,
+  getCategories,
+  getProductBySlug,
+  getRelatedProducts,
+  listProducts,
+} from "@/lib/catalogue";
 
 type Params = Promise<{ slug: string }>;
 
@@ -28,93 +35,64 @@ export async function generateMetadata({
   };
 }
 
-function availabilityLabel(value: string) {
-  switch (value) {
-    case "in_stock":
-      return "In stock";
-    case "low_stock":
-      return "Low stock";
-    case "out_of_stock":
-      return "Out of stock";
-    default:
-      return "Ask us about availability";
-  }
-}
-
 export default async function ProductPage({ params }: { params: Params }) {
   const { slug } = await params;
   const product = getProductBySlug(slug);
   if (!product) notFound();
 
-  const unavailable = product.availability === "out_of_stock";
   const category = getCategories().find((c) => c.slug === product.categorySlug);
+  const siblings = getBrandSiblings(product);
+  const related = getRelatedProducts(product, 4);
 
   return (
-    <Container className="py-10 lg:py-14">
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <ProductGallery images={product.images} productName={product.name} />
-        <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
-            {product.brandName}
-            {category ? ` · ${category.name}` : ""}
-          </p>
-          <h1
-            className="font-display mt-2 leading-tight"
-            style={{ fontSize: "var(--type-h2)" }}
-          >
-            {product.name}
-          </h1>
-          <p className="font-display mt-4 text-3xl tabular">
-            {formatDemoPrice(product.price)}
-          </p>
-          <p className="mt-2 text-sm text-ink-muted">
-            {availabilityLabel(product.availability)}
-          </p>
-          <p className="mt-6 max-w-prose text-ink-muted">
-            {product.description}
-          </p>
+    <>
+      <Container className="py-8 pb-[calc(var(--bottom-bar-h)+5.5rem)] lg:py-12 lg:pb-16">
+        <Breadcrumbs
+          items={[
+            { name: "Home", href: "/" },
+            { name: "Shop", href: "/shop" },
+            ...(category
+              ? [
+                  {
+                    name: category.name,
+                    href: `/shop?category=${category.slug}`,
+                  },
+                ]
+              : []),
+            { name: product.name },
+          ]}
+        />
 
-          <div className="mt-8">
-            <AddToCartForm
-              productId={product.id}
-              productName={product.name}
-              disabled={unavailable}
-            />
-            {unavailable ? (
-              <p className="mt-3 text-sm text-ink-muted">
-                This one is out of stock right now.{" "}
-                <a
-                  href={chatHref()}
-                  className="font-semibold underline underline-offset-4"
-                >
-                  Ask us when it is back.
-                </a>
-              </p>
-            ) : null}
+        <div className="product-purchase grid gap-8 lg:grid-cols-[minmax(0,auto)_minmax(0,1fr)] lg:gap-10 xl:gap-12">
+          <div className="product-purchase__media">
+            <div className="product-purchase__media-sticky">
+              <ProductGallery
+                images={product.images}
+                productName={product.name}
+              />
+            </div>
           </div>
-
-          <div className="mt-10 border-t border-line pt-6 text-sm">
-            <h2 className="font-display text-lg">Details</h2>
-            <dl className="mt-3 grid grid-cols-[7rem_1fr] gap-y-2 text-ink-muted">
-              <dt className="font-semibold text-brand-charcoal">Brand</dt>
-              <dd>{product.brandName}</dd>
-              {category ? (
-                <>
-                  <dt className="font-semibold text-brand-charcoal">Range</dt>
-                  <dd>{category.name}</dd>
-                </>
-              ) : null}
-              <dt className="font-semibold text-brand-charcoal">
-                Availability
-              </dt>
-              <dd>{availabilityLabel(product.availability)}</dd>
-            </dl>
-            <Button href="/shop" variant="ghost" className="mt-6">
-              Back to shop
-            </Button>
+          <div className="product-purchase__info min-w-0">
+            <ProductBuyBox
+              product={product}
+              categoryName={category?.name}
+              siblings={siblings}
+            />
+            <div className="mt-2 border-t-2 border-brand-charcoal/15 py-5">
+              <Button href="/shop" variant="ghost" size="sm">
+                Back to shop
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </Container>
+
+        <ProductRelated
+          products={related}
+          categoryName={category?.name}
+          categorySlug={category?.slug}
+        />
+      </Container>
+      <ProductStickyBar product={product} />
+    </>
   );
 }
