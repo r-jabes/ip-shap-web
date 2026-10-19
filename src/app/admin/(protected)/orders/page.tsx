@@ -1,4 +1,10 @@
 import Link from "next/link";
+import {
+  AdminPageHeader,
+  AdminTable,
+  AdminTd,
+  AdminTh,
+} from "@/components/admin/admin-ui";
 import { formatDemoPrice } from "@/domain/catalogue";
 import { listOrders } from "@/lib/orders/store";
 
@@ -7,57 +13,49 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl">Orders</h1>
-        <p className="mt-2 text-sm text-brand-dark-neutral">
-          Confirm WhatsApp-assisted orders, record verified payments, and
-          advance fulfilment. Payment is never assumed from a browser redirect.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Orders"
+        description="Confirm WhatsApp-assisted orders, record verified payments, and advance fulfilment. Payment is never assumed from a browser redirect."
+      />
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-brand-dark-neutral/20 text-xs uppercase">
-            <tr>
-              <th className="py-2 pr-3">Reference</th>
-              <th className="py-2 pr-3">Channel</th>
-              <th className="py-2 pr-3">Fulfilment</th>
-              <th className="py-2 pr-3">Payment</th>
-              <th className="py-2 pr-3">Total</th>
-              <th className="py-2">Open</th>
+      <AdminTable>
+        <thead>
+          <tr>
+            <AdminTh>Reference</AdminTh>
+            <AdminTh>Channel</AdminTh>
+            <AdminTh>Fulfilment</AdminTh>
+            <AdminTh>Payment</AdminTh>
+            <AdminTh>Total</AdminTh>
+            <AdminTh>Open</AdminTh>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((order) => (
+            <tr key={order.id}>
+              <AdminTd className="font-mono text-xs">{order.reference}</AdminTd>
+              <AdminTd>{order.channel}</AdminTd>
+              <AdminTd>{order.fulfilmentStatus}</AdminTd>
+              <AdminTd>{order.paymentStatus}</AdminTd>
+              <AdminTd className="tabular">
+                {formatDemoPrice(order.total)}
+              </AdminTd>
+              <AdminTd>
+                <Link
+                  href={`/admin/orders/${order.id}`}
+                  className="font-semibold underline decoration-2 underline-offset-4 decoration-brand-burnt-orange"
+                >
+                  Open
+                </Link>
+              </AdminTd>
             </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr
-                key={order.id}
-                className="border-b border-brand-dark-neutral/10"
-              >
-                <td className="py-3 pr-3 font-mono text-xs">
-                  {order.reference}
-                </td>
-                <td className="py-3 pr-3">{order.channel}</td>
-                <td className="py-3 pr-3">{order.fulfilmentStatus}</td>
-                <td className="py-3 pr-3">{order.paymentStatus}</td>
-                <td className="py-3 pr-3">{formatDemoPrice(order.total)}</td>
-                <td className="py-3">
-                  <Link
-                    href={`/admin/orders/${order.id}`}
-                    className="underline underline-offset-4"
-                  >
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {orders.length === 0 ? (
-          <p className="mt-6 text-sm text-brand-dark-neutral">
-            No orders yet. Place a checkout order from the storefront to test.
-          </p>
-        ) : null}
-      </div>
+          ))}
+        </tbody>
+      </AdminTable>
+      {orders.length === 0 ? (
+        <p className="text-sm text-ink-muted">
+          No orders yet. Place a checkout order from the storefront to test.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,10 @@
 import { notFound } from "next/navigation";
+import {
+  AdminPageHeader,
+  AdminStatus,
+} from "@/components/admin/admin-ui";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { Button } from "@/components/ui/Button";
 import { getCategories } from "@/lib/catalogue";
 import { adminGetProduct } from "@/lib/admin/store";
 
@@ -19,14 +24,16 @@ export default async function AdminEditProductPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl">Edit product</h1>
-        {query.saved ? (
-          <p className="mt-2 text-sm text-brand-dark-neutral" role="status">
-            Saved.
-          </p>
-        ) : null}
-      </div>
+      <AdminPageHeader
+        title="Edit product"
+        description={product.name}
+        actions={
+          <Button href="/admin/products" variant="link" size="sm">
+            Back to list
+          </Button>
+        }
+      />
+      {query.saved ? <AdminStatus>Saved.</AdminStatus> : null}
       <ProductForm product={product} categories={getCategories()} />
     </div>
   );

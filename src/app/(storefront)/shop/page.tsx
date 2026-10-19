@@ -87,13 +87,13 @@ export default async function ShopPage({
         </p>
       </header>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
+      <div className="mt-8 grid gap-8 lg:grid-cols-[18.5rem_minmax(0,1fr)] lg:items-start lg:gap-10">
         <Suspense
           fallback={
-            <div className="hidden space-y-4 lg:block" aria-hidden="true">
-              <div className="h-6 w-24 animate-pulse rounded bg-brand-charcoal/10" />
-              <div className="h-40 animate-pulse rounded-xl bg-brand-charcoal/10" />
-            </div>
+            <div
+              className="hidden h-[28rem] animate-pulse rounded-[var(--radius-panel)] border-2 border-brand-charcoal/10 bg-brand-charcoal/5 lg:block"
+              aria-hidden="true"
+            />
           }
         >
           <ShopFilters facets={facets} resultCount={total} />

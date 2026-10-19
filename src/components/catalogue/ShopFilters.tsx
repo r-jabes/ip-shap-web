@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { FilterFacets } from "@/lib/catalogue";
 import { Button } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
+import { Checkbox } from "@/components/ui/Field";
 import { Overlay } from "@/components/ui/Overlay";
 import {
   buildShopHref,
@@ -53,19 +53,35 @@ export function ShopFilters({
         aria-label="Open filters and sort"
       >
         Filters & sort
+        {hasActiveFilters(query) ? (
+          <span className="ml-1 tabular text-brand-burnt-orange">
+            ({activeFilterCount(query)})
+          </span>
+        ) : null}
       </Button>
 
+      {/*
+        Sticky sidebar: pins under the header while the product column scrolls.
+        One scroll surface only (panel itself) — lists do not nest overflow.
+        Scrollbar styled via .shop-filters-scroll in globals.css.
+        PageEnter must not leave a CSS transform on an ancestor.
+      */}
       <aside className="hidden lg:block">
-        <div className="sticky top-[calc(var(--header-h)+1rem)] max-h-[calc(100dvh-var(--header-h)-2rem)] space-y-8 overflow-y-auto pr-1 pb-6">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-xl">Filters</h2>
+        <div className="shop-filters-scroll sticky top-[calc(var(--header-h)+0.75rem)] z-[1] max-h-[calc(100dvh-var(--header-h)-1.5rem)] overflow-y-auto overscroll-contain rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-5 shadow-[4px_4px_0_0_var(--brand-charcoal)]">
+          <div className="flex items-baseline justify-between gap-3 border-b-2 border-brand-charcoal/10 pb-4">
+            <div>
+              <h2 className="font-display text-xl">Filters</h2>
+              <p className="mt-1 text-xs text-ink-muted">
+                Ranges and brands update with the catalogue.
+              </p>
+            </div>
             {hasActiveFilters(query) ? (
               <Button href="/shop" variant="link" size="sm">
-                Clear all
+                Clear
               </Button>
             ) : null}
           </div>
-          {fields}
+          <div className="pt-5">{fields}</div>
         </div>
       </aside>
 
@@ -87,7 +103,9 @@ export function ShopFilters({
             Close
           </Button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-5">{fields}</div>
+        <div className="shop-filters-scroll flex-1 overflow-y-auto px-5 py-5">
+          {fields}
+        </div>
         <div className="border-t border-brand-charcoal/15 p-4">
           <Button
             type="button"
@@ -105,14 +123,16 @@ export function ShopFilters({
 }
 
 function hasActiveFilters(query: ShopQuery) {
-  return (
-    query.categories.length > 0 ||
-    query.brands.length > 0 ||
-    query.availability !== "all" ||
-    typeof query.minPrice === "number" ||
-    typeof query.maxPrice === "number" ||
-    !!query.q
-  );
+  return activeFilterCount(query) > 0;
+}
+
+function activeFilterCount(query: ShopQuery) {
+  let count = query.categories.length + query.brands.length;
+  if (query.availability !== "all") count += 1;
+  if (typeof query.minPrice === "number") count += 1;
+  if (typeof query.maxPrice === "number") count += 1;
+  if (query.q) count += 1;
+  return count;
 }
 
 function FilterFields({
@@ -124,8 +144,21 @@ function FilterFields({
   facets: FilterFacets;
   onChange: (next: Partial<ShopQuery>) => void;
 }) {
+  const [brandQuery, setBrandQuery] = useState("");
+  const [rangeOpen, setRangeOpen] = useState(true);
+  // Collapse long brand lists by default so the sticky panel stays compact.
+  const [brandOpen, setBrandOpen] = useState(facets.brands.length <= 8);
+
+  const filteredBrands = useMemo(() => {
+    const needle = brandQuery.trim().toLowerCase();
+    if (!needle) return facets.brands;
+    return facets.brands.filter((brand) =>
+      brand.name.toLowerCase().includes(needle),
+    );
+  }, [brandQuery, facets.brands]);
+
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       <div>
         <label
           htmlFor="filter-q"
@@ -153,91 +186,114 @@ function FilterFields({
         />
       </div>
 
-      <fieldset>
-        <legend className="text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
-          Range
-        </legend>
-        <div className="mt-3 flex flex-wrap gap-2">
+      <FilterSection
+        title="Range"
+        hint={`${facets.categories.length} in catalogue`}
+        open={rangeOpen}
+        onToggle={() => setRangeOpen((value) => !value)}
+        selectedCount={query.categories.length}
+      >
+        <ul className="space-y-1">
           {facets.categories.map((category) => {
             const selected = query.categories.includes(category.slug);
             const disabled = !selected && category.count === 0;
             return (
-              <Chip
-                key={category.slug}
-                selected={selected}
-                count={category.count}
-                disabled={disabled}
-                onClick={() =>
-                  onChange({
-                    categories: toggleInList(query.categories, category.slug),
-                    page: 1,
-                  })
-                }
-              >
-                {category.name}
-              </Chip>
+              <li key={category.slug}>
+                <Checkbox
+                  label={category.name}
+                  count={category.count}
+                  checked={selected}
+                  disabled={disabled}
+                  onChange={() =>
+                    onChange({
+                      categories: toggleInList(
+                        query.categories,
+                        category.slug,
+                      ),
+                      page: 1,
+                    })
+                  }
+                />
+              </li>
             );
           })}
-        </div>
-      </fieldset>
+        </ul>
+      </FilterSection>
 
-      <fieldset>
-        <legend className="text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
-          Brand
-        </legend>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {facets.brands.map((brand) => {
+      <FilterSection
+        title="Brand"
+        hint={`${facets.brands.length} in catalogue`}
+        open={brandOpen}
+        onToggle={() => setBrandOpen((value) => !value)}
+        selectedCount={query.brands.length}
+      >
+        {facets.brands.length > 6 ? (
+          <input
+            type="search"
+            value={brandQuery}
+            onChange={(event) => setBrandQuery(event.target.value)}
+            placeholder="Find a brand"
+            className="mb-3 w-full rounded-full border-2 border-brand-charcoal/25 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-charcoal"
+            aria-label="Filter brand list"
+          />
+        ) : null}
+        <ul className="space-y-1">
+          {filteredBrands.map((brand) => {
             const selected = query.brands.includes(brand.slug);
             const disabled = !selected && brand.count === 0;
             return (
-              <Chip
-                key={brand.slug}
-                selected={selected}
-                count={brand.count}
-                disabled={disabled}
-                onClick={() =>
-                  onChange({
-                    brands: toggleInList(query.brands, brand.slug),
-                    page: 1,
-                  })
-                }
-              >
-                {brand.name}
-              </Chip>
+              <li key={brand.slug}>
+                <Checkbox
+                  label={brand.name}
+                  count={brand.count}
+                  checked={selected}
+                  disabled={disabled}
+                  onChange={() =>
+                    onChange({
+                      brands: toggleInList(query.brands, brand.slug),
+                      page: 1,
+                    })
+                  }
+                />
+              </li>
             );
           })}
-        </div>
-      </fieldset>
+          {filteredBrands.length === 0 ? (
+            <li className="px-1 py-2 text-sm text-ink-muted">No brands match.</li>
+          ) : null}
+        </ul>
+      </FilterSection>
 
       <fieldset>
         <legend className="text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
           Availability
         </legend>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Chip
-            selected={query.availability === "all"}
-            onClick={() => onChange({ availability: "all", page: 1 })}
-          >
-            All
-          </Chip>
+        <ul className="mt-2 space-y-1">
+          <li>
+            <Checkbox
+              label="All"
+              checked={query.availability === "all"}
+              onChange={() => onChange({ availability: "all", page: 1 })}
+            />
+          </li>
           {facets.availability.map((option) => {
             const selected = query.availability === option.value;
             const disabled = !selected && option.count === 0;
             return (
-              <Chip
-                key={option.value}
-                selected={selected}
-                count={option.count}
-                disabled={disabled}
-                onClick={() =>
-                  onChange({ availability: option.value, page: 1 })
-                }
-              >
-                {option.label}
-              </Chip>
+              <li key={option.value}>
+                <Checkbox
+                  label={option.label}
+                  count={option.count}
+                  checked={selected}
+                  disabled={disabled}
+                  onChange={() =>
+                    onChange({ availability: option.value, page: 1 })
+                  }
+                />
+              </li>
             );
           })}
-        </div>
+        </ul>
       </fieldset>
 
       <fieldset>
@@ -289,8 +345,9 @@ function FilterFields({
           </label>
         </div>
         <p className="mt-2 text-xs text-ink-muted">
-          Catalogue from {facets.priceBounds.min.toLocaleString("en-RW")} to{" "}
-          {facets.priceBounds.max.toLocaleString("en-RW")} RWF.
+          From {facets.priceBounds.min.toLocaleString("en-RW")} to{" "}
+          {facets.priceBounds.max.toLocaleString("en-RW")} RWF in the current
+          catalogue.
         </p>
       </fieldset>
 
@@ -317,6 +374,49 @@ function FilterFields({
           <option value="price_desc">Price high–low</option>
         </select>
       </div>
+    </div>
+  );
+}
+
+function FilterSection({
+  title,
+  hint,
+  open,
+  onToggle,
+  selectedCount,
+  children,
+}: {
+  title: string;
+  hint: string;
+  open: boolean;
+  onToggle: () => void;
+  selectedCount: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-t border-brand-charcoal/10 pt-5 first:border-t-0 first:pt-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <span>
+          <span className="text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
+            {title}
+            {selectedCount > 0 ? (
+              <span className="ml-1.5 text-brand-burnt-orange tabular">
+                {selectedCount}
+              </span>
+            ) : null}
+          </span>
+          <span className="mt-0.5 block text-xs text-ink-muted">{hint}</span>
+        </span>
+        <span aria-hidden="true" className="text-lg leading-none text-ink-muted">
+          {open ? "−" : "+"}
+        </span>
+      </button>
+      {open ? <div className="mt-3">{children}</div> : null}
     </div>
   );
 }

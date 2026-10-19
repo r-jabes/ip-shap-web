@@ -1,5 +1,12 @@
 import { notFound } from "next/navigation";
 import {
+  AdminPageHeader,
+  AdminPanel,
+  AdminStatus,
+} from "@/components/admin/admin-ui";
+import { Button } from "@/components/ui/Button";
+import { Field, Input, Select } from "@/components/ui/Field";
+import {
   adminMarkPaymentAction,
   adminTransitionFulfilmentAction,
 } from "@/app/admin/order-actions";
@@ -22,134 +29,132 @@ export default async function AdminOrderDetailPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl">{order.reference}</h1>
-        <p className="mt-2 text-sm text-brand-dark-neutral">
-          {order.customerName} · {order.customerPhone} · {order.channel}
-        </p>
-        {query.updated || query.paid ? (
-          <p className="mt-2 text-sm" role="status">
-            {query.paid ? "Payment recorded." : "Order updated."}
-          </p>
-        ) : null}
-      </div>
+      <AdminPageHeader
+        title={order.reference}
+        description={`${order.customerName} · ${order.customerPhone} · ${order.channel}`}
+        actions={
+          <Button href="/admin/orders" variant="ghost" size="sm">
+            All orders
+          </Button>
+        }
+      />
 
-      <ul className="grid gap-3 text-sm sm:grid-cols-2">
-        <li className="border border-brand-dark-neutral/20 px-4 py-3">
-          Fulfilment: <strong>{order.fulfilmentStatus}</strong>
-        </li>
-        <li className="border border-brand-dark-neutral/20 px-4 py-3">
-          Payment: <strong>{order.paymentStatus}</strong>
-        </li>
-        <li className="border border-brand-dark-neutral/20 px-4 py-3">
-          Total: <strong>{formatDemoPrice(order.total)}</strong>
-        </li>
-        <li className="border border-brand-dark-neutral/20 px-4 py-3">
-          Delivery fee:{" "}
-          <strong>
-            {order.deliveryFee
-              ? formatDemoPrice(order.deliveryFee)
-              : "Unavailable / manual"}
-          </strong>
-        </li>
+      {query.updated || query.paid ? (
+        <AdminStatus>
+          {query.paid ? "Payment recorded." : "Order updated."}
+        </AdminStatus>
+      ) : null}
+
+      <ul className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        {(
+          [
+            ["Fulfilment", order.fulfilmentStatus],
+            ["Payment", order.paymentStatus],
+            ["Total", formatDemoPrice(order.total)],
+            [
+              "Delivery fee",
+              order.deliveryFee
+                ? formatDemoPrice(order.deliveryFee)
+                : "Unavailable / manual",
+            ],
+          ] as const
+        ).map(([label, value]) => (
+          <li
+            key={label}
+            className="rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 bg-white/50 px-4 py-3"
+          >
+            <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
+              {label}
+            </p>
+            <p className="mt-1.5 font-semibold text-brand-charcoal">{value}</p>
+          </li>
+        ))}
       </ul>
 
-      <section>
+      <AdminPanel>
         <h2 className="font-display text-xl">Lines</h2>
-        <ul className="mt-3 space-y-2 text-sm">
+        <ul className="mt-4 space-y-2 text-sm">
           {order.items.map((item) => (
-            <li key={`${item.productId}-${item.productSlug}`}>
-              {item.quantity} × {item.productName} —{" "}
-              {formatDemoPrice(item.lineTotal)}
+            <li
+              key={`${item.productId}-${item.productSlug}`}
+              className="flex flex-wrap justify-between gap-2 border-t border-brand-charcoal/10 pt-2 first:border-t-0 first:pt-0"
+            >
+              <span>
+                {item.quantity} × {item.productName}
+              </span>
+              <span className="tabular font-medium">
+                {formatDemoPrice(item.lineTotal)}
+              </span>
             </li>
           ))}
         </ul>
-      </section>
+      </AdminPanel>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <form
-          action={adminTransitionFulfilmentAction}
-          className="space-y-3 border border-brand-dark-neutral/20 p-4"
-        >
-          <h2 className="font-display text-xl">Fulfilment</h2>
-          <input type="hidden" name="orderId" value={order.id} />
-          <label className="grid gap-1 text-sm">
-            Next status
-            <select
-              name="to"
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-              defaultValue="confirmed"
-            >
-              <option value="confirmed">confirmed</option>
-              <option value="processing">processing</option>
-              <option value="ready_for_dispatch">ready_for_dispatch</option>
-              <option value="out_for_delivery">out_for_delivery</option>
-              <option value="delivered">delivered</option>
-              <option value="cancelled">cancelled</option>
-            </select>
-          </label>
-          <label className="grid gap-1 text-sm">
-            Reason
-            <input
-              name="reason"
-              required
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-            />
-          </label>
-          <button
-            type="submit"
-            className="bg-brand-charcoal px-4 py-2 text-sm text-brand-warm-white"
-          >
-            Apply fulfilment change
-          </button>
-        </form>
+        <AdminPanel>
+          <form action={adminTransitionFulfilmentAction} className="space-y-4">
+            <h2 className="font-display text-xl">Fulfilment</h2>
+            <input type="hidden" name="orderId" value={order.id} />
+            <Field id="fulfilment-to" label="Next status">
+              <Select
+                id="fulfilment-to"
+                name="to"
+                defaultValue="confirmed"
+              >
+                <option value="confirmed">confirmed</option>
+                <option value="processing">processing</option>
+                <option value="ready_for_dispatch">ready_for_dispatch</option>
+                <option value="out_for_delivery">out_for_delivery</option>
+                <option value="delivered">delivered</option>
+                <option value="cancelled">cancelled</option>
+              </Select>
+            </Field>
+            <Field id="fulfilment-reason" label="Reason">
+              <Input id="fulfilment-reason" name="reason" required />
+            </Field>
+            <Button type="submit" variant="secondary" size="md">
+              Apply fulfilment change
+            </Button>
+          </form>
+        </AdminPanel>
 
-        <form
-          action={adminMarkPaymentAction}
-          className="space-y-3 border border-brand-dark-neutral/20 p-4"
-        >
-          <h2 className="font-display text-xl">Record verified payment</h2>
-          <p className="text-xs text-brand-dark-neutral">
-            Use only after offline verification (bank/MoMo slip, etc.).
-            Reference and reason are required.
-          </p>
-          <input type="hidden" name="orderId" value={order.id} />
-          <label className="grid gap-1 text-sm">
-            Payment reference
-            <input
-              name="paymentReference"
-              required
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-            />
-          </label>
-          <label className="grid gap-1 text-sm">
-            Reason / method note
-            <input
-              name="reason"
-              required
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-            />
-          </label>
-          <button
-            type="submit"
-            className="border border-brand-charcoal px-4 py-2 text-sm"
-            disabled={order.paymentStatus === "paid"}
-          >
-            Mark paid
-          </button>
-        </form>
+        <AdminPanel>
+          <form action={adminMarkPaymentAction} className="space-y-4">
+            <h2 className="font-display text-xl">Record verified payment</h2>
+            <p className="text-xs text-ink-muted">
+              Use only after offline verification (bank/MoMo slip, etc.).
+              Reference and reason are required.
+            </p>
+            <input type="hidden" name="orderId" value={order.id} />
+            <Field id="payment-ref" label="Payment reference">
+              <Input id="payment-ref" name="paymentReference" required />
+            </Field>
+            <Field id="payment-reason" label="Reason / method note">
+              <Input id="payment-reason" name="reason" required />
+            </Field>
+            <Button
+              type="submit"
+              variant="ghost"
+              size="md"
+              disabled={order.paymentStatus === "paid"}
+            >
+              Mark paid
+            </Button>
+          </form>
+        </AdminPanel>
       </section>
 
-      <section>
+      <AdminPanel>
         <h2 className="font-display text-xl">Timeline</h2>
-        <ul className="mt-3 space-y-2 text-sm text-brand-dark-neutral">
+        <ul className="mt-4 space-y-2 text-sm text-ink-muted">
           {order.statusHistory.map((entry, index) => (
             <li key={`${entry.at}-${index}`}>
-              {entry.at}: {entry.from ?? "—"} → {entry.to} — {entry.reason}
+              <span className="tabular text-brand-charcoal">{entry.at}</span>
+              : {entry.from ?? "—"} → {entry.to} — {entry.reason}
             </li>
           ))}
         </ul>
-      </section>
+      </AdminPanel>
     </div>
   );
 }

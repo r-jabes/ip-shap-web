@@ -79,6 +79,5 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 ## Phase status
 
 - **Phase 00–08:** foundations through hardening (see CHANGELOG)
-- **UI redesign R0–R7:** foundations → shell → home → shop → product → cart/checkout → content → motion/quality gates
-- **Optional R8:** admin restyle
-- **Next (data):** resume storefront rebuild / Supabase catalogue when UI is approved
+- **UI redesign R0–R8:** foundations → shell → home → shop → product → cart/checkout → content → motion/quality gates → admin restyle
+- **Next (data):** resume storefront rebuild / Supabase catalogue when UI is approved (`PHASE_10_STOREFRONT_REBUILD_PLAN.md`)

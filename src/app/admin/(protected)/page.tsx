@@ -1,4 +1,9 @@
-import Link from "next/link";
+import {
+  AdminPageHeader,
+  AdminPanel,
+  AdminStat,
+} from "@/components/admin/admin-ui";
+import { Button } from "@/components/ui/Button";
 import {
   adminDashboardCounts,
   adminListAdjustments,
@@ -12,13 +17,26 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-10">
-      <div>
-        <h1 className="font-display text-3xl">Operations dashboard</h1>
-        <p className="mt-2 text-sm text-brand-dark-neutral">
-          Counts are backed by the live admin store (demo in-memory / future
-          Supabase). No invented analytics.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Operations dashboard"
+        description="Counts are backed by the live admin store. No invented analytics."
+        actions={
+          <>
+            <Button href="/admin/orders" variant="secondary" size="sm">
+              Orders
+            </Button>
+            <Button href="/admin/products/new" variant="primary" size="sm">
+              New product
+            </Button>
+            <Button href="/admin/stock" variant="ghost" size="sm">
+              Adjust stock
+            </Button>
+            <Button href="/admin/import" variant="ghost" size="sm">
+              Bulk import
+            </Button>
+          </>
+        }
+      />
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(
@@ -31,77 +49,64 @@ export default function AdminDashboardPage() {
             ["Out of stock", counts.outOfStock],
           ] as const
         ).map(([label, value]) => (
-          <li
-            key={label}
-            className="border border-brand-dark-neutral/20 px-4 py-5"
-          >
-            <p className="text-xs tracking-[0.12em] text-brand-dark-neutral uppercase">
-              {label}
-            </p>
-            <p className="mt-2 font-display text-3xl">{value}</p>
-          </li>
+          <AdminStat key={label} label={label} value={value} />
         ))}
       </ul>
 
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href="/admin/orders"
-          className="bg-brand-charcoal px-4 py-2 text-sm text-brand-warm-white"
-        >
-          Orders
-        </Link>
-        <Link
-          href="/admin/products/new"
-          className="border border-brand-charcoal px-4 py-2 text-sm"
-        >
-          New product
-        </Link>
-        <Link
-          href="/admin/stock"
-          className="border border-brand-charcoal px-4 py-2 text-sm"
-        >
-          Adjust stock
-        </Link>
-        <Link
-          href="/admin/import"
-          className="border border-brand-charcoal px-4 py-2 text-sm"
-        >
-          Bulk import
-        </Link>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminPanel>
+          <h2 className="font-display text-xl">Recent stock adjustments</h2>
+          {adjustments.length === 0 ? (
+            <p className="mt-3 text-sm text-ink-muted">None yet.</p>
+          ) : (
+            <ul className="mt-4 space-y-3 text-sm">
+              {adjustments.map((row) => (
+                <li
+                  key={row.id}
+                  className="border-t border-brand-charcoal/10 pt-3 first:border-t-0 first:pt-0"
+                >
+                  <span className="text-ink-muted tabular">{row.createdAt}</span>
+                  <span className="mx-1.5 text-ink-muted">·</span>
+                  {row.actorEmail}
+                  <span className="mx-1.5 text-ink-muted">·</span>
+                  <span className="tabular">
+                    {row.previousQuantity} → {row.newQuantity}
+                  </span>
+                  <span className="mx-1.5 text-ink-muted">·</span>
+                  {row.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+        </AdminPanel>
+
+        <AdminPanel>
+          <h2 className="font-display text-xl">Audit trail</h2>
+          {audits.length === 0 ? (
+            <p className="mt-3 text-sm text-ink-muted">No events yet.</p>
+          ) : (
+            <ul className="mt-4 space-y-3 text-sm">
+              {audits.map((event) => (
+                <li
+                  key={event.id}
+                  className="border-t border-brand-charcoal/10 pt-3 first:border-t-0 first:pt-0"
+                >
+                  <span className="text-ink-muted tabular">
+                    {event.createdAt}
+                  </span>
+                  <span className="mx-1.5 text-ink-muted">·</span>
+                  {event.actorEmail ?? "system"}
+                  <span className="mx-1.5 text-ink-muted">·</span>
+                  {event.action}
+                  <span className="mx-1.5 text-ink-muted">·</span>
+                  {event.entityType}
+                  {event.entityId ? `:${event.entityId.slice(0, 8)}` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </AdminPanel>
       </div>
-
-      <section>
-        <h2 className="font-display text-2xl">Recent stock adjustments</h2>
-        {adjustments.length === 0 ? (
-          <p className="mt-2 text-sm text-brand-dark-neutral">None yet.</p>
-        ) : (
-          <ul className="mt-3 divide-y divide-brand-dark-neutral/15 text-sm">
-            {adjustments.map((row) => (
-              <li key={row.id} className="py-2">
-                {row.createdAt} · {row.actorEmail} · {row.previousQuantity} →{" "}
-                {row.newQuantity} · {row.reason}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <h2 className="font-display text-2xl">Audit trail</h2>
-        {audits.length === 0 ? (
-          <p className="mt-2 text-sm text-brand-dark-neutral">No events yet.</p>
-        ) : (
-          <ul className="mt-3 divide-y divide-brand-dark-neutral/15 text-sm">
-            {audits.map((event) => (
-              <li key={event.id} className="py-2">
-                {event.createdAt} · {event.actorEmail ?? "system"} ·{" "}
-                {event.action} · {event.entityType}
-                {event.entityId ? `:${event.entityId.slice(0, 8)}` : ""}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

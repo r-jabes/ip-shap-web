@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { adminLoginAction } from "@/app/admin/actions";
+import { Button } from "@/components/ui/Button";
+import { Field, Input } from "@/components/ui/Field";
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -20,38 +22,42 @@ export function LoginForm() {
         });
       }}
     >
-      <label className="block text-sm">
-        Email
-        <input
+      <Field id="admin-email" label="Email">
+        <Input
+          id="admin-email"
           name="email"
           type="email"
           required
           autoComplete="username"
-          className="mt-1 w-full border border-brand-warm-white/30 bg-transparent px-3 py-2"
         />
-      </label>
-      <label className="block text-sm">
-        Bootstrap token
-        <input
+      </Field>
+      <Field
+        id="admin-token"
+        label="Bootstrap token"
+        hint="From ADMIN_BOOTSTRAP_TOKEN on the server."
+      >
+        <Input
+          id="admin-token"
           name="token"
           type="password"
           required
           autoComplete="current-password"
-          className="mt-1 w-full border border-brand-warm-white/30 bg-transparent px-3 py-2"
         />
-      </label>
+      </Field>
       {error ? (
-        <p className="text-sm text-brand-burnt-orange" role="alert">
+        <p className="text-sm text-red-800" role="alert">
           {error}
         </p>
       ) : null}
-      <button
+      <Button
         type="submit"
-        disabled={pending}
-        className="w-full bg-brand-burnt-orange px-4 py-2 text-sm font-medium text-brand-charcoal disabled:opacity-60"
+        variant="primary"
+        size="lg"
+        className="w-full"
+        loading={pending}
       >
         {pending ? "Signing in…" : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }

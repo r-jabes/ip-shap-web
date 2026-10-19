@@ -1,3 +1,13 @@
+import {
+  AdminPageHeader,
+  AdminPanel,
+  AdminStatus,
+  AdminTable,
+  AdminTd,
+  AdminTh,
+} from "@/components/admin/admin-ui";
+import { Button } from "@/components/ui/Button";
+import { Field, Input, Select } from "@/components/ui/Field";
 import { adjustStockAction } from "@/app/admin/actions";
 import { adminListAdjustments, adminListProducts } from "@/lib/admin/store";
 
@@ -12,127 +22,101 @@ export default async function AdminStockPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl">Stock control</h1>
-        <p className="mt-2 text-sm text-brand-dark-neutral">
-          Every adjustment records actor, previous/new values and reason.
-          Negative stock is rejected. Unknown stock must not be treated as in
-          stock.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Stock control"
+        description="Every adjustment records actor, previous/new values and reason. Negative stock is rejected. Unknown stock must not be treated as in stock."
+      />
 
-      {params.adjusted ? (
-        <p className="text-sm text-brand-dark-neutral" role="status">
-          Stock adjusted.
-        </p>
-      ) : null}
+      {params.adjusted ? <AdminStatus>Stock adjusted.</AdminStatus> : null}
 
-      <form action={adjustStockAction} className="grid max-w-xl gap-3">
-        <label className="grid gap-1 text-sm">
-          Product
-          <select
-            name="productId"
-            required
-            className="border border-brand-dark-neutral/30 px-3 py-2"
-          >
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} (
-                {product.stockQuantity === null ||
-                product.stockQuantity === undefined
-                  ? "qty unknown"
-                  : `qty ${product.stockQuantity}`}
-                )
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="grid gap-1 text-sm">
-          Expected quantity (stale-write guard)
-          <input
-            name="expectedQuantity"
-            placeholder="Leave blank to skip check"
-            className="border border-brand-dark-neutral/30 px-3 py-2"
-          />
-        </label>
-        <label className="grid gap-1 text-sm">
-          New availability
-          <select
-            name="newAvailability"
-            className="border border-brand-dark-neutral/30 px-3 py-2"
-            defaultValue="unknown"
-          >
-            <option value="unknown">Unknown</option>
-            <option value="in_stock">In stock</option>
-            <option value="low_stock">Low stock</option>
-            <option value="out_of_stock">Out of stock</option>
-          </select>
-        </label>
-        <label className="grid gap-1 text-sm">
-          New quantity (empty when unknown)
-          <input
-            name="newQuantity"
-            inputMode="numeric"
-            className="border border-brand-dark-neutral/30 px-3 py-2"
-          />
-        </label>
-        <label className="grid gap-1 text-sm">
-          Reason
-          <input
-            name="reason"
-            required
-            maxLength={500}
-            className="border border-brand-dark-neutral/30 px-3 py-2"
-          />
-        </label>
-        <button
-          type="submit"
-          className="w-fit bg-brand-charcoal px-4 py-2 text-sm text-brand-warm-white"
-        >
-          Record adjustment
-        </button>
-      </form>
-
-      <section>
-        <h2 className="font-display text-2xl">Adjustment log</h2>
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-brand-dark-neutral/20 text-xs uppercase">
-              <tr>
-                <th className="py-2 pr-3">When</th>
-                <th className="py-2 pr-3">Actor</th>
-                <th className="py-2 pr-3">Qty</th>
-                <th className="py-2 pr-3">Availability</th>
-                <th className="py-2">Reason</th>
-              </tr>
-            </thead>
-            <tbody>
-              {adjustments.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-brand-dark-neutral/10"
-                >
-                  <td className="py-2 pr-3 whitespace-nowrap">
-                    {row.createdAt}
-                  </td>
-                  <td className="py-2 pr-3">{row.actorEmail}</td>
-                  <td className="py-2 pr-3">
-                    {row.previousQuantity} → {row.newQuantity}
-                  </td>
-                  <td className="py-2 pr-3">
-                    {row.previousAvailability} → {row.newAvailability}
-                  </td>
-                  <td className="py-2">{row.reason}</td>
-                </tr>
+      <AdminPanel className="max-w-xl">
+        <form action={adjustStockAction} className="grid gap-4">
+          <Field id="stock-product" label="Product">
+            <Select id="stock-product" name="productId" required>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name} (
+                  {product.stockQuantity === null ||
+                  product.stockQuantity === undefined
+                    ? "qty unknown"
+                    : `qty ${product.stockQuantity}`}
+                  )
+                </option>
               ))}
-            </tbody>
-          </table>
-          {adjustments.length === 0 ? (
-            <p className="mt-4 text-sm text-brand-dark-neutral">
-              No adjustments yet.
-            </p>
-          ) : null}
-        </div>
+            </Select>
+          </Field>
+          <Field
+            id="stock-expected"
+            label="Expected quantity"
+            hint="Stale-write guard — leave blank to skip."
+          >
+            <Input
+              id="stock-expected"
+              name="expectedQuantity"
+              placeholder="Leave blank to skip check"
+            />
+          </Field>
+          <Field id="stock-availability" label="New availability">
+            <Select
+              id="stock-availability"
+              name="newAvailability"
+              defaultValue="unknown"
+            >
+              <option value="unknown">Unknown</option>
+              <option value="in_stock">In stock</option>
+              <option value="low_stock">Low stock</option>
+              <option value="out_of_stock">Out of stock</option>
+            </Select>
+          </Field>
+          <Field
+            id="stock-qty"
+            label="New quantity"
+            hint="Empty when stock is unknown."
+          >
+            <Input id="stock-qty" name="newQuantity" inputMode="numeric" />
+          </Field>
+          <Field id="stock-reason" label="Reason">
+            <Input id="stock-reason" name="reason" required maxLength={500} />
+          </Field>
+          <Button type="submit" variant="primary" size="md" className="w-fit">
+            Record adjustment
+          </Button>
+        </form>
+      </AdminPanel>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-2xl">Adjustment log</h2>
+        <AdminTable>
+          <thead>
+            <tr>
+              <AdminTh>When</AdminTh>
+              <AdminTh>Actor</AdminTh>
+              <AdminTh>Qty</AdminTh>
+              <AdminTh>Availability</AdminTh>
+              <AdminTh>Reason</AdminTh>
+            </tr>
+          </thead>
+          <tbody>
+            {adjustments.map((row) => (
+              <tr key={row.id}>
+                <AdminTd className="whitespace-nowrap tabular">
+                  {row.createdAt}
+                </AdminTd>
+                <AdminTd>{row.actorEmail}</AdminTd>
+                <AdminTd className="tabular">
+                  {row.previousQuantity} → {row.newQuantity}
+                </AdminTd>
+                <AdminTd>
+                  {row.previousAvailability} → {row.newAvailability}
+                </AdminTd>
+                <AdminTd>{row.reason}</AdminTd>
+              </tr>
+            ))}
+          </tbody>
+        </AdminTable>
+        {adjustments.length === 0 ? (
+          <p className="text-sm text-ink-muted">No adjustments yet.</p>
+        ) : null}
       </section>
     </div>
   );

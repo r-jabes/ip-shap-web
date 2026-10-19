@@ -37,19 +37,23 @@ export function ProductQuickView({
       onClose={onClose}
       side="center"
       label={`Quick view: ${product.name}`}
-      panelClassName="w-[min(100%,40rem)] max-h-[min(92dvh,44rem)] overflow-y-auto rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white shadow-[6px_6px_0_0_var(--brand-charcoal)]"
+      panelClassName="w-[min(100%,44rem)] max-h-[min(92dvh,40rem)] overflow-hidden rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white shadow-[6px_6px_0_0_var(--brand-charcoal)]"
     >
-      <div className="grid gap-0 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
-        <div className="border-b-2 border-brand-charcoal sm:border-r-2 sm:border-b-0">
-          <ProductImageFrame
-            image={image}
-            role="catalogue_primary"
-            objectFit="cover"
-            sizes={sizesForRole("catalogue_primary")}
-            className="rounded-none"
-          />
+      <div className="grid max-h-[min(92dvh,40rem)] sm:grid-cols-[minmax(0,42%)_minmax(0,1fr)] sm:items-stretch">
+        <div className="relative min-h-[14rem] border-b-2 border-brand-charcoal sm:min-h-0 sm:border-r-2 sm:border-b-0">
+          <div className="absolute inset-0">
+            <ProductImageFrame
+              image={image}
+              role="catalogue_primary"
+              aspect="none"
+              objectFit="cover"
+              position="50% 40%"
+              sizes={sizesForRole("catalogue_primary")}
+              className="rounded-none"
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 p-5 sm:p-6">
+        <div className="flex max-h-[min(92dvh,40rem)] flex-col gap-4 overflow-y-auto p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2">
             {categoryName ? <Badge tone="outline">{categoryName}</Badge> : null}
             {onSale ? <Badge tone="accent">Sale</Badge> : null}
@@ -63,7 +67,7 @@ export function ProductQuickView({
             </h2>
           </div>
           <PriceTag price={product.price} size="lg" showSampleSale />
-          <p className="line-clamp-3 text-sm text-ink-muted">
+          <p className="line-clamp-4 text-sm text-ink-muted">
             {product.description}
           </p>
           <div className="mt-auto flex flex-wrap gap-3 pt-2">

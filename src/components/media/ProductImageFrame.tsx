@@ -22,6 +22,11 @@ type ProductImageFrameProps = {
   objectFit?: "contain" | "cover";
   /** CSS object-position, e.g. "50% 40%". */
   position?: string;
+  /**
+   * `catalogue` keeps the 4:5 shop canvas. `none` lets the parent size the frame
+   * (e.g. quick-view column that must fill full height).
+   */
+  aspect?: "catalogue" | "none";
 };
 
 export function ProductImageFrame({
@@ -34,14 +39,17 @@ export function ProductImageFrame({
   sizes,
   objectFit = "contain",
   position = "center",
+  aspect = "catalogue",
 }: ProductImageFrameProps) {
   const [failed, setFailed] = useState(false);
   const effectiveRole = image?.role ?? role;
+  const aspectClass =
+    aspect === "catalogue" ? CATALOGUE_ASPECT_CLASS : "relative h-full w-full";
 
   if (!image || failed) {
     return (
       <div
-        className={`${CATALOGUE_ASPECT_CLASS} flex items-center justify-center text-sm text-brand-dark-neutral ${className}`}
+        className={`${aspectClass} flex items-center justify-center text-sm text-brand-dark-neutral ${className}`}
         style={{ backgroundColor: CATALOGUE_SURFACE }}
         role="img"
         aria-label={alt ?? "Product image unavailable"}
@@ -51,25 +59,40 @@ export function ProductImageFrame({
     );
   }
 
+  const fitClass =
+    objectFit === "cover" ? "object-cover" : "object-contain";
+
   return (
     <div
-      className={`${CATALOGUE_ASPECT_CLASS} relative overflow-hidden ${className}`}
+      className={`${aspectClass} overflow-hidden ${aspect === "none" ? "relative" : ""} ${className}`}
       style={{ backgroundColor: CATALOGUE_SURFACE }}
     >
-      <Image
-        src={image.src}
-        alt={alt ?? image.alt}
-        width={image.width}
-        height={image.height}
-        priority={priority}
-        quality={qualityForRole(effectiveRole)}
-        sizes={sizes ?? sizesForRole(effectiveRole)}
-        onError={() => setFailed(true)}
-        style={{ objectPosition: position }}
-        className={`h-full w-full ${
-          objectFit === "cover" ? "object-cover" : "object-contain"
-        } ${imageClassName}`}
-      />
+      {aspect === "none" ? (
+        <Image
+          src={image.src}
+          alt={alt ?? image.alt}
+          fill
+          priority={priority}
+          quality={qualityForRole(effectiveRole)}
+          sizes={sizes ?? sizesForRole(effectiveRole)}
+          onError={() => setFailed(true)}
+          style={{ objectPosition: position }}
+          className={`${fitClass} ${imageClassName}`}
+        />
+      ) : (
+        <Image
+          src={image.src}
+          alt={alt ?? image.alt}
+          width={image.width}
+          height={image.height}
+          priority={priority}
+          quality={qualityForRole(effectiveRole)}
+          sizes={sizes ?? sizesForRole(effectiveRole)}
+          onError={() => setFailed(true)}
+          style={{ objectPosition: position }}
+          className={`h-full w-full ${fitClass} ${imageClassName}`}
+        />
+      )}
     </div>
   );
 }
