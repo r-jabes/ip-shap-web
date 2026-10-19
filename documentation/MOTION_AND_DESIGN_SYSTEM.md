@@ -33,22 +33,24 @@ Fluid scale (CSS variables):
 - `--type-h2`: `clamp(1.75rem, 2vw + 1rem, 2.5rem)` — section titles
 - `--type-body`: `clamp(1rem, 0.2vw + 0.95rem, 1.125rem)` — body
 
-## Layout principles (Phase 01)
+## Layout principles (Phase 01–02)
 
 - Full-bleed charcoal hero with warm-white type and one primary CTA
 - Editorial collection rows (border-led, not card grids in marketing sections)
-- Catalogue uses a consistent **4:5** product frame on warm-neutral `#E8E2D6`
+- Catalogue uses a consistent **4:5** product frame on warm-neutral `#E8E2D6` via `ProductImageFrame`
 - Orange used sparingly for CTAs, focus rings and demo badges
+- Product photography system: roles, processing status and zoom-on-demand (see `CONTENT_AND_IMAGES.md`)
 
-## Motion (Phase 01 — restrained)
+## Motion (Phase 01–02 — restrained)
 
-| Interaction                 | Behaviour                                                |
-| --------------------------- | -------------------------------------------------------- |
-| Buttons / links             | ~200ms colour/opacity transitions                        |
-| Product card image          | Subtle `scale(1.03)` on hover                            |
-| Hero copy                   | Short `hero-enter` fade/translate (~220ms)               |
-| Cart drawer / filter drawer | Instant mount with short transform easing; Escape closes |
-| Lightbox                    | Focus move to close control; Escape restores focus       |
+| Interaction                 | Behaviour                                                                           |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| Buttons / links             | ~200ms colour/opacity transitions                                                   |
+| Product card image          | Subtle `scale(1.03)` on hover; disabled under reduced motion                        |
+| Hero copy                   | Short `hero-enter` fade/translate (~220ms)                                          |
+| Cart drawer / filter drawer | Instant mount with short transform easing; Escape closes                            |
+| Gallery swipe               | Pointer delta threshold (~40px); no momentum physics                                |
+| Lightbox                    | Focus move to close; Tab trap; Escape restores focus; body scroll locked while open |
 
 No scroll hijacking, pinned storytelling or intro gates.
 
@@ -59,7 +61,8 @@ No scroll hijacking, pinned storytelling or intro gates.
 - Skip link to `#main-content`
 - Visible `:focus-visible` ring (burnt orange)
 - Cart and lightbox dialogs restore focus
-- Gallery supports keyboard previous/next and thumbnails
+- Gallery: visible prev/next, thumbnails, keyboard arrows in lightbox, `aria-live` slide status
+- Zoom is a dedicated control (never hover-only discovery)
 - Demo labels are textual, not colour-only
 
 ## Visual references (inspiration only)

@@ -14,17 +14,40 @@ export type ProductImageRole =
   | "thumbnail"
   | "zoom";
 
+/**
+ * Operator review / processing lifecycle for product imagery.
+ * Unreviewed AI-edited images must never auto-publish.
+ */
+export type ImageProcessingStatus =
+  | "source_received"
+  | "needs_review"
+  | "approved_for_catalogue"
+  | "rejected"
+  | "archived";
+
 export type ProductImage = {
   id: string;
   role: ProductImageRole;
+  /** Public derivative path/URL served to browsers. */
   src: string;
+  /**
+   * Optional higher-resolution asset loaded only when zoom/lightbox opens.
+   * Falls back to `src` when omitted.
+   */
+  zoomSrc?: string;
   alt: string;
   width: number;
   height: number;
   sortOrder: number;
+  processingStatus: ImageProcessingStatus;
   /** True when the photograph shows more than one sellable SKU. */
   isSharedMultiProductPhoto?: boolean;
+  /** Original filename or storage key for operator reference — not product identity. */
   sourceFilename?: string;
+  /** Private/original storage reference (not publicly exposed by default). */
+  originalRef?: string;
+  cropInstructions?: string;
+  rightsNote?: string;
   needsClientConfirmation?: boolean;
 };
 

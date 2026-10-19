@@ -53,12 +53,19 @@ function sharedPhoto(
     id,
     role: "catalogue_primary",
     src,
+    // Zoom reuses the same public derivative until dedicated zoom exports exist.
+    zoomSrc: src,
     alt,
     width: SIZE.width,
     height: SIZE.height,
     sortOrder,
+    processingStatus: "needs_review",
     isSharedMultiProductPhoto: true,
     sourceFilename,
+    originalRef: `resources/${sourceFilename}`,
+    cropInstructions:
+      "Keep full bottles in frame; do not crop labels. Prefer individual SKU retakes before aggressive cut-out.",
+    rightsNote: "Client-supplied shop photograph for THE IP SHAP BUSINESS LTD.",
     needsClientConfirmation: true,
   };
 }
@@ -73,12 +80,18 @@ function singlePhoto(
     id,
     role: "catalogue_primary",
     src,
+    zoomSrc: src,
     alt,
     width: SIZE.width,
     height: SIZE.height,
     sortOrder: 0,
+    processingStatus: "needs_review",
     isSharedMultiProductPhoto: false,
     sourceFilename,
+    originalRef: `resources/${sourceFilename}`,
+    cropInstructions:
+      "Centre bottle on 4:5 canvas; preserve glass edges and label text; avoid aggressive background removal.",
+    rightsNote: "Client-supplied shop photograph for THE IP SHAP BUSINESS LTD.",
     needsClientConfirmation: true,
   };
 }

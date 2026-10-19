@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 — Phase 02 product image system (2026-10-19)
+
+- Add image roles, processing status and metadata helpers (`product-image`)
+- Add `ProductImageFrame` with reserved 4:5 aspect and missing/error fallback
+- Harden product gallery: swipe, focus trap, keyboard arrows, zoom-on-demand
+- Enrich provisional fixtures with `zoomSrc`, `originalRef`, crop/rights notes
+- Enable Next.js AVIF/WebP image formats; expand content/image documentation
+
 ## 0.3.0 — Client assets + provisional catalogue (2026-10-19)
 
 - Copy client logo, app icon and product photographs into `public/`

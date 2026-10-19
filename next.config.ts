@@ -7,7 +7,9 @@ const nextConfig: NextConfig = {
   // Avoid picking up unrelated lockfiles higher in the user profile tree.
   outputFileTracingRoot: path.join(__dirname),
   images: {
-    // Temporary SVG placeholders only; replace with raster/WebP product photos later.
+    // Prefer modern formats when the optimizer can produce them; JPEG/PNG remain fallbacks.
+    formats: ["image/avif", "image/webp"],
+    // Temporary SVG placeholders for fallback testing only.
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

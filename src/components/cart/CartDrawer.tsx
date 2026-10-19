@@ -7,6 +7,7 @@ import { formatDemoPrice } from "@/domain/catalogue";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { getProductById } from "@/lib/catalogue";
+import { primaryCatalogueImage } from "@/lib/product-image";
 
 export function CartDrawer() {
   const { lines, isOpen, closeCart, setQuantity, removeItem, itemCount } =
@@ -90,7 +91,7 @@ export function CartDrawer() {
           ) : (
             <ul className="space-y-5">
               {populated.map(({ line, product }) => {
-                const image = product.images[0];
+                const image = primaryCatalogueImage(product.images);
                 return (
                   <li key={product.id} className="flex gap-3">
                     <div className="relative h-24 w-20 shrink-0 bg-[#E8E2D6]">

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { formatDemoPrice } from "@/domain/catalogue";
 import { getProductById } from "@/lib/catalogue";
+import { primaryCatalogueImage } from "@/lib/product-image";
 
 export default function CartPage() {
   const { lines, setQuantity, removeItem, clearCart } = useCart();
@@ -47,7 +48,7 @@ export default function CartPage() {
         <div className="mt-10 grid gap-10 lg:grid-cols-[1.4fr_0.8fr]">
           <ul className="space-y-6">
             {populated.map(({ line, product }) => {
-              const image = product.images[0];
+              const image = primaryCatalogueImage(product.images);
               return (
                 <li
                   key={product.id}
