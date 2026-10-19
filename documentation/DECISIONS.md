@@ -50,3 +50,23 @@ Use `NEXT_PUBLIC_DEMO_MODE` (default `true` locally) to gate illustrative fixtur
 ### Decision
 
 Ship approved brand CSS tokens in Phase 00 (`#20201E`, `#F5F1E8`, `#F07836`, `#343430`) so Phase 01 UI work cannot invent a competing palette. Typography pairing may be refined in Phase 01.
+
+## ADR-005 — Demo fixtures behind adapter (2026-10-19)
+
+### Decision
+
+Phase 01 catalogue data lives in `src/fixtures/demo/` and is read only through `src/lib/catalogue.ts` when `NEXT_PUBLIC_DEMO_MODE` is true. Components never import fixtures directly for production paths.
+
+### Why
+
+Keeps later Supabase/API swaps localized and prevents accidental “real” presentation of invented SKUs.
+
+## ADR-006 — Temporary SVG placeholders (2026-10-19)
+
+### Decision
+
+Use clearly marked SVG bottle silhouettes instead of fabricating photoreal product labels or pulling unverified stock photos.
+
+### Consequence
+
+Client photography in `../resources/` will replace placeholders in the assets integration phase.

@@ -12,6 +12,9 @@
   --background: var(--brand-warm-white);
   --foreground: var(--brand-charcoal);
   --focus-ring: var(--brand-burnt-orange);
+  --type-display: clamp(2.5rem, 5vw + 1rem, 4.5rem);
+  --type-h2: clamp(1.75rem, 2vw + 1rem, 2.5rem);
+  --type-body: clamp(1rem, 0.2vw + 0.95rem, 1.125rem);
 }
 
 @theme inline {
@@ -28,6 +31,12 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-size: var(--type-body);
+  line-height: 1.6;
+}
+
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
 }
 
 ::selection {
@@ -39,6 +48,21 @@ body {
   outline-offset: 3px;
 }
 
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-enter {
+  animation: hero-fade 220ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -47,5 +71,9 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .hero-enter {
+    animation: none;
   }
 }

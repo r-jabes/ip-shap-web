@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" role="img" aria-label="Temporary product placeholder">
+  <rect width="800" height="1000" fill="#E8E2D6"/>
+  <path d="M355 140h90v70c40 28 62 78 62 140v430c0 55-45 100-100 100h-14c-55 0-100-45-100-100V350c0-62 22-112 62-140v-70z" fill="#20201E"/>
+  <rect x="372" y="90" width="56" height="55" rx="8" fill="#343430"/>
+  <rect x="330" y="420" width="140" height="180" rx="8" fill="#F5F1E8"/>
+  <text x="400" y="500" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#20201E">DEMO</text>
+  <text x="400" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#343430">placeholder</text>
+</svg>

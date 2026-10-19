@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { SiteShell } from "@/components/SiteShell";
+import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
+import { getPublicEnv } from "@/lib/env";
 import "./globals.css";
 
 const bodyFont = DM_Sans({
@@ -15,13 +17,29 @@ const displayFont = Fraunces({
   display: "swap",
 });
 
+const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: {
-    default: "IP SHAP | THE IP SHAP BUSINESS LTD",
-    template: "%s | IP SHAP",
+    default: `${SHORT_BRAND} | ${LEGAL_NAME}`,
+    template: `%s | ${SHORT_BRAND}`,
   },
   description:
-    "Online drinks storefront for THE IP SHAP BUSINESS LTD. Foundation build — catalogue and commerce features arrive in later phases.",
+    "Premium drinks storefront prototype for THE IP SHAP BUSINESS LTD — Rwanda. Demo catalogue only; details await owner confirmation.",
+  openGraph: {
+    title: `${SHORT_BRAND} | ${LEGAL_NAME}`,
+    description:
+      "Client-facing storefront prototype. Demo products and prices are illustrative.",
+    url: appUrl,
+    siteName: SHORT_BRAND,
+    locale: "en_RW",
+    type: "website",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({

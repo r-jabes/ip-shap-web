@@ -10,13 +10,14 @@ Next.js App Router storefront for **THE IP SHAP BUSINESS LTD** (short brand: **I
 
 This repository does **not** own database migrations, RLS policies, Edge Functions, or webhook handlers. Those live in `../backend/`.
 
-## Stack (Phase 00)
+## Stack
 
 - Next.js 15 App Router + React 19 + TypeScript (strict)
 - Tailwind CSS v4 with centralized brand tokens
 - Zod environment validation
 - Vitest unit tests
 - Prettier + ESLint
+- Demo catalogue fixtures (local/demo mode only)
 
 ## Architecture summary
 
@@ -74,6 +75,8 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 
 ## Phase status
 
-- **Phase 00 (current):** foundations, tokens, docs, CI, money/env helpers
-- **Phase 01 (next):** client-facing storefront prototype (~90% visual direction)
-- Client product photographs exist under `../resources/` and will be integrated in a later assets phase after the prototype shell exists
+- **Phase 00:** foundations, tokens, docs, CI, money/env helpers
+- **Phase 01 (current):** client-facing storefront prototype (~90% visual direction)
+  - Routes: `/`, `/shop`, `/product/[slug]`, `/cart`, `/about`, `/contact`, `/delivery`, `/faq`, `/policies/*`
+  - Demo fixtures + cart drawer; no payments/backend integration
+- **Next:** client review of visual direction, then assets/catalogue integration from `../resources/`

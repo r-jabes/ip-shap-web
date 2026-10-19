@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" role="img" aria-label="Temporary product placeholder alternate">
+  <rect width="800" height="1000" fill="#F5F1E8"/>
+  <circle cx="400" cy="520" r="210" fill="#F07836" opacity="0.12"/>
+  <path d="M360 150h80v65c36 24 56 70 56 125v440c0 48-39 87-87 87h-18c-48 0-87-39-87-87V340c0-55 20-101 56-125v-65z" fill="#343430"/>
+  <text x="400" y="520" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#F5F1E8">ALT</text>
+</svg>

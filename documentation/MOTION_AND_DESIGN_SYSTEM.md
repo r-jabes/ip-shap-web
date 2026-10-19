@@ -7,40 +7,60 @@ Short brand: **IP SHAP** (subject to owner approval)
 
 Authoritative palette (`prompts/BRAND_IDENTITY.md`):
 
-| Token                  | Hex       | Usage                                         |
-| ---------------------- | --------- | --------------------------------------------- |
-| `--brand-charcoal`     | `#20201E` | Primary text, header/footer, grounding        |
-| `--brand-warm-white`   | `#F5F1E8` | Main canvas                                   |
-| `--brand-burnt-orange` | `#F07836` | Selective accent (CTA, focus, price emphasis) |
-| `--brand-dark-neutral` | `#343430` | Secondary dark surfaces / muted text          |
+| Token                  | Hex       | Usage                                                 |
+| ---------------------- | --------- | ----------------------------------------------------- |
+| `--brand-charcoal`     | `#20201E` | Primary text, header/footer, hero grounding           |
+| `--brand-warm-white`   | `#F5F1E8` | Main canvas                                           |
+| `--brand-burnt-orange` | `#F07836` | Selective accent (CTA, focus, badges, price emphasis) |
+| `--brand-dark-neutral` | `#343430` | Secondary surfaces / muted text                       |
 
 ### Explicit exclusions
 
 Do **not** use green, emerald, lime, burgundy/wine, or gold as core brand colours.
 
-Tokens are centralized in `src/app/globals.css` and exposed to Tailwind as `brand-*` colours.
+Tokens live in `src/app/globals.css` and map to Tailwind `brand-*` utilities.
 
-## Typography (Phase 00 baseline)
+## Typography (Phase 01)
 
-| Role            | Family   | Notes                 |
-| --------------- | -------- | --------------------- |
-| Display / brand | Fraunces | Editorial headings    |
-| Body / UI       | DM Sans  | Legible storefront UI |
+| Role            | Family   | Implementation                    |
+| --------------- | -------- | --------------------------------- |
+| Display / brand | Fraunces | `--font-display`, `.font-display` |
+| Body / UI       | DM Sans  | `--font-body` / `font-sans`       |
 
-Phase 01 may refine the type scale with fluid `clamp()` sizes while keeping these roles.
+Fluid scale (CSS variables):
 
-## Motion (Phase 00)
+- `--type-display`: `clamp(2.5rem, 5vw + 1rem, 4.5rem)` — hero
+- `--type-h2`: `clamp(1.75rem, 2vw + 1rem, 2.5rem)` — section titles
+- `--type-body`: `clamp(1rem, 0.2vw + 0.95rem, 1.125rem)` — body
 
-- No advanced choreography yet
-- Global `prefers-reduced-motion` CSS kill-switch is enabled
-- Prototype interactions in Phase 01 should stay within ~150–220ms transitions
+## Layout principles (Phase 01)
+
+- Full-bleed charcoal hero with warm-white type and one primary CTA
+- Editorial collection rows (border-led, not card grids in marketing sections)
+- Catalogue uses a consistent **4:5** product frame on warm-neutral `#E8E2D6`
+- Orange used sparingly for CTAs, focus rings and demo badges
+
+## Motion (Phase 01 — restrained)
+
+| Interaction                 | Behaviour                                                |
+| --------------------------- | -------------------------------------------------------- |
+| Buttons / links             | ~200ms colour/opacity transitions                        |
+| Product card image          | Subtle `scale(1.03)` on hover                            |
+| Hero copy                   | Short `hero-enter` fade/translate (~220ms)               |
+| Cart drawer / filter drawer | Instant mount with short transform easing; Escape closes |
+| Lightbox                    | Focus move to close control; Escape restores focus       |
+
+No scroll hijacking, pinned storytelling or intro gates.
+
+`prefers-reduced-motion` disables non-essential animation globally.
 
 ## Accessibility
 
 - Skip link to `#main-content`
-- Visible `:focus-visible` ring using burnt orange
-- Do not rely on colour alone for state
-- Maintain contrast between charcoal text and warm white canvas
+- Visible `:focus-visible` ring (burnt orange)
+- Cart and lightbox dialogs restore focus
+- Gallery supports keyboard previous/next and thumbnails
+- Demo labels are textual, not colour-only
 
 ## Visual references (inspiration only)
 
@@ -48,3 +68,11 @@ Phase 01 may refine the type scale with fluid `clamp()` sizes while keeping thes
 - https://lefrenchystudio.com/
 
 Do not copy layouts, assets or proprietary details.
+
+## Visual QA checklist
+
+- [ ] Mobile 360–430px: header, hero, shop filters drawer, product gallery, cart drawer
+- [ ] Tablet ~768px: two-column product detail
+- [ ] Desktop / wide: shop sidebar + 4-column grid
+- [ ] Keyboard: tab through nav, filters, gallery, zoom, cart
+- [ ] Reduced motion enabled: no distracting motion
