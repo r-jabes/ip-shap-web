@@ -62,11 +62,14 @@ export function ShopFilters({
 
       {/*
         Sticky sidebar: pins under the header while the product column scrolls.
+        The aside must stretch to the full row height (lg:self-stretch) — a
+        sticky child can only travel inside its parent, so an items-start grid
+        would pin it only for its own height.
         One scroll surface only (panel itself) — lists do not nest overflow.
         Scrollbar styled via .shop-filters-scroll in globals.css.
         PageEnter must not leave a CSS transform on an ancestor.
       */}
-      <aside className="hidden lg:block">
+      <aside className="hidden lg:block lg:self-stretch">
         <div className="shop-filters-scroll sticky top-[calc(var(--header-h)+0.75rem)] z-[1] max-h-[calc(100dvh-var(--header-h)-1.5rem)] overflow-y-auto overscroll-contain rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-5 shadow-[4px_4px_0_0_var(--brand-charcoal)]">
           <div className="flex items-baseline justify-between gap-3 border-b-2 border-brand-charcoal/10 pb-4">
             <div>
