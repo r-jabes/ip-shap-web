@@ -1,10 +1,15 @@
-import type { CatalogueFilters, DemoProduct } from "@/domain/catalogue";
+import type {
+  AvailabilityFilter,
+  CatalogueFilters,
+  DemoProduct,
+} from "@/domain/catalogue";
 import {
   DEMO_BRANDS,
   DEMO_CATEGORIES,
   DEMO_PRODUCTS,
 } from "@/fixtures/demo/catalogue";
 import { isDemoMode } from "@/lib/env";
+import { availabilityLabel } from "@/lib/shop-query";
 
 export function getCategories() {
   return DEMO_CATEGORIES;
@@ -54,7 +59,17 @@ export function paginateProducts<T>(
   };
 }
 
-export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
+function categorySlugsOf(filters: CatalogueFilters): string[] {
+  if (filters.categorySlugs?.length) return filters.categorySlugs;
+  return filters.categorySlug ? [filters.categorySlug] : [];
+}
+
+function brandSlugsOf(filters: CatalogueFilters): string[] {
+  if (filters.brandSlugs?.length) return filters.brandSlugs;
+  return filters.brandSlug ? [filters.brandSlug] : [];
+}
+
+function filterWithoutSort(filters: CatalogueFilters = {}): DemoProduct[] {
   if (!isDemoMode()) {
     return [];
   }
@@ -64,14 +79,17 @@ export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
     (product) => product.status === "published" || product.status === "demo",
   );
 
-  if (filters.categorySlug) {
+  const categories = categorySlugsOf(filters);
+  if (categories.length) {
     items = items.filter(
-      (product) => product.categorySlug === filters.categorySlug,
+      (product) =>
+        !!product.categorySlug && categories.includes(product.categorySlug),
     );
   }
 
-  if (filters.brandSlug) {
-    items = items.filter((product) => product.brandSlug === filters.brandSlug);
+  const brands = brandSlugsOf(filters);
+  if (brands.length) {
+    items = items.filter((product) => brands.includes(product.brandSlug));
   }
 
   if (filters.availability && filters.availability !== "all") {
@@ -113,6 +131,12 @@ export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
     );
   }
 
+  return items;
+}
+
+export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
+  const items = filterWithoutSort(filters);
+
   switch (filters.sort) {
     case "price_asc":
       items.sort((a, b) => a.price.amount - b.price.amount);
@@ -127,6 +151,85 @@ export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
   }
 
   return items;
+}
+
+export type FacetOption = {
+  slug: string;
+  name: string;
+  count: number;
+};
+
+export type AvailabilityFacet = {
+  value: Exclude<AvailabilityFilter, "all">;
+  label: string;
+  count: number;
+};
+
+export type FilterFacets = {
+  categories: FacetOption[];
+  brands: FacetOption[];
+  availability: AvailabilityFacet[];
+  priceBounds: { min: number; max: number };
+};
+
+/**
+ * Facet counts for the shop filters. Each dimension is counted with all other
+ * active filters applied (so selecting Wine does not zero the Wine chip).
+ */
+export function getFilterFacets(filters: CatalogueFilters = {}): FilterFacets {
+  const base = filterWithoutSort({});
+  const amounts = base.map((product) => product.price.amount);
+  const priceBounds = {
+    min: amounts.length ? Math.min(...amounts) : 0,
+    max: amounts.length ? Math.max(...amounts) : 0,
+  };
+
+  const withoutCategory = filterWithoutSort({
+    ...filters,
+    categorySlug: undefined,
+    categorySlugs: undefined,
+  });
+  const categories = getCategories().map((category) => ({
+    slug: category.slug,
+    name: category.name,
+    count: withoutCategory.filter(
+      (product) => product.categorySlug === category.slug,
+    ).length,
+  }));
+
+  const withoutBrand = filterWithoutSort({
+    ...filters,
+    brandSlug: undefined,
+    brandSlugs: undefined,
+  });
+  const brands = getBrands().map((brand) => ({
+    slug: brand.slug,
+    name: brand.name,
+    count: withoutBrand.filter((product) => product.brandSlug === brand.slug)
+      .length,
+  }));
+
+  const withoutAvailability = filterWithoutSort({
+    ...filters,
+    availability: "all",
+  });
+  const availability: AvailabilityFacet[] = (
+    ["in_stock", "unknown"] as const
+  ).map((value) => ({
+    value,
+    label: availabilityLabel(value),
+    count: withoutAvailability.filter((product) => {
+      if (value === "in_stock") {
+        return (
+          product.availability === "in_stock" ||
+          product.availability === "low_stock"
+        );
+      }
+      return product.availability === "unknown";
+    }).length,
+  }));
+
+  return { categories, brands, availability, priceBounds };
 }
 
 export function getFeaturedProducts(limit = 4): DemoProduct[] {

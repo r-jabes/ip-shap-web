@@ -1,16 +1,26 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { ProductGrid } from "@/components/catalogue/ProductGrid";
+import { AppliedFilterChips } from "@/components/catalogue/AppliedFilterChips";
+import {
+  ProductGrid,
+  ProductGridSkeleton,
+} from "@/components/catalogue/ProductGrid";
 import { ShopFilters } from "@/components/catalogue/ShopFilters";
+import { ShopPagination } from "@/components/catalogue/ShopPagination";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { Container } from "@/components/ui/Container";
-import type { AvailabilityFilter } from "@/domain/catalogue";
-import Link from "next/link";
 import {
   getBrands,
   getCategories,
+  getFilterFacets,
   listProducts,
   paginateProducts,
 } from "@/lib/catalogue";
+import {
+  buildShopHref,
+  parseShopSearchParams,
+  shopQueryToFilters,
+} from "@/lib/shop-query";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -20,116 +30,116 @@ export const metadata: Metadata = {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-function first(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 export default async function ShopPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  const categorySlug = first(params.category);
-  const brandSlug = first(params.brand);
-  const availability = (first(params.availability) ??
-    "all") as AvailabilityFilter;
-  const sort = (first(params.sort) ?? "name_asc") as
-    "price_asc" | "price_desc" | "name_asc";
-  const q = first(params.q);
-  const pageParam = Number.parseInt(first(params.page) ?? "1", 10);
-
-  const allProducts = listProducts({
-    categorySlug,
-    brandSlug,
-    availability,
-    sort,
-    q,
-  });
+  const query = parseShopSearchParams(params);
+  const filters = shopQueryToFilters(query);
+  const allProducts = listProducts(filters);
   const {
     items: products,
     page,
     totalPages,
     total,
-  } = paginateProducts(allProducts, Number.isFinite(pageParam) ? pageParam : 1);
+  } = paginateProducts(allProducts, query.page);
+  const facets = getFilterFacets(filters);
   const categories = getCategories();
   const brands = getBrands();
 
-  function pageHref(target: number) {
-    const next = new URLSearchParams();
-    if (categorySlug) next.set("category", categorySlug);
-    if (brandSlug) next.set("brand", brandSlug);
-    if (availability && availability !== "all") {
-      next.set("availability", availability);
-    }
-    if (sort && sort !== "name_asc") next.set("sort", sort);
-    if (q) next.set("q", q);
-    if (target > 1) next.set("page", String(target));
-    const query = next.toString();
-    return query ? `/shop?${query}` : "/shop";
-  }
+  const categoryNames = Object.fromEntries(
+    categories.map((category) => [category.slug, category.name]),
+  );
+  const brandNames = Object.fromEntries(
+    brands.map((brand) => [brand.slug, brand.name]),
+  );
+
+  const activeCategory =
+    query.categories.length === 1
+      ? categories.find((category) => category.slug === query.categories[0])
+      : undefined;
 
   return (
-    <Container className="py-10 lg:py-14">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-brand-dark-neutral/15 pb-6">
-        <div>
-          <p className="text-xs tracking-[0.16em] text-brand-dark-neutral uppercase">
-            Catalogue
-          </p>
-          <h1
-            className="mt-2 font-display"
-            style={{ fontSize: "var(--type-h2)" }}
-          >
-            Shop drinks
-          </h1>
-          <p className="mt-2 max-w-xl text-sm text-brand-dark-neutral">
-            Spirits and wine, ready to order. Pick what you like and send your
-            order on WhatsApp.
-          </p>
-        </div>
-      </div>
+    <Container className="py-8 lg:py-12">
+      <Breadcrumbs
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Shop", href: activeCategory ? "/shop" : undefined },
+          ...(activeCategory ? [{ name: activeCategory.name }] : []),
+        ]}
+      />
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">
-        <Suspense fallback={<div className="text-sm">Loading filters…</div>}>
-          <ShopFilters categories={categories} brands={brands} />
+      <header className="max-w-2xl">
+        <p className="text-xs font-semibold tracking-[0.16em] text-ink-muted uppercase">
+          Catalogue
+        </p>
+        <h1
+          className="font-display mt-2 text-brand-charcoal"
+          style={{ fontSize: "clamp(2rem, 1.4rem + 2vw, 3rem)" }}
+        >
+          {activeCategory ? activeCategory.name : "Shop drinks"}
+        </h1>
+        <p className="mt-2 text-sm text-ink-muted sm:text-base">
+          {activeCategory?.description ??
+            "Spirits and wine, ready to order. Pick what you like and send your order on WhatsApp."}
+        </p>
+      </header>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start">
+        <Suspense
+          fallback={
+            <div className="hidden space-y-4 lg:block" aria-hidden="true">
+              <div className="h-6 w-24 animate-pulse rounded bg-brand-charcoal/10" />
+              <div className="h-40 animate-pulse rounded-xl bg-brand-charcoal/10" />
+            </div>
+          }
+        >
+          <ShopFilters facets={facets} resultCount={total} />
         </Suspense>
-        <div>
-          <p className="mb-6 text-sm text-brand-dark-neutral">
-            Showing{" "}
-            <span className="font-medium text-brand-charcoal">
-              {products.length}
-            </span>{" "}
-            of {total} product{total === 1 ? "" : "s"}
-            {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}
-          </p>
-          <ProductGrid products={products} />
-          {totalPages > 1 ? (
-            <nav
-              className="mt-8 flex flex-wrap items-center gap-3 text-sm"
-              aria-label="Catalogue pages"
-            >
-              {page > 1 ? (
-                <Link
-                  href={pageHref(page - 1)}
-                  className="underline underline-offset-4"
-                >
-                  Previous
-                </Link>
-              ) : (
-                <span className="text-brand-dark-neutral">Previous</span>
-              )}
-              {page < totalPages ? (
-                <Link
-                  href={pageHref(page + 1)}
-                  className="underline underline-offset-4"
-                >
-                  Next
-                </Link>
-              ) : (
-                <span className="text-brand-dark-neutral">Next</span>
-              )}
-            </nav>
-          ) : null}
+
+        <div className="min-w-0">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <p className="text-sm text-ink-muted">
+              Showing{" "}
+              <span className="font-semibold text-brand-charcoal tabular">
+                {products.length}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-brand-charcoal tabular">
+                {total}
+              </span>{" "}
+              {total === 1 ? "drink" : "drinks"}
+              {totalPages > 1 ? (
+                <>
+                  {" "}
+                  · page{" "}
+                  <span className="tabular">
+                    {page}/{totalPages}
+                  </span>
+                </>
+              ) : null}
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <AppliedFilterChips
+              query={query}
+              categoryNames={categoryNames}
+              brandNames={brandNames}
+            />
+          </div>
+
+          <Suspense fallback={<ProductGridSkeleton />}>
+            <ProductGrid products={products} />
+          </Suspense>
+
+          <ShopPagination
+            page={page}
+            totalPages={totalPages}
+            buildHref={(target) => buildShopHref({ page: target }, query)}
+          />
         </div>
       </div>
     </Container>

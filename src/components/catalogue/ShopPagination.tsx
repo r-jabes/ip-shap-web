@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 
 export function ShopPagination({
   page,
@@ -16,34 +16,33 @@ export function ShopPagination({
 
   return (
     <nav
-      className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-brand-dark-neutral/15 pt-6 text-sm"
+      className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t-2 border-brand-charcoal/15 pt-6"
       aria-label="Catalogue pages"
     >
       {prev ? (
-        <Link
-          href={buildHref(prev)}
-          className="underline-offset-4 hover:underline"
-          rel="prev"
-        >
+        <Button href={buildHref(prev)} variant="ghost" size="sm">
           Previous
-        </Link>
+        </Button>
       ) : (
-        <span className="text-brand-dark-neutral/50">Previous</span>
+        <Button variant="ghost" size="sm" disabled>
+          Previous
+        </Button>
       )}
-      <p className="text-brand-dark-neutral">
-        Page <span className="font-medium text-brand-charcoal">{page}</span> of{" "}
-        {totalPages}
+      <p className="text-sm text-ink-muted">
+        Page{" "}
+        <span className="font-semibold text-brand-charcoal tabular">
+          {page}
+        </span>{" "}
+        of <span className="tabular">{totalPages}</span>
       </p>
       {next ? (
-        <Link
-          href={buildHref(next)}
-          className="underline-offset-4 hover:underline"
-          rel="next"
-        >
+        <Button href={buildHref(next)} variant="ghost" size="sm">
           Next
-        </Link>
+        </Button>
       ) : (
-        <span className="text-brand-dark-neutral/50">Next</span>
+        <Button variant="ghost" size="sm" disabled>
+          Next
+        </Button>
       )}
     </nav>
   );

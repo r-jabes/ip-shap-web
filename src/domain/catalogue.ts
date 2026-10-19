@@ -38,8 +38,12 @@ export type DemoProduct = Product & {
 export type CatalogueProduct = DemoProduct;
 
 export type CatalogueFilters = {
+  /** Single category (legacy). Prefer `categorySlugs` for multi-select. */
   categorySlug?: string;
+  categorySlugs?: string[];
+  /** Single brand (legacy). Prefer `brandSlugs` for multi-select. */
   brandSlug?: string;
+  brandSlugs?: string[];
   availability?: AvailabilityFilter;
   q?: string;
   sort?: "price_asc" | "price_desc" | "name_asc";

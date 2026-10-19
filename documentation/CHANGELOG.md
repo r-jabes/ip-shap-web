@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R2 (foundations, shell, home)
+## Unreleased — UI redesign R0–R3 (foundations, shell, home, shop)
+
+- Shop (R3): product cards with 4:5 frame, hover shift, stock pill, quick add + quick view; sticky filter sidebar and mobile sheet with “Show N results”; multi-select range/brand chips with facet counts; price bounds; applied-filter chips; URL state; sort, pagination, skeletons and empty state
 
 - Logo: reversed asset for dark surfaces, `BrandLogo` now requires `tone`; ivory header, charcoal footer/menu
 - Tokens and type: Archivo + DM Sans, new radii/shadows/motion tokens, pointer cursors and focus rings restored under Tailwind v4
