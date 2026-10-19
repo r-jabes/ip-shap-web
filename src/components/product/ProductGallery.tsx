@@ -126,14 +126,16 @@ export function ProductGallery({
           pointerStartX.current = null;
         }}
       >
-        <ProductImageFrame
-          image={current}
-          role="catalogue_secondary"
-          priority
-          objectFit="contain"
-          sizes={sizesForRole("catalogue_secondary")}
-          imageClassName="pointer-events-none select-none"
-        />
+        <div key={current.id} className="gallery-crossfade">
+          <ProductImageFrame
+            image={current}
+            role="catalogue_secondary"
+            priority
+            objectFit="contain"
+            sizes={sizesForRole("catalogue_secondary")}
+            imageClassName="pointer-events-none select-none"
+          />
+        </div>
         {safeImages.length > 1 ? (
           <>
             <button
@@ -208,7 +210,7 @@ export function ProductGallery({
       ) : null}
 
       {lightboxOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-charcoal/90 p-4">
+        <div className="lightbox-enter fixed inset-0 z-50 flex items-center justify-center bg-brand-charcoal/90 p-4">
           <div
             ref={dialogRef}
             role="dialog"
@@ -232,10 +234,11 @@ export function ProductGallery({
             >
               {/* Zoom asset mounts only while lightbox is open. */}
               <Image
+                key={current.id}
                 src={resolveZoomSrc(current)}
                 alt={current.alt}
                 fill
-                className="object-contain"
+                className="gallery-crossfade object-contain"
                 sizes={sizesForRole("zoom")}
                 quality={qualityForRole("zoom")}
                 priority

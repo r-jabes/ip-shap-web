@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 — Phase 03 purposeful motion (2026-10-19)
+
+- Add motion tokens (fast / UI / editorial / hero) and CSS choreography
+- Staggered hero entrance; IntersectionObserver editorial reveals (not on grids)
+- Gallery crossfade, drawer/lightbox enter motion, cart count pulse + text feedback
+- Match product-card hover/focus image scale; document reduced-motion + perf rationale
+
 ## 0.4.0 — Phase 02 product image system (2026-10-19)
 
 - Add image roles, processing status and metadata helpers (`product-image`)

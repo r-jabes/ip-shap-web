@@ -10,8 +10,15 @@ import { getProductById } from "@/lib/catalogue";
 import { primaryCatalogueImage } from "@/lib/product-image";
 
 export function CartDrawer() {
-  const { lines, isOpen, closeCart, setQuantity, removeItem, itemCount } =
-    useCart();
+  const {
+    lines,
+    isOpen,
+    closeCart,
+    setQuantity,
+    removeItem,
+    itemCount,
+    feedback,
+  } = useCart();
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -53,7 +60,7 @@ export function CartDrawer() {
     <div className="fixed inset-0 z-50 flex justify-end">
       <button
         type="button"
-        className="absolute inset-0 bg-brand-charcoal/50"
+        className="drawer-backdrop absolute inset-0 bg-brand-charcoal/50"
         aria-label="Close cart"
         onClick={closeCart}
       />
@@ -61,7 +68,7 @@ export function CartDrawer() {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative flex h-full w-full max-w-md flex-col bg-brand-warm-white text-brand-charcoal shadow-xl transition-transform duration-200 ease-out"
+        className="drawer-panel relative flex h-full w-full max-w-md flex-col bg-brand-warm-white text-brand-charcoal shadow-xl"
       >
         <div className="flex items-center justify-between border-b border-brand-dark-neutral/15 px-5 py-4">
           <h2 id={titleId} className="font-display text-2xl">
@@ -71,11 +78,19 @@ export function CartDrawer() {
             ref={closeRef}
             type="button"
             onClick={closeCart}
-            className="text-sm underline-offset-4 hover:underline"
+            className="text-sm underline-offset-4 transition-opacity duration-[var(--motion-fast)] hover:underline"
           >
             Close
           </button>
         </div>
+        {feedback ? (
+          <p
+            className="border-b border-brand-dark-neutral/10 bg-brand-warm-white px-5 py-2 text-sm text-brand-dark-neutral"
+            role="status"
+          >
+            {feedback}
+          </p>
+        ) : null}
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {populated.length === 0 ? (

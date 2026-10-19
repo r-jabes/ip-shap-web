@@ -19,7 +19,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
           role="catalogue_primary"
           objectFit="cover"
           sizes={sizesForRole("catalogue_primary")}
-          imageClassName="transition-transform duration-200 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          imageClassName="transition-transform duration-[var(--motion-ui)] ease-[var(--ease-ui)] group-hover:scale-[1.03] group-focus-within:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-focus-within:scale-100"
         />
         <span className="absolute top-3 left-3">
           <DemoBadge>{product.demoLabel}</DemoBadge>
@@ -32,7 +32,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
         <h3 className="font-display text-xl leading-snug">
           <Link
             href={`/product/${product.slug}`}
-            className="underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-burnt-orange"
+            className="underline-offset-4 transition-opacity duration-[var(--motion-fast)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-burnt-orange"
           >
             {product.name}
           </Link>

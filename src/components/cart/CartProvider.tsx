@@ -9,11 +9,15 @@ import {
   useState,
 } from "react";
 import type { CartLine } from "@/domain/catalogue";
+import { getProductById } from "@/lib/catalogue";
+import { MOTION } from "@/lib/motion";
 
 type CartContextValue = {
   lines: CartLine[];
   itemCount: number;
   isOpen: boolean;
+  /** Concise text confirmation for add-to-cart (also announced live). */
+  feedback: string | null;
   openCart: () => void;
   closeCart: () => void;
   addItem: (productId: string, quantity?: number) => void;
@@ -29,6 +33,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -50,6 +55,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
 
+  useEffect(() => {
+    if (!feedback) return;
+    const id = window.setTimeout(
+      () => setFeedback(null),
+      MOTION.editorialMs * 4,
+    );
+    return () => window.clearTimeout(id);
+  }, [feedback]);
+
   const addItem = useCallback((productId: string, quantity = 1) => {
     setLines((current) => {
       const existing = current.find((line) => line.productId === productId);
@@ -62,6 +76,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...current, { productId, quantity }];
     });
+    const product = getProductById(productId);
+    setFeedback(
+      product ? `Added ${product.name} to cart` : "Added item to cart",
+    );
     setIsOpen(true);
   }, []);
 
@@ -89,6 +107,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       lines,
       itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
       isOpen,
+      feedback,
       openCart: () => setIsOpen(true),
       closeCart: () => setIsOpen(false),
       addItem,
@@ -96,7 +115,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem,
       clearCart,
     }),
-    [lines, isOpen, addItem, setQuantity, removeItem, clearCart],
+    [lines, isOpen, feedback, addItem, setQuantity, removeItem, clearCart],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

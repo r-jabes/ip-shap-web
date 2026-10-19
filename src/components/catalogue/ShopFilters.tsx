@@ -159,7 +159,7 @@ export function ShopFilters({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-brand-charcoal/50"
+            className="drawer-backdrop absolute inset-0 bg-brand-charcoal/50"
             aria-label="Close filters"
             onClick={() => setOpen(false)}
           />
@@ -167,7 +167,7 @@ export function ShopFilters({
             role="dialog"
             aria-modal="true"
             aria-label="Filters and sort"
-            className="absolute inset-y-0 left-0 w-[min(100%,22rem)] overflow-y-auto bg-brand-warm-white p-5"
+            className="drawer-panel-left absolute inset-y-0 left-0 w-[min(100%,22rem)] overflow-y-auto bg-brand-warm-white p-5"
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-xl">Filters</h2>

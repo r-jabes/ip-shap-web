@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { useCart } from "@/components/cart/CartProvider";
 
@@ -14,8 +14,18 @@ const navLinks = [
 ];
 
 export function SiteHeader() {
-  const { itemCount, openCart } = useCart();
+  const { itemCount, openCart, feedback } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const previousCount = useRef(itemCount);
+
+  useEffect(() => {
+    if (itemCount === previousCount.current) return;
+    previousCount.current = itemCount;
+    setPulse(true);
+    const id = window.setTimeout(() => setPulse(false), 240);
+    return () => window.clearTimeout(id);
+  }, [itemCount]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-dark-neutral/20 bg-brand-charcoal text-brand-warm-white">
@@ -23,7 +33,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center border border-brand-warm-white/25 text-sm lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center border border-brand-warm-white/25 text-sm transition-opacity duration-[var(--motion-fast)] lg:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
             onClick={() => setMobileOpen((value) => !value)}
@@ -40,7 +50,7 @@ export function SiteHeader() {
               <li key={link.href + link.label}>
                 <Link
                   href={link.href}
-                  className="underline-offset-4 transition-opacity duration-200 hover:opacity-80 hover:underline"
+                  className="underline-offset-4 transition-opacity duration-[var(--motion-fast)] hover:opacity-80 hover:underline"
                 >
                   {link.label}
                 </Link>
@@ -65,16 +75,24 @@ export function SiteHeader() {
           <button
             type="button"
             onClick={openCart}
-            className="relative border border-brand-warm-white/25 px-3 py-2 text-sm transition-colors duration-200 hover:border-brand-burnt-orange"
+            className="relative border border-brand-warm-white/25 px-3 py-2 text-sm transition-colors duration-[var(--motion-ui)] hover:border-brand-burnt-orange"
             aria-label={`Open cart, ${itemCount} items`}
           >
             Cart
-            <span className="ml-2 inline-flex min-w-5 items-center justify-center bg-brand-burnt-orange px-1.5 text-xs text-brand-charcoal">
+            <span
+              className={`ml-2 inline-flex min-w-5 items-center justify-center bg-brand-burnt-orange px-1.5 text-xs text-brand-charcoal ${
+                pulse ? "cart-count--pulse" : ""
+              }`}
+            >
               {itemCount}
             </span>
           </button>
         </div>
       </div>
+
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {feedback}
+      </p>
 
       {mobileOpen ? (
         <nav
