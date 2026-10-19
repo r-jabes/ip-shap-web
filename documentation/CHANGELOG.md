@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — UI redesign R0 + R1 (foundations and global shell)
+## Unreleased — UI redesign R0–R2 (foundations, shell, home)
 
 - Logo: reversed asset for dark surfaces, `BrandLogo` now requires `tone`; ivory header, charcoal footer/menu
 - Tokens and type: Archivo + DM Sans, new radii/shadows/motion tokens, pointer cursors and focus rings restored under Tailwind v4
@@ -9,6 +9,7 @@
 - Cart integrity: badge, drawer, cart page and checkout read one derived list; versioned storage; stale lines pruned with a notice
 - Customer-facing copy no longer mentions demo/provisional/unverified/prototype; `PreviewIndicator` (dev only) replaces it; a test guards this
 - Catalogue grouped into Whisky, Vodka, Gin, Wine, Sparkling; contact details from `NEXT_PUBLIC_*` via `site-config`
+- Home redesign: arch hero (whisky photo), range marquee, collections bento, gin spotlight, how-it-works, WhatsApp band, trust/FAQ; one photo per slot via `range-media`
 
 ## 0.9.0 — Phase 08 hardening (2026-10-19)
 

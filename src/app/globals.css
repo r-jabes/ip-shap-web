@@ -188,7 +188,7 @@
     transform: scale(1.04);
   }
   to {
-    opacity: 0.45;
+    opacity: 1;
     transform: scale(1);
   }
 }
@@ -441,7 +441,7 @@
   }
 
   .hero-media {
-    opacity: 0.45;
+    opacity: 1;
     transform: none;
   }
 

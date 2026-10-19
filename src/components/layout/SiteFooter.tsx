@@ -169,11 +169,14 @@ export function SiteFooter({ nav }: { nav: NavData }) {
         </div>
       </div>
 
-      {/* Decorative wordmark; hidden from assistive tech. */}
+      {/* Decorative wordmark — font-size derived from viewport so the full
+          string stays on-screen (glyph run is ~6.2em at this face/stretch). */}
       <p
         aria-hidden="true"
-        className="font-display-hero pointer-events-none -mb-[0.18em] px-4 text-center leading-none whitespace-nowrap text-brand-warm-white/[0.07] select-none"
-        style={{ fontSize: "clamp(5rem, 24vw, 22rem)" }}
+        className="font-display-hero pointer-events-none -mb-[0.18em] w-full px-3 text-center leading-none whitespace-nowrap text-brand-warm-white/[0.07] select-none sm:px-4"
+        style={{
+          fontSize: "clamp(2.5rem, calc((100vw - 1.5rem) / 6.2), 16rem)",
+        }}
       >
         IP SHAP
       </p>

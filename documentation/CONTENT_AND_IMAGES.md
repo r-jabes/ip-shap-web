@@ -92,6 +92,19 @@ No paid SaaS or custom processing API is approved yet.
 
 Formats preserved for current demo copies (JPEG/PNG). Next.js image optimizer may serve AVIF/WebP to supporting browsers.
 
+### Home page photo slots (no duplicates)
+
+Allocated in `src/lib/range-media.ts` — one static product photo per moment:
+
+| Photo                         | Home slot              |
+| ----------------------------- | ---------------------- |
+| `drink-28000-68000-78000`     | Hero arch (whisky)     |
+| `drink-13000`                 | Collections · Wine     |
+| `drink-20000`                 | Collections · Sparkling|
+| `drink-12000`                 | Collections · Vodka    |
+| `drink-60000`                 | Gin spotlight          |
+| `drink-17000`                 | WhatsApp order band    |
+
 Legacy SVG placeholders under `public/products/placeholders/` remain for fallback testing but are not referenced by the live provisional catalogue.
 
 ## Filename → provisional price
