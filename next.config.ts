@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { securityHeaders } from "./src/lib/security/headers";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -9,10 +10,19 @@ const nextConfig: NextConfig = {
   images: {
     // Prefer modern formats when the optimizer can produce them; JPEG/PNG remain fallbacks.
     formats: ["image/avif", "image/webp"],
-    // Temporary SVG placeholders for fallback testing only.
-    dangerouslyAllowSVG: true,
+    // SVG disabled at the optimizer boundary — catalogue uses raster derivatives.
+    dangerouslyAllowSVG: false,
     contentDispositionType: "attachment",
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders({
+          isProduction: process.env.NODE_ENV === "production",
+        }),
+      },
+    ];
   },
 };
 

@@ -118,6 +118,47 @@ describe("createOrder", () => {
     ).toThrow(/already marked paid/i);
   });
 
+  it("fails concurrent reservations that would oversell known stock", async () => {
+    const { adminUpsertProduct } = await import("@/lib/admin/store");
+    const { createOrder } = await import("./store");
+    const product = adminUpsertProduct(
+      {
+        sub: "test",
+        email: "owner@example.com",
+        role: "owner",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      {
+        slug: `reserve-test-${Date.now()}`,
+        name: "Reserve Test",
+        description: "Stock reservation test",
+        priceAmount: 5000,
+        brandSlug: "test-brand",
+        brandName: "Test Brand",
+        status: "published",
+        availability: "in_stock",
+        isProvisional: true,
+        stockQuantity: 2,
+      },
+    );
+    createOrder({
+      channel: "whatsapp_assisted",
+      items: [{ productId: product.id, quantity: 2 }],
+      customerName: "Ada",
+      customerPhone: "+250788123456",
+      idempotencyKey: "11111111-1111-4111-8111-111111111107",
+    });
+    expect(() =>
+      createOrder({
+        channel: "whatsapp_assisted",
+        items: [{ productId: product.id, quantity: 1 }],
+        customerName: "Bea",
+        customerPhone: "+250788123457",
+        idempotencyKey: "11111111-1111-4111-8111-111111111108",
+      }),
+    ).toThrow(/stock/i);
+  });
+
   it("applies webhooks idempotently and never downgrades paid", async () => {
     const { createOrder, applyPaymentStatusFromWebhook } =
       await import("./store");

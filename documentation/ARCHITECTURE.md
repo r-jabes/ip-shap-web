@@ -20,8 +20,11 @@ Backend repo
 
 1. **Presentation** — `src/app`, `src/components`
 2. **Domain types** — `src/domain` (products, money-facing shapes)
-3. **Infrastructure helpers** — `src/lib` (env, logger, money)
-4. **Demo fixtures** — later under a clearly isolated path such as `src/fixtures/demo/` and gated by `NEXT_PUBLIC_DEMO_MODE`
+3. **Infrastructure helpers** — `src/lib` (env, logger, money, security, orders)
+4. **Demo fixtures** — `src/fixtures/demo/` gated by `NEXT_PUBLIC_DEMO_MODE`
+5. **Edge middleware** — request id + block sensitive path probes (not authz)
+
+Security headers/CSP are applied in `next.config.ts`. Authorisation remains in Server Actions / layouts / RLS.
 
 Server Components are the default. Client Components are reserved for interactive UI (cart drawer, gallery controls, forms).
 

@@ -16,6 +16,12 @@ Production: prefer Supabase Auth users listed in `admin_profiles` (see backend `
 - Admin UI ships with the Next.js app under `/admin`
 - Ensure hosting env includes admin secrets when bootstrap is enabled
 - Never commit `.env.local`
+- Keep `ONLINE_PAYMENT_ENABLED=false` until payment provider gate is done
+- Review `RELEASE_CHECKLIST.md` and `PERFORMANCE_REPORT.md` before promote
+
+## Bug triage
+
+Use severity table in backend `RELEASE_CHECKLIST.md`. No unresolved Critical/High security or money-flow defects at launch.
 
 ## Rollback
 

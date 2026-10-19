@@ -33,5 +33,35 @@ export function formatRwf(amount: number, locale = "en-RW"): string {
 }
 
 export function addMoney(a: MoneyRwf, b: MoneyRwf): MoneyRwf {
-  return moneyRwf(a.amount + b.amount);
+  return moneyRwf(checkedSum(a.amount, b.amount));
+}
+
+/** Line total = unit × qty; both must be safe integers. */
+export function multiplyMoney(unit: MoneyRwf, quantity: number): MoneyRwf {
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    throw new Error("Quantity must be a non-negative integer.");
+  }
+  if (quantity === 0) return moneyRwf(0);
+  if (
+    unit.amount > 0 &&
+    quantity > Math.floor(Number.MAX_SAFE_INTEGER / unit.amount)
+  ) {
+    throw new Error("Money overflow.");
+  }
+  return moneyRwf(unit.amount * quantity);
+}
+
+export function subtractMoney(a: MoneyRwf, b: MoneyRwf): MoneyRwf {
+  if (b.amount > a.amount) {
+    throw new Error("Cannot subtract to a negative RWF amount.");
+  }
+  return moneyRwf(a.amount - b.amount);
+}
+
+function checkedSum(a: number, b: number): number {
+  const sum = a + b;
+  if (!Number.isSafeInteger(sum)) {
+    throw new Error("Money overflow.");
+  }
+  return sum;
 }

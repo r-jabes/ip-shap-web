@@ -25,7 +25,16 @@ export async function POST(request: Request) {
     );
   }
 
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (contentLength > 64_000) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   const rawBody = await request.text();
+  if (rawBody.length > 64_000) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   const signature = request.headers.get("x-ipshap-sandbox-signature");
   if (!verifySandboxWebhookSignature(rawBody, signature, secret)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });

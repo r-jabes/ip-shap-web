@@ -4,10 +4,10 @@ import { listProducts } from "@/lib/catalogue";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = getPublicEnv().NEXT_PUBLIC_APP_URL;
+  // Omit cart/checkout/order/admin — private or transactional surfaces.
   const staticRoutes = [
     "",
     "/shop",
-    "/cart",
     "/about",
     "/contact",
     "/delivery",

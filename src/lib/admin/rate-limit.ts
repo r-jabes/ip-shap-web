@@ -23,3 +23,7 @@ export function consumeRateLimit(
   current.count += 1;
   return { ok: true };
 }
+
+export function resetRateLimitForTests() {
+  buckets.clear();
+}

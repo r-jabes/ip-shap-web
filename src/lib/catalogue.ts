@@ -14,18 +14,44 @@ export function getBrands() {
   return DEMO_BRANDS;
 }
 
+function isStorefrontVisible(product: DemoProduct): boolean {
+  return product.status === "published" || product.status === "demo";
+}
+
 export function getProductBySlug(slug: string): DemoProduct | undefined {
   if (!isDemoMode()) {
     return undefined;
   }
-  return DEMO_PRODUCTS.find((product) => product.slug === slug);
+  const product = DEMO_PRODUCTS.find((row) => row.slug === slug);
+  return product && isStorefrontVisible(product) ? product : undefined;
 }
 
 export function getProductById(id: string): DemoProduct | undefined {
   if (!isDemoMode()) {
     return undefined;
   }
-  return DEMO_PRODUCTS.find((product) => product.id === id);
+  const product = DEMO_PRODUCTS.find((row) => row.id === id);
+  return product && isStorefrontVisible(product) ? product : undefined;
+}
+
+/** Page size for catalogue grids — keeps payloads bounded. */
+export const CATALOGUE_PAGE_SIZE = 12;
+
+export function paginateProducts<T>(
+  items: T[],
+  page: number,
+  pageSize = CATALOGUE_PAGE_SIZE,
+): { items: T[]; page: number; totalPages: number; total: number } {
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    items: items.slice(start, start + pageSize),
+    page: safePage,
+    totalPages,
+    total,
+  };
 }
 
 export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
@@ -33,7 +59,10 @@ export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
     return [];
   }
 
-  let items = [...DEMO_PRODUCTS];
+  // Storefront never lists draft/archived products.
+  let items = DEMO_PRODUCTS.filter(
+    (product) => product.status === "published" || product.status === "demo",
+  );
 
   if (filters.categorySlug) {
     items = items.filter(

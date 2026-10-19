@@ -232,7 +232,11 @@ export function CheckoutForm({
         </fieldset>
 
         {state.error ? (
-          <p className="text-sm text-brand-burnt-orange" role="alert">
+          <p
+            className="border border-brand-burnt-orange/40 bg-brand-burnt-orange/10 px-3 py-2 text-sm text-brand-charcoal"
+            role="alert"
+            aria-live="assertive"
+          >
             {state.error}
           </p>
         ) : null}

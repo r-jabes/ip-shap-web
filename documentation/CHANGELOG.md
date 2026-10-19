@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0 — Phase 08 hardening (2026-10-19)
+
+- Security headers/CSP, middleware request id, open-redirect helper
+- Shop pagination; sitemap omits transactional routes; SVG optimizer off
+- A11y: cart focus trap, filter Escape, checkout alert contrast
+- Money/rate-limit/logger/reservation tests; performance + release docs
+
 ## 0.8.0 — Phase 07 payments, admin orders, notifications (2026-10-19)
 
 - Sandbox payment helpers + HMAC webhook route (`/api/payments/webhook`)
