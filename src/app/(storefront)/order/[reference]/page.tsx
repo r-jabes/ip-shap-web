@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { ClearCartOnConfirm } from "@/components/checkout/ClearCartOnConfirm";
+import { OrderStatusTimeline } from "@/components/checkout/OrderStatusTimeline";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { WhatsAppIcon } from "@/components/ui/icons";
 import { formatRwf } from "@/lib/money";
 import { buildWhatsAppDeepLink, lookupOrder } from "@/lib/orders/store";
+import { chatHref } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Order confirmation",
@@ -30,18 +34,31 @@ export default async function OrderConfirmationPage({
   if (!order) notFound();
 
   const whatsapp = buildWhatsAppDeepLink(order);
+  const messageHref =
+    whatsapp ??
+    chatHref(
+      `Hello — I placed order ${order.reference} and would like to confirm it.`,
+    );
   const sandboxPending = payment === "sandbox_pending";
 
   return (
     <Container className="py-10 lg:py-14">
-      <p className="text-xs tracking-[0.14em] text-brand-dark-neutral uppercase">
+      <CheckoutSteps current="confirmed" />
+      <p className="mt-6 text-xs font-semibold tracking-[0.14em] text-brand-burnt-orange uppercase">
         Order placed
       </p>
-      <h1 className="mt-2 font-display" style={{ fontSize: "var(--type-h2)" }}>
+      <h1
+        className="font-display mt-2 text-brand-charcoal"
+        style={{ fontSize: "var(--type-display)" }}
+      >
         Thank you
       </h1>
-      <p className="mt-3 max-w-2xl text-brand-dark-neutral">
-        Your order was created and is awaiting confirmation
+      <p className="mt-3 max-w-2xl text-ink-muted">
+        Your order{" "}
+        <span className="font-semibold text-brand-charcoal">
+          {order.reference}
+        </span>{" "}
+        was created and is awaiting confirmation
         {order.channel === "whatsapp_assisted"
           ? " and payment instructions"
           : ""}
@@ -52,62 +69,93 @@ export default async function OrderConfirmationPage({
         .
       </p>
 
-      <dl className="mt-8 grid max-w-xl gap-3 text-sm">
-        <div className="flex justify-between gap-4 border-b border-brand-dark-neutral/15 pb-2">
-          <dt>Reference</dt>
-          <dd className="font-medium">{order.reference}</dd>
-        </div>
-        <div className="flex justify-between gap-4 border-b border-brand-dark-neutral/15 pb-2">
-          <dt>Status</dt>
-          <dd>{order.fulfilmentStatus.replaceAll("_", " ")}</dd>
-        </div>
-        <div className="flex justify-between gap-4 border-b border-brand-dark-neutral/15 pb-2">
-          <dt>Payment</dt>
-          <dd>{order.paymentStatus.replaceAll("_", " ")}</dd>
-        </div>
-        <div className="flex justify-between gap-4 border-b border-brand-dark-neutral/15 pb-2">
-          <dt>Total</dt>
-          <dd className="font-medium">
-            {formatRwf(order.total.amount)}
-            {order.deliveryFee === null ? " + delivery TBC" : ""}
-          </dd>
-        </div>
-      </dl>
+      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start lg:gap-12">
+        <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-6 shadow-[6px_6px_0_0_var(--brand-charcoal)]">
+          <h2 className="font-display text-2xl">Status</h2>
+          <div className="mt-5">
+            <OrderStatusTimeline status={order.fulfilmentStatus} />
+          </div>
+        </section>
 
-      <ul className="mt-8 max-w-xl space-y-2 text-sm">
-        {order.items.map((item) => (
-          <li
-            key={`${item.productId}-${item.quantity}`}
-            className="flex justify-between gap-3"
-          >
-            <span>
-              {item.productName} × {item.quantity}
-            </span>
-            <span>{formatRwf(item.lineTotal.amount)}</span>
-          </li>
-        ))}
-      </ul>
+        <div className="space-y-6">
+          <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-6">
+            <h2 className="font-display text-2xl">Order details</h2>
+            <dl className="mt-5 grid gap-3 text-sm">
+              <div className="flex justify-between gap-4 border-b border-brand-charcoal/10 pb-2">
+                <dt className="text-ink-muted">Reference</dt>
+                <dd className="font-semibold tabular">{order.reference}</dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-brand-charcoal/10 pb-2">
+                <dt className="text-ink-muted">Payment</dt>
+                <dd className="capitalize">
+                  {order.paymentStatus.replaceAll("_", " ")}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-brand-charcoal/10 pb-2">
+                <dt className="text-ink-muted">Total</dt>
+                <dd className="font-display text-xl tabular text-brand-burnt-orange">
+                  {formatRwf(order.total.amount)}
+                  {order.deliveryFee === null ? (
+                    <span className="ml-1 text-sm font-sans font-normal text-ink-muted">
+                      + delivery
+                    </span>
+                  ) : null}
+                </dd>
+              </div>
+            </dl>
 
-      <div className="mt-10 flex flex-wrap gap-3">
-        {whatsapp ? (
-          <Button href={whatsapp} variant="on-dark">
-            Continue on WhatsApp
-          </Button>
-        ) : (
-          <p className="text-sm text-brand-dark-neutral">
-            We will confirm this order with you. Keep your reference{" "}
-            <strong>{order.reference}</strong> for follow-up.
-          </p>
-        )}
-        <Button href="/shop" variant="ghost">
-          Keep shopping
-        </Button>
+            <ul className="mt-6 space-y-3 border-t-2 border-brand-charcoal/10 pt-5 text-sm">
+              {order.items.map((item) => (
+                <li
+                  key={`${item.productId}-${item.quantity}`}
+                  className="flex justify-between gap-3"
+                >
+                  <span>
+                    <span className="font-medium">{item.productName}</span>
+                    <span className="text-ink-muted"> × {item.quantity}</span>
+                  </span>
+                  <span className="tabular">
+                    {formatRwf(item.lineTotal.amount)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-charcoal p-6 text-brand-warm-white shadow-[6px_6px_0_0_var(--brand-burnt-orange)]">
+            <h2 className="font-display text-2xl">Next step</h2>
+            <p className="mt-2 text-sm text-brand-warm-white/75">
+              Message us with your reference so we can confirm availability,
+              delivery and payment.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Button
+                href={messageHref}
+                variant="on-dark"
+                size="lg"
+                iconLeft={<WhatsAppIcon size={18} />}
+              >
+                Message us
+              </Button>
+              <Button
+                href="/shop"
+                variant="link"
+                className="text-brand-warm-white decoration-brand-burnt-orange"
+              >
+                Keep shopping
+              </Button>
+            </div>
+          </section>
+        </div>
       </div>
 
-      <p className="mt-8 text-xs text-brand-dark-neutral">
-        Save this page URL to look up your order later. Lookup requires your
+      <p className="mt-10 text-xs text-ink-muted">
+        Save this page URL to look up your order later. Lookup needs your
         private token and is rate limited.{" "}
-        <Link href="/order/lookup" className="underline underline-offset-4">
+        <Link
+          href="/order/lookup"
+          className="font-semibold underline underline-offset-4"
+        >
           Order lookup
         </Link>
       </p>

@@ -11,6 +11,8 @@ import { formatDemoPrice } from "@/domain/catalogue";
 import type { DeliveryZone } from "@/lib/orders/delivery";
 import { formatRwf } from "@/lib/money";
 import { Button } from "@/components/ui/Button";
+import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { WhatsAppIcon } from "@/components/ui/icons";
 
 type Line = { product: DemoProduct; quantity: number };
 
@@ -33,6 +35,9 @@ export function CheckoutForm({
   );
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [zoneId, setZoneId] = useState("");
+  const [channel, setChannel] = useState<"whatsapp_assisted" | "online_payment">(
+    "whatsapp_assisted",
+  );
 
   const subtotal = useMemo(
     () =>
@@ -46,6 +51,7 @@ export function CheckoutForm({
   const selectedZone = zones.find((zone) => zone.id === zoneId);
   const deliveryFee = selectedZone?.feeRwf ?? null;
   const total = subtotal + (deliveryFee ?? 0);
+  const fieldErrors = state.fieldErrors ?? {};
 
   const itemsJson = JSON.stringify(
     lines.map((line) => ({
@@ -56,9 +62,12 @@ export function CheckoutForm({
 
   if (lines.length === 0) {
     return (
-      <div className="border border-dashed border-brand-dark-neutral/30 px-6 py-16 text-center">
-        <p className="font-display text-2xl">Your cart is empty</p>
-        <Button href="/shop" className="mt-6">
+      <div className="rounded-[var(--radius-panel)] border-2 border-dashed border-brand-charcoal/25 bg-paper-2/40 px-6 py-16 text-center">
+        <p className="font-display text-3xl">Your cart is empty</p>
+        <p className="mx-auto mt-2 max-w-sm text-ink-muted">
+          Add a few bottles first, then come back to check out.
+        </p>
+        <Button href="/shop" className="mt-8">
           Shop drinks
         </Button>
       </div>
@@ -68,231 +77,318 @@ export function CheckoutForm({
   return (
     <form
       action={formAction}
-      className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]"
+      className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
+      noValidate
     >
-      <input type="hidden" name="itemsJson" value={itemsJson} />
-      <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+        <input type="hidden" name="itemsJson" value={itemsJson} />
+        <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+        <input type="hidden" name="channel" value={channel} />
 
-      <div className="space-y-8">
-        <fieldset className="space-y-3">
-          <legend className="font-display text-xl">Contact</legend>
-          <label className="grid gap-1 text-sm">
-            Full name
-            <input
-              name="customerName"
-              required
-              maxLength={200}
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-              autoComplete="name"
-            />
-          </label>
-          <label className="grid gap-1 text-sm">
-            Phone (Rwanda 07… / +2507… preferred)
-            <input
-              name="customerPhone"
-              required
-              maxLength={20}
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-              autoComplete="tel"
-              placeholder="+2507…"
-            />
-          </label>
-          <label className="grid gap-1 text-sm">
-            Order notes (optional)
-            <textarea
-              name="customerNotes"
-              maxLength={2000}
-              rows={3}
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-            />
-          </label>
-        </fieldset>
-
-        <fieldset className="space-y-3">
-          <legend className="font-display text-xl">Delivery</legend>
-          {zones.length === 0 ? (
-            <p className="text-sm text-brand-dark-neutral">
-              We confirm your delivery fee with you after you place the order.
-              Nothing is charged on this page.
+        <div className="space-y-8">
+          <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
+            <h2 className="font-display text-2xl">Contact</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              We use these details to confirm your order.
             </p>
-          ) : (
-            <label className="grid gap-1 text-sm">
-              Delivery zone
-              <select
-                name="deliveryZoneId"
-                value={zoneId}
-                onChange={(event) => setZoneId(event.target.value)}
-                className="border border-brand-dark-neutral/30 px-3 py-2"
+            <div className="mt-5 space-y-4">
+              <Field
+                id="customerName"
+                label="Full name"
+                error={fieldErrors.customerName}
               >
-                <option value="">Select a zone</option>
-                {zones.map((zone) => (
-                  <option key={zone.id} value={zone.id}>
-                    {zone.name}
-                    {zone.feeRwf === null
-                      ? " (fee TBC)"
-                      : ` — ${formatRwf(zone.feeRwf)}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm">
-              District
-              <input
-                name="deliveryDistrict"
-                maxLength={120}
-                className="border border-brand-dark-neutral/30 px-3 py-2"
-              />
-            </label>
-            <label className="grid gap-1 text-sm">
-              Sector
-              <input
-                name="deliverySector"
-                maxLength={120}
-                className="border border-brand-dark-neutral/30 px-3 py-2"
-              />
-            </label>
-            <label className="grid gap-1 text-sm">
-              Cell
-              <input
-                name="deliveryCell"
-                maxLength={120}
-                className="border border-brand-dark-neutral/30 px-3 py-2"
-              />
-            </label>
-            <label className="grid gap-1 text-sm">
-              Village
-              <input
-                name="deliveryVillage"
-                maxLength={120}
-                className="border border-brand-dark-neutral/30 px-3 py-2"
-              />
-            </label>
-          </div>
-          <label className="grid gap-1 text-sm">
-            Directions / landmark
-            <textarea
-              name="deliveryDirections"
-              maxLength={500}
-              rows={2}
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-            />
-          </label>
-          <label className="grid gap-1 text-sm">
-            Delivery instructions
-            <textarea
-              name="deliveryInstructions"
-              maxLength={500}
-              rows={2}
-              className="border border-brand-dark-neutral/30 px-3 py-2"
-            />
-          </label>
-        </fieldset>
+                <Input
+                  id="customerName"
+                  name="customerName"
+                  required
+                  maxLength={200}
+                  autoComplete="name"
+                  aria-invalid={fieldErrors.customerName ? true : undefined}
+                  aria-describedby={
+                    fieldErrors.customerName ? "customerName-error" : undefined
+                  }
+                />
+              </Field>
+              <Field
+                id="customerPhone"
+                label="Phone"
+                hint="Rwanda 07… / +2507… preferred"
+                error={fieldErrors.customerPhone}
+              >
+                <Input
+                  id="customerPhone"
+                  name="customerPhone"
+                  required
+                  maxLength={20}
+                  autoComplete="tel"
+                  placeholder="+2507…"
+                  aria-invalid={fieldErrors.customerPhone ? true : undefined}
+                  aria-describedby={
+                    fieldErrors.customerPhone
+                      ? "customerPhone-error"
+                      : "customerPhone-hint"
+                  }
+                />
+              </Field>
+              <Field id="customerNotes" label="Order notes (optional)">
+                <Textarea
+                  id="customerNotes"
+                  name="customerNotes"
+                  maxLength={2000}
+                  rows={3}
+                />
+              </Field>
+            </div>
+          </section>
 
-        <fieldset className="space-y-3">
-          <legend className="font-display text-xl">Checkout method</legend>
-          <label className="flex items-start gap-3 text-sm">
-            <input
-              type="radio"
-              name="channel"
-              value="whatsapp_assisted"
-              defaultChecked
-              className="mt-1"
-            />
-            <span>
-              WhatsApp-assisted order
-              <span className="mt-1 block text-brand-dark-neutral">
-                We create your order first, then you can message the shop.
-                Opening WhatsApp is not payment confirmation.
-                {!whatsappConfigured
-                  ? " You will get an order reference to quote when you contact us."
-                  : ""}
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 text-sm">
-            <input
-              type="radio"
-              name="channel"
-              value="online_payment"
-              disabled={!onlinePaymentEnabled}
-              className="mt-1"
-            />
-            <span className={!onlinePaymentEnabled ? "opacity-50" : undefined}>
-              Online payment
-              <span className="mt-1 block text-brand-dark-neutral">
-                {onlinePaymentEnabled
-                  ? "Pay online after the order is created."
-                  : "Not available yet. Pay when we confirm your order."}
-              </span>
-            </span>
-          </label>
-        </fieldset>
+          <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
+            <h2 className="font-display text-2xl">Delivery</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Fee and timing are finalised with you before the order is locked
+              in.
+            </p>
+            <div className="mt-5 space-y-4">
+              {zones.length === 0 ? (
+                <p className="rounded-2xl bg-paper-2 px-4 py-3 text-sm text-ink-muted">
+                  We confirm your delivery fee with you after you place the
+                  order. Nothing is charged on this page.
+                </p>
+              ) : (
+                <Field
+                  id="deliveryZoneId"
+                  label="Delivery zone"
+                  error={fieldErrors.deliveryZoneId}
+                >
+                  <Select
+                    id="deliveryZoneId"
+                    name="deliveryZoneId"
+                    value={zoneId}
+                    onChange={(event) => setZoneId(event.target.value)}
+                    aria-invalid={
+                      fieldErrors.deliveryZoneId ? true : undefined
+                    }
+                  >
+                    <option value="">Select a zone</option>
+                    {zones.map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.name}
+                        {zone.feeRwf === null
+                          ? " (fee TBC)"
+                          : ` — ${formatRwf(zone.feeRwf)}`}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field id="deliveryDistrict" label="District">
+                  <Input
+                    id="deliveryDistrict"
+                    name="deliveryDistrict"
+                    maxLength={120}
+                    autoComplete="address-level2"
+                  />
+                </Field>
+                <Field id="deliverySector" label="Sector">
+                  <Input
+                    id="deliverySector"
+                    name="deliverySector"
+                    maxLength={120}
+                  />
+                </Field>
+                <Field id="deliveryCell" label="Cell">
+                  <Input id="deliveryCell" name="deliveryCell" maxLength={120} />
+                </Field>
+                <Field id="deliveryVillage" label="Village">
+                  <Input
+                    id="deliveryVillage"
+                    name="deliveryVillage"
+                    maxLength={120}
+                  />
+                </Field>
+              </div>
+              <Field id="deliveryDirections" label="Directions / landmark">
+                <Textarea
+                  id="deliveryDirections"
+                  name="deliveryDirections"
+                  maxLength={500}
+                  rows={2}
+                />
+              </Field>
+              <Field
+                id="deliveryInstructions"
+                label="Delivery instructions (optional)"
+              >
+                <Textarea
+                  id="deliveryInstructions"
+                  name="deliveryInstructions"
+                  maxLength={500}
+                  rows={2}
+                />
+              </Field>
+            </div>
+          </section>
 
-        {state.error ? (
-          <p
-            className="border border-brand-burnt-orange/40 bg-brand-burnt-orange/10 px-3 py-2 text-sm text-brand-charcoal"
-            role="alert"
-            aria-live="assertive"
+          <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
+            <h2 className="font-display text-2xl">How to finish</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              WhatsApp-assisted is the usual path. We create the order first,
+              then you message the shop.
+            </p>
+            <div className="mt-5 grid gap-3">
+              <ChannelOption
+                selected={channel === "whatsapp_assisted"}
+                onSelect={() => setChannel("whatsapp_assisted")}
+                title="WhatsApp-assisted order"
+                description={
+                  whatsappConfigured
+                    ? "Place the order here, then continue on WhatsApp. Opening WhatsApp is not payment."
+                    : "Place the order here and keep your reference to contact us. Opening WhatsApp is not payment."
+                }
+                icon
+              />
+              <ChannelOption
+                selected={channel === "online_payment"}
+                onSelect={() => setChannel("online_payment")}
+                disabled={!onlinePaymentEnabled}
+                title="Online payment"
+                description={
+                  onlinePaymentEnabled
+                    ? "Pay online after the order is created."
+                    : "Not available yet. Pay when we confirm your order."
+                }
+              />
+            </div>
+          </section>
+
+          {state.error ? (
+            <p
+              className="rounded-2xl border-2 border-brand-burnt-orange bg-brand-burnt-orange/10 px-4 py-3 text-sm text-brand-charcoal"
+              role="alert"
+              aria-live="assertive"
+            >
+              {state.error}
+            </p>
+          ) : null}
+        </div>
+
+        <aside className="h-fit rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-6 shadow-[6px_6px_0_0_var(--brand-charcoal)] lg:sticky lg:top-[calc(var(--header-h)+1.25rem)]">
+          <h2 className="font-display text-2xl">Order summary</h2>
+          <ul className="mt-5 space-y-3 border-b-2 border-brand-charcoal/10 pb-4 text-sm">
+            {lines.map(({ product, quantity }) => (
+              <li key={product.id} className="flex justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block font-medium">{product.name}</span>
+                  <span className="text-ink-muted">× {quantity}</span>
+                </span>
+                <span className="shrink-0 tabular">
+                  {formatDemoPrice({
+                    amount: product.price.amount * quantity,
+                    currency: "RWF",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <dl className="mt-4 space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Subtotal</dt>
+              <dd className="tabular">{formatRwf(subtotal)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-ink-muted">Delivery</dt>
+              <dd className="tabular">
+                {deliveryFee === null
+                  ? "Confirm with us"
+                  : formatRwf(deliveryFee)}
+              </dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3 pt-2">
+              <dt className="font-semibold">Total</dt>
+              <dd className="font-display text-2xl tabular text-brand-burnt-orange">
+                {formatRwf(total)}
+                {deliveryFee === null ? (
+                  <span className="ml-1 text-sm font-sans font-normal text-ink-muted">
+                    + delivery
+                  </span>
+                ) : null}
+              </dd>
+            </div>
+          </dl>
+          <Button
+            type="submit"
+            size="lg"
+            className="mt-6 w-full"
+            disabled={pending}
+            loading={pending}
+            iconLeft={
+              channel === "whatsapp_assisted" ? (
+                <WhatsAppIcon size={18} />
+              ) : undefined
+            }
           >
-            {state.error}
+            {pending
+              ? "Placing order…"
+              : channel === "whatsapp_assisted"
+                ? "Place order"
+                : "Place order & pay"}
+          </Button>
+          <p className="mt-3 text-center text-xs text-ink-muted">
+            Prices are checked again on the server.{" "}
+            <Link href="/cart" className="font-semibold underline underline-offset-4">
+              Edit cart
+            </Link>
           </p>
-        ) : null}
-      </div>
-
-      <aside className="h-fit border border-brand-dark-neutral/20 p-5">
-        <h2 className="font-display text-xl">Order summary</h2>
-        <ul className="mt-4 space-y-3 text-sm">
-          {lines.map(({ product, quantity }) => (
-            <li key={product.id} className="flex justify-between gap-3">
-              <span>
-                {product.name} × {quantity}
-              </span>
-              <span>
-                {formatDemoPrice({
-                  amount: product.price.amount * quantity,
-                  currency: "RWF",
-                })}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <dl className="mt-6 space-y-2 border-t border-brand-dark-neutral/15 pt-4 text-sm">
-          <div className="flex justify-between">
-            <dt>Subtotal</dt>
-            <dd>{formatRwf(subtotal)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt>Delivery</dt>
-            <dd>
-              {deliveryFee === null
-                ? "Unavailable / confirm manually"
-                : formatRwf(deliveryFee)}
-            </dd>
-          </div>
-          <div className="flex justify-between font-medium">
-            <dt>Total</dt>
-            <dd>
-              {formatRwf(total)}
-              {deliveryFee === null ? " + delivery TBC" : ""}
-            </dd>
-          </div>
-        </dl>
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-6 w-full bg-brand-charcoal px-4 py-3 text-sm text-brand-warm-white disabled:opacity-60"
-        >
-          {pending ? "Placing order…" : "Place order"}
-        </button>
-        <p className="mt-3 text-xs text-brand-dark-neutral">
-          Prices are recalculated on the server.{" "}
-          <Link href="/cart" className="underline underline-offset-4">
-            Edit cart
-          </Link>
-        </p>
-      </aside>
+        </aside>
     </form>
+  );
+}
+
+function ChannelOption({
+  selected,
+  onSelect,
+  disabled,
+  title,
+  description,
+  icon,
+}: {
+  selected: boolean;
+  onSelect: () => void;
+  disabled?: boolean;
+  title: string;
+  description: string;
+  icon?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={`w-full rounded-2xl border-2 px-4 py-4 text-left transition-[border-color,background-color,box-shadow] duration-[var(--motion-fast)] disabled:cursor-not-allowed disabled:opacity-45 ${
+        selected
+          ? "border-brand-charcoal bg-paper-2 shadow-[3px_3px_0_0_var(--brand-charcoal)]"
+          : "border-brand-charcoal/20 hover:border-brand-charcoal/50"
+      }`}
+    >
+      <span className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-brand-charcoal ${
+            selected ? "bg-brand-burnt-orange" : "bg-transparent"
+          }`}
+        >
+          {selected ? (
+            <span className="h-2 w-2 rounded-full bg-brand-charcoal" />
+          ) : null}
+        </span>
+        <span className="min-w-0">
+          <span className="flex items-center gap-2 font-semibold">
+            {icon ? <WhatsAppIcon size={16} /> : null}
+            {title}
+          </span>
+          <span className="mt-1 block text-sm text-ink-muted">{description}</span>
+        </span>
+      </span>
+    </button>
   );
 }

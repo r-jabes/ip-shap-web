@@ -65,8 +65,11 @@ export async function placeOrderAction(
       idempotencyKey,
     });
   } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not place order.";
     return {
-      error: error instanceof Error ? error.message : "Could not place order.",
+      error: message,
+      fieldErrors: fieldErrorsFromMessage(message),
     };
   }
 
@@ -119,4 +122,12 @@ export async function lookupOrderAction(formData: FormData): Promise<void> {
   redirect(
     `/order/${encodeURIComponent(order.reference)}?token=${encodeURIComponent(order.lookupToken)}`,
   );
+}
+
+function fieldErrorsFromMessage(message: string): Record<string, string> {
+  const lower = message.toLowerCase();
+  if (lower.includes("phone")) return { customerPhone: message };
+  if (lower.includes("name")) return { customerName: message };
+  if (lower.includes("delivery zone")) return { deliveryZoneId: message };
+  return {};
 }

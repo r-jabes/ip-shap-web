@@ -2,6 +2,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
 } from "react";
 import { CheckIcon, ChevronDownIcon } from "@/components/ui/icons";
 
@@ -78,6 +79,18 @@ export function Select({
         className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2"
       />
     </span>
+  );
+}
+
+export function Textarea({
+  className = "",
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className={`${control} min-h-[6.5rem] resize-y py-3 ${className}`}
+      {...props}
+    />
   );
 }
 

@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R4 (foundations, shell, home, shop, product)
+## Unreleased — UI redesign R0–R5 (foundations → cart/checkout)
+
+- Cart / checkout / confirmation (R5): shared Cart → Details → Confirmed steps; restyled cart lines and sticky summary; checkout uses Field kit with channel cards and field-level errors; confirmation status timeline + Message us panel; order lookup restyled to match
 
 - Shop (R3): product cards with 4:5 frame, hover shift, stock pill, quick add + quick view; sticky filter sidebar and mobile sheet with “Show N results”; multi-select range/brand chips with facet counts; price bounds; applied-filter chips; URL state; sort, pagination, skeletons and empty state
 - Product (R4): arch gallery with desktop magnifier and full-screen zoom (wheel/pinch/drag/double-tap + keyboard); buy box with WhatsApp CTA and brand sibling chips; details accordion; related products that skip shared photos; mobile sticky add-to-cart bar
