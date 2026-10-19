@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
-import { SiteShell } from "@/components/SiteShell";
 import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
 import { getPublicEnv } from "@/lib/env";
+import { defaultRobots } from "@/lib/seo";
 import "./globals.css";
 
 const bodyFont = DM_Sans({
@@ -40,10 +40,7 @@ export const metadata: Metadata = {
     icon: [{ url: "/branding/app-icon.png", type: "image/png" }],
     apple: [{ url: "/branding/app-icon.png", type: "image/png" }],
   },
-  robots: {
-    index: false,
-    follow: false,
-  },
+  robots: defaultRobots(),
 };
 
 export default function RootLayout({
@@ -56,7 +53,7 @@ export default function RootLayout({
       <body
         className={`${bodyFont.variable} ${displayFont.variable} font-sans antialiased`}
       >
-        <SiteShell>{children}</SiteShell>
+        {children}
       </body>
     </html>
   );

@@ -19,6 +19,19 @@ const publicEnvSchema = z.object({
  */
 const serverEnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  /**
+   * HMAC secret for admin session cookies. Required for admin login.
+   * Generate a long random string; never commit the real value.
+   */
+  ADMIN_SESSION_SECRET: z.string().min(32).optional(),
+  /**
+   * Local/bootstrap login token compared with timing-safe equality.
+   * Not a default password — must be set explicitly in the environment.
+   * Production should use Supabase Auth + admin_profiles instead.
+   */
+  ADMIN_BOOTSTRAP_TOKEN: z.string().min(16).optional(),
+  /** Optional allow-list; if set, only these emails may bootstrap. */
+  ADMIN_BOOTSTRAP_EMAIL: z.string().email().optional(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -39,6 +52,9 @@ function readPublicEnv(): PublicEnv {
 function readServerEnv(): ServerEnv {
   return serverEnvSchema.parse({
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET,
+    ADMIN_BOOTSTRAP_TOKEN: process.env.ADMIN_BOOTSTRAP_TOKEN,
+    ADMIN_BOOTSTRAP_EMAIL: process.env.ADMIN_BOOTSTRAP_EMAIL,
     NODE_ENV: process.env.NODE_ENV,
   });
 }

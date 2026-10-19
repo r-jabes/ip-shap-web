@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 — Phase 05 admin product management (2026-10-19)
+
+- Split storefront into `(storefront)` route group; add `/admin` operational UI
+- Bootstrap admin login (HMAC session, rate limit, generic errors) + role-gated server actions
+- Product create/edit/archive, stock adjustments with audit, CSV dry-run import
+- Document admin secrets, permissions and noindex for `/admin`
+
 ## 0.5.0 — Phase 03 purposeful motion (2026-10-19)
 
 - Add motion tokens (fast / UI / editorial / hero) and CSS choreography

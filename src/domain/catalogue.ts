@@ -25,7 +25,15 @@ export type DemoProduct = Product & {
   availability: ProductAvailability;
   /** Conspicuous demo label for UI. */
   demoLabel: string;
+  previousSlugs?: string[];
+  sku?: string;
+  barcode?: string;
+  /** Null means unknown quantity. */
+  stockQuantity?: number | null;
 };
+
+/** Alias used by SEO/admin layers. */
+export type CatalogueProduct = DemoProduct;
 
 export type CatalogueFilters = {
   categorySlug?: string;

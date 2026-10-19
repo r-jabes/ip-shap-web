@@ -1,24 +1,22 @@
 # Frontend operations
 
-## Deploy (planned)
+## Admin bootstrap (local)
 
-- Host on a Node-compatible platform (e.g. Vercel) with environment variables from `ENVIRONMENT.md`
-- Production must set `NEXT_PUBLIC_DEMO_MODE=false` unless a deliberate staging demo is required
-- Coordinate Supabase project refs with the backend repo
+1. Copy `.env.example` → `.env.local`
+2. Generate secrets, e.g. `openssl rand -base64 48`
+3. Set `ADMIN_SESSION_SECRET` and `ADMIN_BOOTSTRAP_TOKEN`
+4. Optionally set `ADMIN_BOOTSTRAP_EMAIL` to your operator email
+5. Visit `/admin/login`, sign in, confirm dashboard counts load
+6. Log out clears the httpOnly cookie
 
-## Local development with backend
+Production: prefer Supabase Auth users listed in `admin_profiles` (see backend `OPERATIONS.md` / `SECURITY.md`). Disable bootstrap token in production once Auth is live.
 
-1. Start local or remote Supabase per `backend/documentation/README.md`
-2. Copy URL + anon key into `frontend/.env.local`
-3. Run `npm run dev` in `frontend/`
+## Deploy notes
+
+- Admin UI ships with the Next.js app under `/admin`
+- Ensure hosting env includes admin secrets when bootstrap is enabled
+- Never commit `.env.local`
 
 ## Rollback
 
-- Redeploy previous frontend artifact / Git commit
-- Schema rollbacks are owned by the backend migration process — do not attempt destructive DB changes from the frontend repo
-
-## Monitoring (later)
-
-- Platform request logs
-- Structured application logs via `src/lib/logger.ts`
-- Never log payment credentials or unnecessary PII
+Redeploy previous frontend artifact; admin in-memory demo store resets on process restart (Supabase data is durable once connected).
