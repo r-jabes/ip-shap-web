@@ -158,6 +158,10 @@ Names are inferred from packaging; the "(unverified)" suffix was removed from cu
 - No blur placeholders unless generated from the real image later.
 - Gallery code is client-only on product routes; unrelated routes do not import zoom libraries (none are used).
 
+## Motion vs photography
+
+UI motion (hover scale, gallery crossfade, reveals) must not imply the physical product changed. Prefer transform/opacity on frames; never morph labels or invent bottle drops. See `MOTION_AND_DESIGN_SYSTEM.md`.
+
 ## Manual review checklist
 
 - [ ] Every SKU has its own primary photo (no shared multi-bottle where avoidable)

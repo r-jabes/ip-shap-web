@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FaqList } from "@/components/content/FaqList";
+import { Reveal } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -54,7 +55,9 @@ export default function FaqPage() {
       </div>
 
       <div className="mt-10 max-w-3xl">
-        <FaqList items={FAQS} />
+        <Reveal>
+          <FaqList items={FAQS} />
+        </Reveal>
       </div>
 
       <div className="mt-12 flex flex-wrap gap-3">

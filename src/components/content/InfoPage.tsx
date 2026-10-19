@@ -1,3 +1,4 @@
+import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
 
 type Section = {
@@ -54,18 +55,17 @@ export function InfoPage({
       >
         {sections.map((section, i) =>
           variant === "story" ? (
-            <section
-              key={section.heading}
-              className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-6 shadow-[4px_4px_0_0_var(--brand-charcoal)]"
-            >
-              <p className="text-xs font-semibold tracking-[0.14em] text-brand-burnt-orange uppercase tabular">
-                {section.index ?? String(i + 1).padStart(2, "0")}
-              </p>
-              <h2 className="font-display mt-3 text-2xl text-brand-charcoal">
-                {section.heading}
-              </h2>
-              <p className="mt-3 text-ink-muted">{section.body}</p>
-            </section>
+            <Reveal key={section.heading} delayMs={i * 60} className="h-full">
+              <section className="h-full rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-6 shadow-[4px_4px_0_0_var(--brand-charcoal)]">
+                <p className="text-xs font-semibold tracking-[0.14em] text-brand-burnt-orange uppercase tabular">
+                  {section.index ?? String(i + 1).padStart(2, "0")}
+                </p>
+                <h2 className="font-display mt-3 text-2xl text-brand-charcoal">
+                  {section.heading}
+                </h2>
+                <p className="mt-3 text-ink-muted">{section.body}</p>
+              </section>
+            </Reveal>
           ) : (
             <section
               key={section.heading}

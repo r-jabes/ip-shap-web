@@ -7,6 +7,7 @@ import { MobileBottomBar } from "@/components/layout/MobileBottomBar";
 import { PreviewIndicator } from "@/components/layout/PreviewIndicator";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { PageEnter } from "@/components/motion/PageEnter";
 import { SkipLink } from "@/components/SkipLink";
 import { buildNavData } from "@/lib/navigation";
 
@@ -21,7 +22,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           <AnnouncementBar />
           <SiteHeader nav={nav} />
           <main id="main-content" className="flex-1">
-            {children}
+            <PageEnter>{children}</PageEnter>
           </main>
           <SiteFooter nav={nav} />
         </div>

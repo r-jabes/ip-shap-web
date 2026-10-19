@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R6 (foundations → content pages)
+## Unreleased — UI redesign R0–R7 (foundations → motion/quality)
 
+- Motion / quality (R7): cart fly-in + visible toast; `PageEnter` route settle (View Transitions deferred); shop `.content-settle`; story/FAQ reveals; `QUALITY_GATES.md`; motion + performance docs updated
 - Content pages (R6): About story cards; Contact WhatsApp card + enquiry hand-off + Maps link; Delivery/FAQ/Privacy/Terms in the new system; FAQ accordion; 404 and error restyled; shared Accordion
 - Cart / checkout / confirmation (R5): shared Cart → Details → Confirmed steps; restyled cart lines and sticky summary; checkout uses Field kit with channel cards and field-level errors; confirmation status timeline + Message us panel; order lookup restyled to match
 

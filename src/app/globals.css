@@ -591,7 +591,7 @@
   animation: overlay-backdrop-in var(--motion-ui) var(--ease-soft) both;
 }
 
-/* —— Cart count feedback —— */
+/* —— Cart count feedback + fly-in affordance —— */
 @keyframes cart-pulse {
   0%,
   100% {
@@ -604,6 +604,93 @@
 
 .cart-count--pulse {
   animation: cart-pulse var(--motion-ui) var(--ease-ui);
+}
+
+@keyframes cart-fly-in {
+  from {
+    opacity: 0;
+    transform: translate(-2.25rem, 1.75rem) scale(0.35);
+  }
+  55% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(0.15rem, -0.35rem) scale(1);
+  }
+}
+
+@keyframes cart-catch {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  40% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-burnt-orange) 55%, transparent);
+  }
+}
+
+.cart-fly-dot {
+  pointer-events: none;
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 2;
+  height: 0.65rem;
+  width: 0.65rem;
+  border-radius: 999px;
+  background: var(--brand-burnt-orange);
+  border: 2px solid var(--brand-charcoal);
+  animation: cart-fly-in var(--motion-editorial) var(--ease-settle) both;
+}
+
+.cart-target--catch {
+  animation: cart-catch var(--motion-ui) var(--ease-ui);
+}
+
+@keyframes cart-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cart-toast {
+  animation: cart-toast-in var(--motion-ui) var(--ease-out) both;
+}
+
+/* —— Route settle (View Transitions deferred to Next 16) —— */
+@keyframes page-enter {
+  from {
+    opacity: 0.88;
+    transform: translateY(0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter var(--motion-ui) var(--ease-out) both;
+}
+
+/* —— Grid content settle after skeletons —— */
+@keyframes content-settle {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.content-settle {
+  animation: content-settle var(--motion-ui) var(--ease-soft) both;
 }
 
 /* —— Marquee (range names strip). Pure CSS, transform only. —— */
@@ -674,6 +761,11 @@
   .drawer-panel-left,
   .lightbox-enter,
   .cart-count--pulse,
+  .cart-fly-dot,
+  .cart-target--catch,
+  .cart-toast,
+  .page-enter,
+  .content-settle,
   .skeleton {
     animation: none !important;
   }

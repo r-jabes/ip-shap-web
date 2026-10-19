@@ -28,10 +28,13 @@ After `npm run build && npm run start`:
 2. Record LCP element, transfer size of hero image, JS bundle main
 3. Paste scores into the table below when measured
 
-| Route   | LCP | INP/TBT | CLS | Notes |
-| ------- | --- | ------- | --- | ----- |
-| `/`     | TBD | TBD     | TBD |       |
-| `/shop` | TBD | TBD     | TBD |       |
+| Route   | LCP | INP/TBT | CLS | Notes                                      |
+| ------- | --- | ------- | --- | ------------------------------------------ |
+| `/`     | —   | —       | —   | Operator: fill after local prod Lighthouse |
+| `/shop` | —   | —       | —   | Operator: fill after local prod Lighthouse |
+| `/product/[slug]` | — | —     | —   | Sticky gallery + buy box; watch CLS        |
+
+Motion (R7): CSS + `Reveal` / `PageEnter` only — no GSAP. See `MOTION_AND_DESIGN_SYSTEM.md` and `QUALITY_GATES.md`.
 
 ## Residual risks
 

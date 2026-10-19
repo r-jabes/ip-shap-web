@@ -36,7 +36,7 @@ export function SiteHeader({ nav }: { nav: NavData }) {
     if (itemCount === previousCount.current) return;
     previousCount.current = itemCount;
     setPulse(true);
-    const id = window.setTimeout(() => setPulse(false), 240);
+    const id = window.setTimeout(() => setPulse(false), 560);
     return () => window.clearTimeout(id);
   }, [itemCount]);
 
@@ -49,7 +49,7 @@ export function SiteHeader({ nav }: { nav: NavData }) {
 
   return (
     <header
-      className={`sticky top-0 z-40 border-b bg-brand-warm-white/95 backdrop-blur-md transition-shadow duration-[var(--motion-ui)] motion-reduce:transition-none ${
+      className={`relative sticky top-0 z-40 border-b bg-brand-warm-white/95 backdrop-blur-md transition-shadow duration-[var(--motion-ui)] motion-reduce:transition-none ${
         scrolled
           ? "border-line shadow-[0_10px_30px_-22px_rgb(32_32_30/0.55)]"
           : "border-transparent"
@@ -122,8 +122,13 @@ export function SiteHeader({ nav }: { nav: NavData }) {
             onClick={openCart}
             aria-haspopup="dialog"
             aria-label={`Open cart, ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-charcoal bg-brand-charcoal text-brand-warm-white transition-[transform,background-color] duration-[var(--motion-fast)] hover:bg-brand-dark-neutral active:scale-95 motion-reduce:transition-none"
+            className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-charcoal bg-brand-charcoal text-brand-warm-white transition-[transform,background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-brand-dark-neutral active:scale-95 motion-reduce:transition-none ${
+              pulse ? "cart-target--catch" : ""
+            }`}
           >
+            {pulse ? (
+              <span aria-hidden="true" className="cart-fly-dot" />
+            ) : null}
             <BagIcon size={20} />
             {itemCount > 0 ? (
               <span
@@ -142,6 +147,14 @@ export function SiteHeader({ nav }: { nav: NavData }) {
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {feedback}
       </p>
+      {feedback ? (
+        <div
+          role="status"
+          className="cart-toast pointer-events-none absolute top-full right-4 z-50 mt-2 max-w-xs rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-4 py-2 text-sm font-semibold text-brand-charcoal shadow-[3px_3px_0_0_var(--brand-burnt-orange)] sm:right-6"
+        >
+          {feedback}
+        </div>
+      ) : null}
     </header>
   );
 }

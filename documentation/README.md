@@ -71,11 +71,14 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 - [API_USAGE.md](./API_USAGE.md)
 - [CONTENT_AND_IMAGES.md](./CONTENT_AND_IMAGES.md)
 - [MOTION_AND_DESIGN_SYSTEM.md](./MOTION_AND_DESIGN_SYSTEM.md)
+- [QUALITY_GATES.md](./QUALITY_GATES.md)
+- [PERFORMANCE_REPORT.md](./PERFORMANCE_REPORT.md)
 - [CHECKOUT.md](./CHECKOUT.md)
 - [CHANGELOG.md](./CHANGELOG.md)
 
 ## Phase status
 
-- **Phase 00–05:** foundations, storefront, catalogue, motion, admin shell
-- **Phase 06:** guest cart, Rwanda delivery fields, checkout, order confirmation/lookup
-- **Next:** payments (gated), fulfilment ops, catalogue confirmation with Rosine
+- **Phase 00–08:** foundations through hardening (see CHANGELOG)
+- **UI redesign R0–R7:** foundations → shell → home → shop → product → cart/checkout → content → motion/quality gates
+- **Optional R8:** admin restyle
+- **Next (data):** resume storefront rebuild / Supabase catalogue when UI is approved

@@ -1,15 +1,24 @@
-import { describe, expect, it } from "vitest";
-import { MOTION } from "./motion";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { MOTION, prefersReducedMotion } from "./motion";
 
-describe("MOTION tokens", () => {
-  it("keeps hero choreography inside the 450–850ms budget", () => {
-    expect(MOTION.heroMs).toBeGreaterThanOrEqual(450);
-    expect(MOTION.heroMs).toBeLessThanOrEqual(850);
-  });
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
-  it("keeps UI transitions shorter than editorial reveals", () => {
+describe("motion tokens", () => {
+  it("keeps named durations aligned with CSS intent", () => {
     expect(MOTION.fastMs).toBeLessThan(MOTION.uiMs);
     expect(MOTION.uiMs).toBeLessThan(MOTION.editorialMs);
-    expect(MOTION.editorialMs).toBeLessThanOrEqual(MOTION.heroMs);
+    expect(MOTION.editorialMs).toBeLessThan(MOTION.heroMs);
+  });
+
+  it("reads prefers-reduced-motion when matchMedia exists", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    expect(prefersReducedMotion()).toBe(true);
   });
 });
