@@ -39,7 +39,10 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: {
-    icon: [{ url: "/branding/app-icon.png", type: "image/png" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/branding/app-icon.png", type: "image/png" },
+    ],
     apple: [{ url: "/branding/app-icon.png", type: "image/png" }],
   },
   robots: defaultRobots(),

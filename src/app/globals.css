@@ -159,6 +159,11 @@
     text-transform: uppercase;
   }
 
+  /* Home hero: large but capped so brand + copy + CTAs fit one viewport */
+  .font-display-hero--home {
+    font-size: clamp(2.75rem, 1.35rem + 5.2vw, 6.25rem);
+  }
+
   .tabular {
     font-variant-numeric: tabular-nums;
   }
@@ -215,6 +220,179 @@
 }
 .hero-stagger > *:nth-child(5) {
   animation-delay: 420ms;
+}
+
+/* —— Brand atmosphere (soft wash that blends under the sticky header) —— */
+.brand-atmosphere--hero .brand-atmosphere__wash {
+  /* Soft top edge so orange isn’t clipped hard by the ivory navbar */
+  background: radial-gradient(
+    ellipse 70% 65% at 86% 42%,
+    color-mix(in srgb, var(--brand-burnt-orange) 22%, transparent),
+    transparent 72%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 100%);
+}
+
+.brand-atmosphere--featured .brand-atmosphere__wash {
+  background: radial-gradient(
+    ellipse 55% 60% at 18% 55%,
+    color-mix(in srgb, var(--brand-burnt-orange) 14%, transparent),
+    transparent 70%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 100%);
+}
+
+/*
+  Product stage: two offset frames behind the photo (both down-right), then the
+  photo overlapping them on the top/left — never boxed inside. Dashed orange is
+  a tight nearer echo; solid charcoal is the deeper offset. Gaps stay small so
+  the bottles dominate. The wrapper reserves right/bottom room so nothing clips.
+*/
+.product-arch-stage {
+  padding: 0 0.85rem 0.85rem 0;
+}
+
+.product-arch-stage__ring {
+  inset: 0.28rem 0.57rem 0.57rem 0.28rem;
+  border-radius: var(--radius-arch);
+  border: 2px dashed var(--brand-burnt-orange);
+}
+
+.product-arch-stage__frame {
+  inset: 0.85rem 0 0 0.85rem;
+  border-radius: var(--radius-arch);
+  border: 2px solid var(--brand-charcoal);
+}
+
+/* Hero stage fills its column; the arch height follows the viewport height so
+   the first screen stays in view, but never gets squat: it keeps the bottles
+   readable on short screens too. */
+@media (min-width: 1024px) {
+  .hero-stage .arch {
+    aspect-ratio: auto;
+    height: clamp(
+      26rem,
+      calc(100dvh - var(--header-h) - var(--announcement-h) - 6.5rem),
+      42rem
+    );
+  }
+}
+
+.product-arch-stage__sticker {
+  border: 2px solid var(--brand-charcoal);
+  border-radius: 1.1rem;
+  background: var(--brand-burnt-orange);
+  box-shadow: 3px 3px 0 0 var(--brand-charcoal);
+  rotate: 14deg;
+  animation: brand-sticker-in 700ms var(--ease-settle) 80ms both;
+}
+
+@keyframes brand-arch-settle {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes brand-sticker-in {
+  from {
+    opacity: 0;
+    transform: rotate(14deg) translate(0.35rem, -0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(14deg) translate(0, 0);
+  }
+}
+
+@keyframes scroll-cue-dot {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  45% {
+    transform: translateY(0.45rem);
+    opacity: 1;
+  }
+}
+
+@keyframes scroll-cue-chevron {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(0.2rem);
+    opacity: 1;
+  }
+}
+
+.scroll-cue__dot {
+  animation: scroll-cue-dot 1.7s var(--ease-soft) infinite;
+}
+
+.scroll-cue__chevron {
+  animation: scroll-cue-chevron 1.7s var(--ease-soft) infinite;
+}
+
+.featured-media {
+  animation: brand-arch-settle 700ms var(--ease-out) both;
+}
+
+.featured-track {
+  overscroll-behavior-x: contain;
+}
+
+/* Carousel autoplay progress (restarts per slide via React key) */
+@keyframes featured-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.featured-progress__bar {
+  transform-origin: left center;
+  animation: featured-progress var(--featured-interval, 5000ms) linear both;
+}
+
+/* —— Range ticker (strip under the hero) —— */
+.range-ticker {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 7%,
+    #000 93%,
+    transparent 100%
+  );
+}
+
+.range-ticker__name {
+  font-size: clamp(1.9rem, 1.2rem + 2.6vw, 3.25rem);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  transition:
+    color var(--motion-ui) var(--ease-ui),
+    -webkit-text-stroke-color var(--motion-ui) var(--ease-ui);
+}
+
+.range-ticker__name--outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--brand-warm-white);
+}
+
+.range-ticker__item:hover .range-ticker__name,
+.range-ticker__item:focus-visible .range-ticker__name {
+  color: var(--brand-burnt-orange);
+  -webkit-text-stroke-color: var(--brand-burnt-orange);
 }
 
 /* —— Editorial one-time reveal (IntersectionObserver) —— */
@@ -415,6 +593,10 @@
 
   .hero-media,
   .hero-stagger > *,
+  .product-arch-stage__sticker,
+  .featured-media,
+  .scroll-cue__dot,
+  .scroll-cue__chevron,
   .gallery-crossfade,
   .overlay-backdrop,
   .overlay-from-right,
@@ -438,6 +620,18 @@
   }
   .marquee-track > [aria-hidden="true"] {
     display: none;
+  }
+  .marquee-track > .range-ticker__row {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.5rem;
+  }
+  .range-ticker {
+    mask-image: none;
+  }
+  .featured-progress__bar {
+    animation: none !important;
+    transform: scaleX(1);
   }
 
   .hero-media {

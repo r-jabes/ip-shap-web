@@ -11,8 +11,11 @@ export function HomeCollections() {
   const [lead, ...rest] = tiles;
 
   return (
-    <section className="border-t border-line py-16 sm:py-20">
-      <Container>
+    <section
+      id="home-collections"
+      className="relative bg-brand-warm-white py-12 sm:py-16"
+    >
+      <Container className="relative">
         <Reveal>
           <SectionHeading
             index="02"
@@ -22,17 +25,18 @@ export function HomeCollections() {
           />
         </Reveal>
 
-        <ul className="mt-10 grid gap-4 md:grid-cols-2 md:grid-rows-2 md:gap-5">
+        {/* Bento: Wine is tall on the left (both rows); Sparkling + Vodka stack on the right. */}
+        <ul className="mt-8 grid gap-4 md:grid-cols-2 md:grid-rows-2 md:gap-5 md:auto-rows-[minmax(11rem,1fr)]">
           {lead ? (
-            <li className="md:row-span-2">
-              <Reveal>
+            <li className="h-full md:row-span-2">
+              <Reveal className="h-full">
                 <CollectionTile tile={lead} featured />
               </Reveal>
             </li>
           ) : null}
           {rest.map((tile, index) => (
-            <li key={tile.slug}>
-              <Reveal delayMs={(index + 1) * 70}>
+            <li key={tile.slug} className="h-full">
+              <Reveal className="h-full" delayMs={(index + 1) * 70}>
                 <CollectionTile tile={tile} />
               </Reveal>
             </li>
@@ -53,8 +57,8 @@ function CollectionTile({
   return (
     <Link
       href={tile.href}
-      className={`group relative flex h-full min-h-[16rem] overflow-hidden rounded-[1.75rem] bg-paper-2 transition-transform duration-[var(--motion-ui)] ease-[var(--ease-ui)] hover:-translate-y-1 motion-reduce:hover:translate-y-0 ${
-        featured ? "md:min-h-full" : ""
+      className={`group relative flex h-full overflow-hidden rounded-[1.75rem] bg-paper-2 transition-transform duration-[var(--motion-ui)] ease-[var(--ease-ui)] hover:-translate-y-1 motion-reduce:hover:translate-y-0 ${
+        featured ? "min-h-[22rem] md:min-h-0" : "min-h-[12.5rem]"
       }`}
     >
       <Image
@@ -73,7 +77,7 @@ function CollectionTile({
         aria-hidden="true"
         className="absolute inset-0 bg-gradient-to-t from-brand-charcoal/80 via-brand-charcoal/25 to-transparent"
       />
-      <div className="relative mt-auto flex w-full flex-col gap-2 p-5 text-brand-warm-white sm:p-6">
+      <div className="relative mt-auto flex w-full flex-col gap-1.5 p-5 text-brand-warm-white sm:p-6">
         <span className="text-xs font-semibold tracking-[0.18em] text-brand-warm-white/70 uppercase">
           {tile.index} / {tile.name}
         </span>

@@ -9,7 +9,13 @@
 - Cart integrity: badge, drawer, cart page and checkout read one derived list; versioned storage; stale lines pruned with a notice
 - Customer-facing copy no longer mentions demo/provisional/unverified/prototype; `PreviewIndicator` (dev only) replaces it; a test guards this
 - Catalogue grouped into Whisky, Vodka, Gin, Wine, Sparkling; contact details from `NEXT_PUBLIC_*` via `site-config`
-- Home redesign: arch hero (whisky photo), range marquee, collections bento, gin spotlight, how-it-works, WhatsApp band, trust/FAQ; one photo per slot via `range-media`
+- Home redesign: arch hero (whisky photo), range ticker, collections bento, featured carousel (admin-ready data shape), how-it-works, WhatsApp band, trust/FAQ; photos allocated via `range-media`
+- Favicon: replace default Next/Vercel `favicon.ico` with the IP SHAP mark; add App Router `icon.png`
+- Product stage frames: dashed orange nearer echo + solid charcoal deeper offset, gaps tightened so bottles dominate
+- Hero: image fills its column flush to the container edge; arch height follows the viewport height so the first screen stays in view; no decorative rails/rules (they collided with content at some widths)
+- Brand atmosphere: soft masked wash that blends under the header; product stage = photo overlapping one offset frame + sticker; hero scroll cue is a mouse icon
+- Range ticker under the hero: charcoal band, scrolling linked ranges with bottle counts and a "Shop all" sticker; static list under reduced motion
+- Featured: 4 slides (photos may repeat until the admin replaces them); counter sits outside any border; autoplay every 5 s with a progress bar, pause/play button, keyboard-focus pause, off under reduced motion; hover/click no longer freeze it
 
 ## 0.9.0 — Phase 08 hardening (2026-10-19)
 
