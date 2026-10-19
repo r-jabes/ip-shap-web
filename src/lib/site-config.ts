@@ -78,3 +78,9 @@ export function whatsappLink(
 export function chatHref(message?: string, config: SiteConfig = SITE): string {
   return whatsappLink(message, config) ?? "/contact";
 }
+
+/** Google Maps search for the published address, or null when unset. */
+export function mapsLink(config: SiteConfig = SITE): string | null {
+  if (!config.address) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(config.address)}`;
+}

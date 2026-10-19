@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/content/InfoPage";
+import { Button } from "@/components/ui/Button";
 import { LEGAL_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = { title: "Terms of sale" };
@@ -7,8 +8,10 @@ export const metadata: Metadata = { title: "Terms of sale" };
 export default function TermsPage() {
   return (
     <InfoPage
+      eyebrow="Policies"
       title="Terms of sale"
       intro={`These terms apply to orders placed with ${LEGAL_NAME} through this website.`}
+      variant="legal"
       sections={[
         {
           heading: "Age",
@@ -22,7 +25,16 @@ export default function TermsPage() {
           heading: "Prices",
           body: "Prices are in Rwandan francs (RWF). We may correct a price that was shown by mistake and will tell you before confirming.",
         },
+        {
+          heading: "Payment",
+          body: "You are not charged on this website. Payment is agreed when we confirm the order with you.",
+        },
       ]}
+      action={
+        <Button href="/shop" variant="ghost">
+          Browse the shop
+        </Button>
+      }
     />
   );
 }

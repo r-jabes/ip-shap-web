@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R5 (foundations → cart/checkout)
+## Unreleased — UI redesign R0–R6 (foundations → content pages)
 
+- Content pages (R6): About story cards; Contact WhatsApp card + enquiry hand-off + Maps link; Delivery/FAQ/Privacy/Terms in the new system; FAQ accordion; 404 and error restyled; shared Accordion
 - Cart / checkout / confirmation (R5): shared Cart → Details → Confirmed steps; restyled cart lines and sticky summary; checkout uses Field kit with channel cards and field-level errors; confirmation status timeline + Message us panel; order lookup restyled to match
 
 - Shop (R3): product cards with 4:5 frame, hover shift, stock pill, quick add + quick view; sticky filter sidebar and mobile sheet with “Show N results”; multi-select range/brand chips with facet counts; price bounds; applied-filter chips; URL state; sort, pagination, skeletons and empty state

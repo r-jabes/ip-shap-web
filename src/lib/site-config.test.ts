@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   chatHref,
   formatPhoneDisplay,
+  mapsLink,
   readSiteConfig,
   whatsappLink,
 } from "./site-config";
@@ -35,5 +36,13 @@ describe("site config", () => {
 
   it("formats display phone numbers", () => {
     expect(formatPhoneDisplay("250788123456")).toBe("+250 788 123 456");
+  });
+
+  it("builds a Maps link only when an address is set", () => {
+    expect(mapsLink(readSiteConfig({}))).toBeNull();
+    const config = readSiteConfig({
+      NEXT_PUBLIC_ADDRESS: "Kigali, Rwanda",
+    });
+    expect(mapsLink(config)).toContain(encodeURIComponent("Kigali, Rwanda"));
   });
 });
