@@ -71,12 +71,11 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 - [API_USAGE.md](./API_USAGE.md)
 - [CONTENT_AND_IMAGES.md](./CONTENT_AND_IMAGES.md)
 - [MOTION_AND_DESIGN_SYSTEM.md](./MOTION_AND_DESIGN_SYSTEM.md)
+- [CHECKOUT.md](./CHECKOUT.md)
 - [CHANGELOG.md](./CHANGELOG.md)
 
 ## Phase status
 
-- **Phase 00:** foundations, tokens, docs, CI, money/env helpers
-- **Phase 01:** client-facing storefront prototype shell
-- **Assets / provisional catalogue (current):** client logo, favicon, product photos, 13 provisional SKUs
-- **Next:** visual polish / motion (Phase 03) and further catalogue confirmation with Rosine
-- Payments/admin still later phases
+- **Phase 00–05:** foundations, storefront, catalogue, motion, admin shell
+- **Phase 06:** guest cart, Rwanda delivery fields, checkout, order confirmation/lookup
+- **Next:** payments (gated), fulfilment ops, catalogue confirmation with Rosine

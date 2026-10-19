@@ -38,6 +38,21 @@ export function Button({
   const classes = `${base} ${variantClasses[variant]} ${className}`;
 
   if (href) {
+    const external = /^https?:\/\//.test(href);
+    if (external) {
+      return (
+        <a
+          href={href}
+          className={classes}
+          aria-label={ariaLabel}
+          onClick={onClick}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {children}
+        </a>
+      );
+    }
     return (
       <Link
         href={href}

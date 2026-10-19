@@ -45,8 +45,14 @@ export default function AdminDashboardPage() {
 
       <div className="flex flex-wrap gap-3">
         <Link
-          href="/admin/products/new"
+          href="/admin/orders"
           className="bg-brand-charcoal px-4 py-2 text-sm text-brand-warm-white"
+        >
+          Orders
+        </Link>
+        <Link
+          href="/admin/products/new"
+          className="border border-brand-charcoal px-4 py-2 text-sm"
         >
           New product
         </Link>

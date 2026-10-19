@@ -9,6 +9,7 @@
 5. Prefer RLS-backed Supabase access from the browser; use service role only in tightly scoped server code.
 6. Admin routes (`/admin/*`) are `noindex`. Every admin Server Action calls `requireSession(permission)` — hiding nav links is not enough.
 7. Admin session cookies are httpOnly + HMAC-signed (`ADMIN_SESSION_SECRET`). Bootstrap login uses timing-safe token compare and generic errors.
+8. Checkout never trusts client prices; orders require idempotency keys; customer order lookup needs reference + high-entropy token (rate limited). Cart localStorage stores product IDs/qty only.
 
 ## Admin local bootstrap
 

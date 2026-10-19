@@ -13,13 +13,17 @@ Never commit real secrets. Values below are names and purposes only.
 
 ## Server-only
 
-| Variable                    | Purpose                                                             |
-| --------------------------- | ------------------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY` | Privileged Supabase key — server only, never shipped to the browser |
-| `ADMIN_SESSION_SECRET`      | HMAC secret for admin session cookies (≥ 32 chars)                  |
-| `ADMIN_BOOTSTRAP_TOKEN`     | Operator-generated bootstrap token (≥ 16 chars); not a default pwd  |
-| `ADMIN_BOOTSTRAP_EMAIL`     | Optional allow-list email for bootstrap login                       |
-| `NODE_ENV`                  | Node runtime mode                                                   |
+| Variable                    | Purpose                                                               |
+| --------------------------- | --------------------------------------------------------------------- |
+| `SUPABASE_SERVICE_ROLE_KEY` | Privileged Supabase key — server only, never shipped to the browser   |
+| `ADMIN_SESSION_SECRET`      | HMAC secret for admin session cookies (≥ 32 chars)                    |
+| `ADMIN_BOOTSTRAP_TOKEN`     | Operator-generated bootstrap token (≥ 16 chars); not a default pwd    |
+| `ADMIN_BOOTSTRAP_EMAIL`     | Optional allow-list email for bootstrap login                         |
+| `WHATSAPP_BUSINESS_E164`    | WhatsApp Business number for deep links (unset until confirmed)       |
+| `ONLINE_PAYMENT_ENABLED`    | `true` only after a Rwanda-capable provider is verified (default off) |
+| `PAYMENT_PROVIDER`          | `unselected` (default) or `sandbox` for tests only                    |
+| `PAYMENT_WEBHOOK_SECRET`    | HMAC secret for `/api/payments/webhook` (≥ 16 chars)                  |
+| `NODE_ENV`                  | Node runtime mode                                                     |
 
 ## Validation
 

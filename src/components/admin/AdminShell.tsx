@@ -5,6 +5,7 @@ import { SHORT_BRAND } from "@/lib/brand";
 
 const links = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/stock", label: "Stock" },
   { href: "/admin/import", label: "Import" },

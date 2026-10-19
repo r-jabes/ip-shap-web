@@ -97,7 +97,7 @@ export function CartDrawer() {
             <div className="py-12 text-center">
               <p className="font-display text-xl">Your cart is empty</p>
               <p className="mt-2 text-sm text-brand-dark-neutral">
-                Demo cart only — no checkout yet.
+                Add drinks from the shop to continue to checkout.
               </p>
               <Button href="/shop" className="mt-6" onClick={closeCart}>
                 Shop drinks
@@ -176,10 +176,22 @@ export function CartDrawer() {
               </span>
             </div>
             <p className="mt-2 text-xs text-brand-dark-neutral">
-              Checkout and payments arrive in later phases. Opening WhatsApp is
-              not available from this prototype cart.
+              Checkout recalculates prices server-side and creates the order
+              before any WhatsApp hand-off.
             </p>
-            <Button href="/cart" className="mt-4 w-full" onClick={closeCart}>
+            <Button
+              href="/checkout"
+              className="mt-4 w-full"
+              onClick={closeCart}
+            >
+              Checkout
+            </Button>
+            <Button
+              href="/cart"
+              variant="ghost"
+              className="mt-2 w-full"
+              onClick={closeCart}
+            >
               View cart page
             </Button>
           </div>

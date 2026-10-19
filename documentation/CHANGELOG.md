@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 — Phase 07 payments, admin orders, notifications (2026-10-19)
+
+- Sandbox payment helpers + HMAC webhook route (`/api/payments/webhook`)
+- Admin orders list/detail: fulfilment transitions and verified manual payment
+- Log-only notifications on create / payment / fulfilment; order status UX copy
+- Env: `PAYMENT_PROVIDER`, `PAYMENT_WEBHOOK_SECRET`
+
+## 0.7.0 — Phase 06 checkout and orders (2026-10-19)
+
+- Guest checkout with server-side price recompute, idempotency and order snapshots
+- WhatsApp-assisted channel; online payment gated until provider enabled
+- Confirmation + private token lookup; delivery fee unavailable when zones unset
+- Document checkout flow (`CHECKOUT.md`)
+
 ## 0.6.0 — Phase 05 admin product management (2026-10-19)
 
 - Split storefront into `(storefront)` route group; add `/admin` operational UI

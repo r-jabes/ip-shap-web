@@ -32,6 +32,26 @@ const serverEnvSchema = z.object({
   ADMIN_BOOTSTRAP_TOKEN: z.string().min(16).optional(),
   /** Optional allow-list; if set, only these emails may bootstrap. */
   ADMIN_BOOTSTRAP_EMAIL: z.string().email().optional(),
+  /**
+   * E.164 WhatsApp Business number for deep links (digits with country code).
+   * Leave unset until the business confirms the number.
+   */
+  WHATSAPP_BUSINESS_E164: z
+    .string()
+    .regex(/^\+?[0-9]{8,15}$/)
+    .optional(),
+  /** Must stay false until a Rwanda-capable provider is verified. */
+  ONLINE_PAYMENT_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  /**
+   * `unselected` | `sandbox` — never set a live provider id without a documented decision.
+   * Sandbox must not be labelled as live in UI.
+   */
+  PAYMENT_PROVIDER: z.enum(["unselected", "sandbox"]).default("unselected"),
+  /** HMAC secret for sandbox webhook verification (server only). */
+  PAYMENT_WEBHOOK_SECRET: z.string().min(16).optional(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -55,6 +75,10 @@ function readServerEnv(): ServerEnv {
     ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET,
     ADMIN_BOOTSTRAP_TOKEN: process.env.ADMIN_BOOTSTRAP_TOKEN,
     ADMIN_BOOTSTRAP_EMAIL: process.env.ADMIN_BOOTSTRAP_EMAIL,
+    WHATSAPP_BUSINESS_E164: process.env.WHATSAPP_BUSINESS_E164,
+    ONLINE_PAYMENT_ENABLED: process.env.ONLINE_PAYMENT_ENABLED ?? "false",
+    PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER ?? "unselected",
+    PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET,
     NODE_ENV: process.env.NODE_ENV,
   });
 }
@@ -70,13 +94,22 @@ export function getPublicEnv(): PublicEnv {
 }
 
 export function getServerEnv(): ServerEnv {
-  if (typeof window !== "undefined") {
+  // Vitest/jsdom defines `window`; allow server env reads in unit tests.
+  const isTest =
+    process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+  if (typeof window !== "undefined" && !isTest) {
     throw new Error("getServerEnv() must only be called on the server.");
   }
   if (!cachedServerEnv) {
     cachedServerEnv = readServerEnv();
   }
   return cachedServerEnv;
+}
+
+/** Clears cached env — used by unit tests after stubbing process.env. */
+export function resetEnvCacheForTests() {
+  cachedPublicEnv = undefined;
+  cachedServerEnv = undefined;
 }
 
 export function isDemoMode(): boolean {

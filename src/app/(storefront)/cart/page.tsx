@@ -34,7 +34,8 @@ export default function CartPage() {
         Cart
       </h1>
       <p className="mt-2 text-sm text-brand-dark-neutral">
-        Demo cart state only. Checkout is not implemented in Phase 01.
+        Guest cart (product IDs only in local storage). Prices are recalculated
+        at checkout on the server.
       </p>
 
       {populated.length === 0 ? (
@@ -117,11 +118,11 @@ export default function CartPage() {
               </span>
             </div>
             <p className="mt-4 text-xs text-brand-dark-neutral">
-              Delivery fees unknown until confirmed. Payment and WhatsApp order
-              flows arrive in later phases.
+              Delivery fees stay unavailable until zones are configured.
+              Checkout creates a durable order before any WhatsApp hand-off.
             </p>
-            <Button className="mt-6 w-full" disabled>
-              Checkout unavailable
+            <Button href="/checkout" className="mt-6 w-full">
+              Proceed to checkout
             </Button>
             <button
               type="button"

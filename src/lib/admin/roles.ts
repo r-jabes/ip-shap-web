@@ -3,6 +3,7 @@ export type AdminRole = "owner" | "staff";
 export type AdminPermission =
   | "products:read"
   | "products:write"
+  | "orders:manage"
   | "inventory:adjust"
   | "import:run"
   | "admins:manage"
@@ -12,6 +13,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
   owner: [
     "products:read",
     "products:write",
+    "orders:manage",
     "inventory:adjust",
     "import:run",
     "admins:manage",
@@ -20,6 +22,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
   staff: [
     "products:read",
     "products:write",
+    "orders:manage",
     "inventory:adjust",
     "import:run",
     "audit:read",
