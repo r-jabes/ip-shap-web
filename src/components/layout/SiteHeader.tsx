@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { useCart } from "@/components/cart/CartProvider";
-import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
 
 const navLinks = [
   { href: "/shop", label: "Shop" },
@@ -31,13 +31,7 @@ export function SiteHeader() {
             <span className="sr-only">Menu</span>
             <span aria-hidden="true">{mobileOpen ? "✕" : "☰"}</span>
           </button>
-          <Link
-            href="/"
-            className="font-display text-lg tracking-[0.12em] uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-burnt-orange"
-          >
-            <span className="sr-only">{LEGAL_NAME}</span>
-            <span aria-hidden="true">{SHORT_BRAND}</span>
-          </Link>
+          <BrandLogo height={34} priority />
         </div>
 
         <nav aria-label="Primary" className="hidden lg:block">

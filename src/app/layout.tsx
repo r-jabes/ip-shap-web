@@ -30,11 +30,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: `${SHORT_BRAND} | ${LEGAL_NAME}`,
     description:
-      "Client-facing storefront prototype. Demo products and prices are illustrative.",
+      "Client-facing storefront prototype. Provisional catalogue prices require confirmation.",
     url: appUrl,
     siteName: SHORT_BRAND,
     locale: "en_RW",
     type: "website",
+  },
+  icons: {
+    icon: [{ url: "/branding/app-icon.png", type: "image/png" }],
+    apple: [{ url: "/branding/app-icon.png", type: "image/png" }],
   },
   robots: {
     index: false,

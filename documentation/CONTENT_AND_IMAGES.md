@@ -1,78 +1,96 @@
 # Content and images
 
-## Phase 01 status
+## Source and destinations
 
-The storefront prototype uses **temporary SVG bottle placeholders** under:
+| Location                              | Role                                                              |
+| ------------------------------------- | ----------------------------------------------------------------- |
+| `../resources/`                       | Client originals (do not delete; not served publicly from parent) |
+| `public/branding/`                    | Copied logo + app icon for the storefront                         |
+| `public/products/`                    | Copied product photographs for catalogue use                      |
+| `src/app/icon.png` / `apple-icon.png` | Next.js favicon / Apple touch icon (from `app_icon.png`)          |
+| `src/fixtures/demo/catalogue.ts`      | Provisional product fixtures (demo mode only)                     |
 
-`public/products/placeholders/`
+Originals remain in `../resources/`. Frontend copies only what the storefront needs.
 
-| File                  | Role                               |
-| --------------------- | ---------------------------------- |
-| `bottle-warm.svg`     | Catalogue primary (warm canvas)    |
-| `bottle-charcoal.svg` | Catalogue / hero (dark canvas)     |
-| `bottle-neutral.svg`  | Catalogue primary (neutral canvas) |
-| `*-alt.svg`           | Secondary gallery frames           |
+## Asset inventory and mapping
 
-These are clearly labelled “DEMO / placeholder” in the artwork and via UI `DemoBadge`s. They are **not** client product photography.
+| Source (`resources/`) | Frontend path                                                           | Role                            | Dimensions |
+| --------------------- | ----------------------------------------------------------------------- | ------------------------------- | ---------- |
+| `main_logo.png`       | `public/branding/main-logo.png`                                         | Logo (header/footer)            | 882×256    |
+| `app_icon.png`        | `public/branding/app-icon.png` (+ `src/app/icon.png`, `apple-icon.png`) | Favicon / app icon              | 158×155    |
+| `12k.jpeg`            | `public/products/drink-12000.jpeg`                                      | Multi-product photo (4 bottles) | 810×1080   |
+| `13k.jpeg`            | `public/products/drink-13000.jpeg`                                      | Multi-product photo (2 bottles) | 810×1080   |
+| `17k.jpeg`            | `public/products/drink-17000.jpeg`                                      | Single-product photo            | 810×1080   |
+| `20k.jpeg`            | `public/products/drink-20000.jpeg`                                      | Multi-product photo (2 bottles) | 810×1080   |
+| `60k.jpeg`            | `public/products/drink-60000.jpeg`                                      | Single-product photo (+ box)    | 810×1080   |
+| `28k-68k-78k.jpeg`    | `public/products/drink-28000-68000-78000.jpeg`                          | Multi-product photo (3 bottles) | 810×1080   |
 
-## Client originals (not yet integrated)
+Formats preserved (PNG / JPEG). No WebP conversion in this phase.
 
-Still located outside this repo at `../resources/`:
+Legacy SVG placeholders under `public/products/placeholders/` remain for fallback testing but are no longer referenced by the live provisional catalogue.
 
-- `main_logo.png`, `app_icon.png`
-- Product JPEGs priced by filename (`12k`, `13k`, `17k`, `20k`, `60k`, `28k-68k-78k`)
+## Filename → provisional price
 
-Integration of those assets belongs to the next assets/catalogue phase after visual direction review.
+| Source filename    | Provisional RWF          | Notes                                                                                              |
+| ------------------ | ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `12k.jpeg`         | 12,000                   | Applied to **four** ROZZITA entries sharing one photo — which bottle owns the price is unconfirmed |
+| `13k.jpeg`         | 13,000                   | Applied to **two** Pinta Negra entries — per-bottle assignment unconfirmed                         |
+| `17k.jpeg`         | 17,000                   | Single product                                                                                     |
+| `20k.jpeg`         | 20,000                   | Applied to **two** LIBOLL entries — per-bottle assignment unconfirmed                              |
+| `60k.jpeg`         | 60,000                   | Single product                                                                                     |
+| `28k-68k-78k.jpeg` | 28,000 / 68,000 / 78,000 | Three Johnnie Walker entries; L→R assumed Red / Black / Double Black — **mapping unconfirmed**     |
 
-## Demo product fixtures
+All prices are **provisional catalogue values** and must be confirmed with Rosine before production launch.
 
-Typed fixtures: `src/fixtures/demo/catalogue.ts`  
-Access adapter: `src/lib/catalogue.ts` (gated by `NEXT_PUBLIC_DEMO_MODE`)
+## Provisional product entries (13)
 
-Rules:
+| ID suffix | Display name                                | Price RWF | Image                | Uncertainty            |
+| --------- | ------------------------------------------- | --------- | -------------------- | ---------------------- |
+| …001      | ROZZITA Chocolate (unverified)              | 12,000    | shared `12k`         | price split + identity |
+| …002      | ROZZITA Raspberry (unverified)              | 12,000    | shared `12k`         | price split + identity |
+| …003      | ROZZITA Original (unverified)               | 12,000    | shared `12k`         | price split + identity |
+| …004      | ROZZITA Green Apple (unverified)            | 12,000    | shared `12k`         | price split + identity |
+| …005      | Pinta Negra Red 2024 (unverified)           | 13,000    | shared `13k`         | price split            |
+| …006      | Pinta Negra White 2024 (unverified)         | 13,000    | shared `13k`         | price split            |
+| …007      | Valdepablo Vino Para Consagrar (unverified) | 17,000    | single `17k`         | name/details           |
+| …008      | LIBOLL Rosé Extra Dry (unverified)          | 20,000    | shared `20k`         | price split            |
+| …009      | LIBOLL Extra Dry (unverified)               | 20,000    | shared `20k`         | price split            |
+| …010      | Grands Domaines Gin Bio (unverified)        | 60,000    | single `60k`         | details                |
+| …011      | Johnnie Walker Red Label (unverified)       | 28,000    | shared `28k-68k-78k` | bottle↔price map       |
+| …012      | Johnnie Walker Black Label (unverified)     | 68,000    | shared `28k-68k-78k` | bottle↔price map       |
+| …013      | Johnnie Walker Double Black (unverified)    | 78,000    | shared `28k-68k-78k` | bottle↔price map       |
 
-1. Never auto-seed demo fixtures into production databases
-2. Names/prices/availability are illustrative
-3. Stable UUIDs + slugs are independent of image filenames
-4. UI marks demo prices and demo stock states conspicuously
+Inferred names from packaging are marked **(unverified)**. Volume, ABV, origin, stock, discounts and reviews are not asserted as verified facts.
 
-## Image pipeline (for future real photos)
+## Logo and favicon
 
-### Preferred source
+- Logo integrated in header and footer via `BrandLogo` (`/branding/main-logo.png`), aspect ratio preserved on charcoal surfaces (logo includes black background).
+- App icon wired through Next.js `src/app/icon.png`, `apple-icon.png`, and metadata `icons` pointing at `/branding/app-icon.png`.
+- Source is PNG 158×155 — suitable as-is; no fake `.ico` rename. Next.js generates appropriate favicon responses.
 
-- High-resolution photo of the actual product
-- Label legible, camera square-on
-- Neutral consistent light, clean surface
+## Catalogue presentation
 
-### Catalogue primary style
+- Product frames remain **4:5** with `object-cover object-center` for shop photography consistency.
+- Shared multi-product photos are flagged in data (`isSharedMultiProductPhoto`) and called out on product detail.
+- Alt text describes visible content — never the price filename.
+- Gallery/zoom behaviour from Phase 01 retained; single-image products stay single-image (no duplicated fake slides).
 
-- Warm-neutral or white background (`#F5F1E8` / `#E8E2D6` family)
-- Consistent 4:5 crop, bottle centred, comparable scale
-- Preserve glass edges; avoid aggressive cut-outs that invent fake packaging
+## Future photo workflow
 
-### Editorial style
+1. Capture/retake individual SKU photos (square-on, label legible, consistent light).
+2. Keep originals outside public if private; export web derivatives to `public/products/` or Storage.
+3. Prefer 4:5 WebP/AVIF derivatives with documented conversion; keep a source copy.
+4. Replace shared multi-product `src` per SKU; clear `isSharedMultiProductPhoto`.
+5. Confirm prices and names with Rosine; remove “unverified” / provisional badges.
+6. Manual review: crop, background, label legibility, no upscaling, no label recolouring.
 
-- Genuine shop/lifestyle photos only in selected story slots
-- Do not mix randomly into catalogue thumbnails
+## Manual review checklist
 
-### Naming / metadata
-
-- Stable product ID in data, not in filename identity
-- Suggested derivative pattern: `{brand}-{product}-{view}-01.webp`
-- Track roles: `catalogue_primary`, `catalogue_secondary`, `editorial`, `thumbnail`, `zoom`
-- Alt text describes visible product content — never price filenames
-
-### Manual review checklist
-
-- [ ] Label legible
-- [ ] No distorted geometry
-- [ ] Background tidy without fake edges
-- [ ] Rights/source noted
-- [ ] Provisional prices confirmed before production
-
-## Replacement steps
-
-1. Copy client photos into `public/products/` (or Storage later)
-2. Update fixture/API image `src`, dimensions and alt text
-3. Remove SVG placeholders once every featured SKU has a real primary image
-4. Set `NEXT_PUBLIC_DEMO_MODE=false` in production when real catalogue is live
+- [ ] Every SKU has its own primary photo (no shared multi-bottle where avoidable)
+- [ ] Label legible at catalogue thumbnail size
+- [ ] Price confirmed (not filename-inferred)
+- [ ] Name/brand confirmed (not only OCR/guess from packaging)
+- [ ] Johnnie Walker L→R price mapping confirmed
+- [ ] ROZZITA / LIBOLL / Pinta Negra price splits confirmed
+- [ ] Logo contrast OK on header/footer
+- [ ] Favicon correct in production build

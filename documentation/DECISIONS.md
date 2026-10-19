@@ -69,4 +69,14 @@ Use clearly marked SVG bottle silhouettes instead of fabricating photoreal produ
 
 ### Consequence
 
-Client photography in `../resources/` will replace placeholders in the assets integration phase.
+Superseded for the live catalogue by ADR-007 once client photographs were integrated. SVG placeholders remain on disk for fallback testing only.
+
+## ADR-007 — Provisional catalogue from client photos (2026-10-19)
+
+### Decision
+
+Copy client assets into `public/branding` and `public/products`, build 13 provisional fixture SKUs, and keep all prices/names flagged for confirmation. Multi-bottle photos may be shared across SKUs with explicit `isSharedMultiProductPhoto` metadata.
+
+### Why
+
+Unblocks a realistic catalogue preview without inventing verified business facts or seeding production.

@@ -92,13 +92,20 @@ export default async function ProductPage({ params }: { params: Params }) {
             </h2>
             <ul className="mt-3 list-disc space-y-1 pl-5">
               <li>
-                Volume, ABV and origin are not asserted in this prototype.
+                Volume, ABV, origin and stock are not published as verified
+                facts.
               </li>
+              {product.images.some(
+                (image) => image.isSharedMultiProductPhoto,
+              ) ? (
+                <li>
+                  Image is a shared multi-product photograph — not a verified
+                  individual product shot.
+                </li>
+              ) : null}
               <li>
-                Images are temporary placeholders, not client photography.
-              </li>
-              <li>
-                Replace this entry with confirmed catalogue data before launch.
+                Price and identity are provisional until THE IP SHAP BUSINESS
+                LTD confirms them.
               </li>
             </ul>
             <Button href="/shop" variant="ghost" className="mt-6">

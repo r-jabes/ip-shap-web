@@ -56,11 +56,11 @@ export default async function ShopPage({
             Shop drinks
           </h1>
           <p className="mt-2 max-w-xl text-sm text-brand-dark-neutral">
-            Illustrative demo products for visual review. Filter patterns are
-            ready for a 300+ SKU catalogue.
+            Provisional catalogue from client photography. Prices inferred from
+            filenames require confirmation before launch.
           </p>
         </div>
-        <DemoBadge>Demo catalogue</DemoBadge>
+        <DemoBadge>Provisional catalogue</DemoBadge>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">

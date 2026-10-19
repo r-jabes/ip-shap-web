@@ -13,13 +13,21 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="relative isolate min-h-[88vh] overflow-hidden bg-brand-charcoal text-brand-warm-white">
+      <section className="relative isolate min-h-[92vh] overflow-hidden bg-brand-charcoal text-brand-warm-white">
+        <Image
+          src="/products/drink-60000.jpeg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center opacity-45"
+        />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_20%,rgba(240,120,54,0.18),transparent_55%),linear-gradient(160deg,#20201E_0%,#343430_55%,#20201E_100%)]"
+          className="absolute inset-0 bg-gradient-to-r from-brand-charcoal via-brand-charcoal/85 to-brand-charcoal/40"
         />
-        <Container className="relative flex min-h-[88vh] flex-col justify-end gap-10 py-16 lg:flex-row lg:items-end lg:justify-between lg:py-24">
-          <div className="hero-enter max-w-xl">
+        <Container className="relative flex min-h-[92vh] flex-col justify-end py-16 lg:py-24">
+          <div className="hero-enter max-w-2xl">
             <p className="text-xs tracking-[0.2em] text-brand-burnt-orange uppercase">
               {SHORT_BRAND} · Rwanda
             </p>
@@ -27,12 +35,12 @@ export default function HomePage() {
               className="mt-4 font-display leading-[1.05] text-balance"
               style={{ fontSize: "var(--type-display)" }}
             >
-              Drinks, curated with quiet confidence.
+              {SHORT_BRAND}
             </h1>
-            <p className="mt-5 max-w-md text-base text-brand-warm-white/80 sm:text-lg">
-              A single-retailer storefront prototype for THE IP SHAP BUSINESS
-              LTD. Shop the demo catalogue, review the visual direction, then
-              replace placeholders with confirmed products.
+            <p className="mt-5 max-w-md text-base text-brand-warm-white/85 sm:text-lg">
+              Drinks, curated with quiet confidence. Provisional catalogue from
+              client photography — prices and product details await confirmation
+              from THE IP SHAP BUSINESS LTD.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button href="/shop" variant="on-dark">
@@ -46,21 +54,9 @@ export default function HomePage() {
                 About the brand
               </Button>
             </div>
-          </div>
-          <div className="hero-enter relative w-full max-w-sm self-stretch lg:self-end">
-            <div className="relative aspect-[4/5] overflow-hidden bg-brand-dark-neutral">
-              <Image
-                src="/products/placeholders/bottle-charcoal.svg"
-                alt="Temporary editorial placeholder bottle composition for the homepage hero"
-                fill
-                priority
-                sizes="(max-width: 1024px) 90vw, 24rem"
-                className="object-contain p-8"
-              />
-            </div>
-            <p className="mt-3 text-xs text-brand-warm-white/55">
-              Temporary hero artwork — client product photography will replace
-              this in the assets phase.
+            <p className="mt-6 text-xs text-brand-warm-white/55">
+              Hero uses a client product photograph. Catalogue prices are
+              provisional.
             </p>
           </div>
         </Container>
@@ -77,13 +73,13 @@ export default function HomePage() {
                 Collections
               </h2>
               <p className="mt-2 max-w-lg text-brand-dark-neutral">
-                Prototype categories for browsing patterns. Names and groupings
-                await Rosine&apos;s confirmation.
+                Provisional groupings for browsing. Confirm taxonomy with Rosine
+                before launch.
               </p>
             </div>
-            <DemoBadge>Demo taxonomy</DemoBadge>
+            <DemoBadge>Provisional</DemoBadge>
           </div>
-          <ul className="mt-8 grid gap-4 md:grid-cols-3">
+          <ul className="mt-8 grid gap-4 md:grid-cols-2">
             {categories.map((category) => (
               <li key={category.slug}>
                 <Link
@@ -109,11 +105,11 @@ export default function HomePage() {
                 className="font-display"
                 style={{ fontSize: "var(--type-h2)" }}
               >
-                Featured for review
+                From the shelf
               </h2>
               <p className="mt-2 max-w-xl text-brand-dark-neutral">
-                Illustrative demo products for layout approval. Prices and names
-                are not verified catalogue facts.
+                Client-supplied photographs with provisional prices. Names
+                marked unverified until confirmed.
               </p>
             </div>
             <Button href="/shop" variant="secondary">
@@ -139,15 +135,15 @@ export default function HomePage() {
             <p className="mt-4 text-brand-warm-white/75">
               Online payment and WhatsApp-assisted ordering are planned.
               Delivery zones, fees and timelines stay unavailable until the
-              business confirms them — this prototype does not invent promises.
+              business confirms them.
             </p>
           </div>
           <ul className="space-y-4 text-sm">
             <li className="border-l-2 border-brand-burnt-orange pl-4">
-              Demo catalogue only — replace with confirmed SKUs
+              Provisional prices from photo filenames — confirm before launch
             </li>
             <li className="border-l-2 border-brand-warm-white/30 pl-4">
-              No fake scarcity, reviews or delivery ETAs
+              Multi-bottle photos flagged until individual SKU shots arrive
             </li>
             <li className="border-l-2 border-brand-warm-white/30 pl-4">
               Contact and WhatsApp numbers are placeholders
@@ -164,9 +160,8 @@ export default function HomePage() {
             </h2>
             <p className="mt-4 max-w-xl text-brand-dark-neutral">
               THE IP SHAP BUSINESS LTD is building a focused drinks retail
-              experience for Rwanda. This site is the visual prototype for
-              direction approval before motion polish, admin inventory and
-              payments.
+              experience for Rwanda. This storefront currently uses provisional
+              catalogue data pending owner confirmation.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">

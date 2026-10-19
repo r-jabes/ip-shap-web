@@ -20,7 +20,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
             width={image.width}
             height={image.height}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="h-full w-full object-contain transition-transform duration-200 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            className="h-full w-full object-cover object-center transition-transform duration-200 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-brand-dark-neutral">

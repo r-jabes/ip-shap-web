@@ -76,7 +76,7 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 ## Phase status
 
 - **Phase 00:** foundations, tokens, docs, CI, money/env helpers
-- **Phase 01 (current):** client-facing storefront prototype (~90% visual direction)
-  - Routes: `/`, `/shop`, `/product/[slug]`, `/cart`, `/about`, `/contact`, `/delivery`, `/faq`, `/policies/*`
-  - Demo fixtures + cart drawer; no payments/backend integration
-- **Next:** client review of visual direction, then assets/catalogue integration from `../resources/`
+- **Phase 01:** client-facing storefront prototype shell
+- **Assets / provisional catalogue (current):** client logo, favicon, product photos, 13 provisional SKUs
+- **Next:** visual polish / motion (Phase 03) and further catalogue confirmation with Rosine
+- Payments/admin still later phases

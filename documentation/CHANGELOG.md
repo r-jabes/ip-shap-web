@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — Client assets + provisional catalogue (2026-10-19)
+
+- Copy client logo, app icon and product photographs into `public/`
+- Wire logo into header/footer; configure favicon / Apple icon
+- Replace placeholder SVG catalogue with 13 provisional SKUs from client photos
+- Document filename→price mapping, multi-bottle ambiguity and confirmation needs
+- Use real product photography on the homepage hero
+
 ## 0.2.0 — Phase 01 storefront prototype (2026-10-19)
 
 - Build client-facing storefront: home, shop, product detail, cart, content pages
