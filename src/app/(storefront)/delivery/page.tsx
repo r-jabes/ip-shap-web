@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/content/PlaceholderPage";
+import { InfoPage } from "@/components/content/InfoPage";
 
 export const metadata: Metadata = { title: "Delivery" };
 
 export default function DeliveryPage() {
   return (
-    <PlaceholderPage
+    <InfoPage
       title="Delivery"
-      intro="Delivery is intended within Rwanda. Zones, fees, cut-off times and estimates are unknown until THE IP SHAP BUSINESS LTD confirms them."
+      intro="We serve customers within Rwanda. Delivery details are agreed with you when you place an order."
       sections={[
         {
-          heading: "Current status",
-          body: "Unavailable / unknown in this prototype. The storefront will show an explicit unknown state rather than inventing fees or timelines.",
+          heading: "Fees and timing",
+          body: "The delivery fee and the expected time depend on where you are. We confirm both with you on WhatsApp before the order is final.",
         },
         {
-          heading: "What we need from Rosine",
-          body: "Coverage areas, fees per zone, any free-delivery thresholds, operating hours, and rules for alcohol delivery if applicable.",
+          heading: "Before you order",
+          body: "Not sure whether we reach your area? Send us a message and we will tell you.",
         },
       ]}
     />

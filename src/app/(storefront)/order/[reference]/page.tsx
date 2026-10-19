@@ -95,7 +95,7 @@ export default async function OrderConfirmationPage({
           </Button>
         ) : (
           <p className="text-sm text-brand-dark-neutral">
-            WhatsApp hand-off is not configured yet. Keep your reference{" "}
+            We will confirm this order with you. Keep your reference{" "}
             <strong>{order.reference}</strong> for follow-up.
           </p>
         )}

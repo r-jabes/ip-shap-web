@@ -1,25 +1,29 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/content/PlaceholderPage";
+import { InfoPage } from "@/components/content/InfoPage";
 
 export const metadata: Metadata = { title: "FAQ" };
 
 export default function FaqPage() {
   return (
-    <PlaceholderPage
+    <InfoPage
       title="FAQ"
-      intro="Sample questions for layout only. Final FAQ content requires owner confirmation."
+      intro="Quick answers about ordering."
       sections={[
         {
-          heading: "Can I order online today?",
-          body: "Not from this prototype. Cart interactions are demo-only until checkout phases land.",
+          heading: "How do I order?",
+          body: "Add bottles to your cart, check out, and send the order to us on WhatsApp. We confirm it with you.",
         },
         {
-          heading: "Are the prices real?",
-          body: "No. Demo prices are illustrative placeholders for typography and layout review.",
+          heading: "When do I pay?",
+          body: "We agree payment with you when we confirm the order. You are not charged on the website.",
         },
         {
           heading: "Do you deliver outside Kigali?",
-          body: "Delivery coverage is to be confirmed. No invented promises are shown in the UI.",
+          body: "Ask us. We confirm coverage, fee and timing for your area when you order.",
+        },
+        {
+          heading: "Who can order?",
+          body: "You must be of legal drinking age to order alcohol.",
         },
       ]}
     />

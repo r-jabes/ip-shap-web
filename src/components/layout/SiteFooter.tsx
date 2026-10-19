@@ -1,45 +1,195 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { Container } from "@/components/ui/Container";
+import { Button } from "@/components/ui/Button";
 import {
-  ADDRESS_PLACEHOLDER,
-  EMAIL_PLACEHOLDER,
-  LEGAL_NAME,
-  WHATSAPP_PLACEHOLDER,
-} from "@/lib/brand";
+  MailIcon,
+  PhoneIcon,
+  PinIcon,
+  WhatsAppIcon,
+} from "@/components/ui/icons";
+import type { NavData } from "@/lib/navigation";
+import { SITE, chatHref, formatPhoneDisplay } from "@/lib/site-config";
 
-const footerLinks = [
-  { href: "/shop", label: "Shop" },
-  { href: "/about", label: "About" },
+const helpLinks = [
   { href: "/delivery", label: "Delivery" },
   { href: "/faq", label: "FAQ" },
+  { href: "/about", label: "About us" },
   { href: "/contact", label: "Contact" },
+];
+
+const legalLinks = [
   { href: "/policies/privacy", label: "Privacy" },
   { href: "/policies/terms", label: "Terms" },
 ];
 
-export function SiteFooter() {
+const headingClass =
+  "text-xs font-semibold tracking-[0.18em] text-brand-burnt-orange uppercase";
+const linkClass =
+  "inline-flex min-h-9 items-center text-[0.95rem] text-brand-warm-white/80 underline-offset-4 transition-colors duration-[var(--motion-fast)] hover:text-brand-warm-white hover:underline";
+
+export function SiteFooter({ nav }: { nav: NavData }) {
+  const categories = nav.groups.flatMap((group) => group.categories);
+  const hasContact =
+    SITE.whatsappDigits || SITE.phoneDigits || SITE.email || SITE.address;
+
   return (
-    <footer className="mt-auto border-t border-brand-dark-neutral/20 bg-brand-charcoal text-brand-warm-white">
-      <Container className="grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr]">
-        <div>
-          <BrandLogo height={40} />
-          <p className="mt-3 text-sm text-brand-warm-white/75">{LEGAL_NAME}</p>
-          <p className="mt-4 max-w-sm text-sm text-brand-warm-white/65">
-            Single-retailer drinks storefront prototype. Contact details below
-            are placeholders awaiting owner confirmation.
-          </p>
-        </div>
-        <div>
-          <h2 className="text-xs tracking-[0.14em] text-brand-burnt-orange uppercase">
-            Explore
+    <footer className="on-ink relative mt-auto overflow-hidden bg-brand-charcoal text-brand-warm-white">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-8 border-b border-brand-warm-white/12 py-14 md:flex-row md:items-end md:justify-between">
+          <h2
+            className="font-display max-w-2xl text-balance"
+            style={{ fontSize: "var(--type-display)" }}
+          >
+            Ready to order?{" "}
+            <span className="text-brand-burnt-orange">Say hello.</span>
           </h2>
-          <ul className="mt-4 space-y-2 text-sm">
-            {footerLinks.map((link) => (
+          <div className="flex flex-wrap gap-3">
+            <Button
+              href={chatHref("Hello, I would like to place an order.")}
+              variant="primary"
+              iconLeft={<WhatsAppIcon size={18} />}
+            >
+              Order on WhatsApp
+            </Button>
+            <Button href="/shop" variant="on-dark">
+              Browse the shop
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+          <div>
+            <BrandLogo tone="on-ink" height={48} />
+            <p className="mt-5 max-w-xs text-[0.95rem] text-brand-warm-white/70">
+              Wines, spirits and more from a retailer based in {SITE.country}.
+              Browse online and send your order on WhatsApp.
+            </p>
+          </div>
+
+          <nav aria-label="Shop categories">
+            <h2 className={headingClass}>Shop</h2>
+            <ul className="mt-3">
+              <li>
+                <Link href="/shop" className={linkClass}>
+                  All drinks
+                </Link>
+              </li>
+              {categories.map((category) => (
+                <li key={category.slug}>
+                  <Link
+                    href={`/shop?category=${category.slug}`}
+                    className={linkClass}
+                  >
+                    {category.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <nav aria-label="Help">
+            <h2 className={headingClass}>Help</h2>
+            <ul className="mt-3">
+              {helpLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className={linkClass}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div>
+            <h2 className={headingClass}>Get in touch</h2>
+            {hasContact ? (
+              <ul className="mt-3 space-y-2 text-[0.95rem] text-brand-warm-white/80">
+                {SITE.whatsappDigits ? (
+                  <li className="flex items-center gap-2.5">
+                    <WhatsAppIcon size={17} />
+                    <a
+                      className="underline-offset-4 hover:underline"
+                      href={chatHref()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {formatPhoneDisplay(SITE.whatsappDigits)}
+                    </a>
+                  </li>
+                ) : null}
+                {SITE.phoneDigits ? (
+                  <li className="flex items-center gap-2.5">
+                    <PhoneIcon size={17} />
+                    <a
+                      className="underline-offset-4 hover:underline"
+                      href={`tel:+${SITE.phoneDigits}`}
+                    >
+                      {formatPhoneDisplay(SITE.phoneDigits)}
+                    </a>
+                  </li>
+                ) : null}
+                {SITE.email ? (
+                  <li className="flex items-center gap-2.5">
+                    <MailIcon size={17} />
+                    <a
+                      className="underline-offset-4 hover:underline"
+                      href={`mailto:${SITE.email}`}
+                    >
+                      {SITE.email}
+                    </a>
+                  </li>
+                ) : null}
+                {SITE.address ? (
+                  <li className="flex items-start gap-2.5">
+                    <PinIcon size={17} className="mt-1 shrink-0" />
+                    <span>{SITE.address}</span>
+                  </li>
+                ) : null}
+                {SITE.hours ? (
+                  <li className="pl-7 text-brand-warm-white/60">
+                    {SITE.hours}
+                  </li>
+                ) : null}
+              </ul>
+            ) : (
+              <p className="mt-3 max-w-xs text-[0.95rem] text-brand-warm-white/70">
+                Questions about a bottle or an order? Use the contact page and
+                we will get back to you.
+              </p>
+            )}
+            {!hasContact ? (
+              <Link
+                href="/contact"
+                className={`${linkClass} mt-2 font-semibold`}
+              >
+                Contact us
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {/* Decorative wordmark; hidden from assistive tech. */}
+      <p
+        aria-hidden="true"
+        className="font-display-hero pointer-events-none -mb-[0.18em] px-4 text-center leading-none whitespace-nowrap text-brand-warm-white/[0.07] select-none"
+        style={{ fontSize: "clamp(5rem, 24vw, 22rem)" }}
+      >
+        IP SHAP
+      </p>
+
+      <div className="relative border-t border-brand-warm-white/12 bg-brand-charcoal">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-brand-warm-white/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <p>
+            © {new Date().getFullYear()} {SITE.legalName}. All rights reserved.
+          </p>
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-1">
+            <li>Prices in Rwandan francs (RWF)</li>
+            {legalLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="underline-offset-4 hover:underline"
+                  className="inline-flex min-h-9 items-center underline-offset-4 hover:text-brand-warm-white hover:underline"
                 >
                   {link.label}
                 </Link>
@@ -47,24 +197,6 @@ export function SiteFooter() {
             ))}
           </ul>
         </div>
-        <div>
-          <h2 className="text-xs tracking-[0.14em] text-brand-burnt-orange uppercase">
-            Contact (to confirm)
-          </h2>
-          <ul className="mt-4 space-y-2 text-sm text-brand-warm-white/80">
-            <li>WhatsApp: {WHATSAPP_PLACEHOLDER}</li>
-            <li>Email: {EMAIL_PLACEHOLDER}</li>
-            <li>{ADDRESS_PLACEHOLDER}</li>
-          </ul>
-        </div>
-      </Container>
-      <div className="border-t border-brand-warm-white/10">
-        <Container className="flex flex-col gap-2 py-4 text-xs text-brand-warm-white/55 sm:flex-row sm:justify-between">
-          <p>
-            © {new Date().getFullYear()} {LEGAL_NAME}
-          </p>
-          <p>Prototype — not a live ordering system</p>
-        </Container>
       </div>
     </footer>
   );

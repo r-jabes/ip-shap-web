@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Fraunces } from "next/font/google";
+import { Archivo, DM_Sans } from "next/font/google";
 import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
 import { getPublicEnv } from "@/lib/env";
 import { defaultRobots } from "@/lib/seo";
@@ -11,10 +11,12 @@ const bodyFont = DM_Sans({
   display: "swap",
 });
 
-const displayFont = Fraunces({
+/** Heavy geometric display face with a width axis; echoes the logo wordmark. */
+const displayFont = Archivo({
   variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
+  axes: ["wdth"],
 });
 
 const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL;
@@ -26,11 +28,11 @@ export const metadata: Metadata = {
     template: `%s | ${SHORT_BRAND}`,
   },
   description:
-    "Premium drinks storefront prototype for THE IP SHAP BUSINESS LTD — Rwanda. Demo catalogue only; details await owner confirmation.",
+    "Wines, spirits and more from THE IP SHAP BUSINESS LTD in Rwanda. Browse the range and send your order on WhatsApp.",
   openGraph: {
     title: `${SHORT_BRAND} | ${LEGAL_NAME}`,
     description:
-      "Client-facing storefront prototype. Provisional catalogue prices require confirmation.",
+      "Wines, spirits and more from THE IP SHAP BUSINESS LTD in Rwanda. Browse the range and send your order on WhatsApp.",
     url: appUrl,
     siteName: SHORT_BRAND,
     locale: "en_RW",

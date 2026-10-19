@@ -11,6 +11,8 @@ export type ProductAvailability =
 export type Category = {
   slug: string;
   name: string;
+  /** Navigation group shown as a column in the mega menu (e.g. "Spirits"). */
+  group?: string;
   description: string;
 };
 
@@ -50,10 +52,12 @@ export type CartLine = {
   quantity: number;
 };
 
+/** Formats integer RWF as "RWF 68,000" (ISO code, unambiguous for international visitors). */
 export function formatDemoPrice(price: MoneyRwf): string {
   return new Intl.NumberFormat("en-RW", {
     style: "currency",
     currency: "RWF",
+    currencyDisplay: "code",
     maximumFractionDigits: 0,
   }).format(price.amount);
 }

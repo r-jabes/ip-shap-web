@@ -24,21 +24,33 @@ Tokens live in `src/app/globals.css` and map to Tailwind `brand-*` utilities.
 
 | Role            | Family   | Implementation                    |
 | --------------- | -------- | --------------------------------- |
-| Display / brand | Fraunces | `--font-display`, `.font-display` |
-| Body / UI       | DM Sans  | `--font-body` / `font-sans`       |
+| Display / brand | Archivo (variable, `wdth` axis) | `--font-display`, `.font-display` (800, stretch 108%), `.font-display-hero` (900, stretch 118%, uppercase) |
+| Body / UI       | DM Sans                         | `--font-body` / `font-sans`                                                                                 |
 
-Fluid scale (CSS variables):
+Fluid scale (CSS variables in `globals.css`): `--type-hero`, `--type-display`, `--type-h2`, `--type-h3`, `--type-body`. Use `.tabular` for prices and counts.
 
-- `--type-display`: `clamp(2.5rem, 5vw + 1rem, 4.5rem)` — hero
-- `--type-h2`: `clamp(1.75rem, 2vw + 1rem, 2.5rem)` — section titles
-- `--type-body`: `clamp(1rem, 0.2vw + 0.95rem, 1.125rem)` — body
+Tailwind v4 notes: preflight no longer sets pointer cursors, so `@layer base` restores them. Custom classes such as `.font-display` live in `@layer components` so utilities can still override them. `.on-ink` only flips `--focus-ring` (charcoal on light, orange on dark); it does not set colours.
+
+## Component kit (`src/components/ui/`)
+
+`Button` (primary/secondary/ghost/on-dark/link, sm/md/lg, loading, icons), `IconButton` (label required), `Badge`, `Chip`, `Field/Input/Select/Checkbox`, `QuantityStepper`, `Skeleton`, `PriceTag`, `ArchFrame`, `SectionHeading`, `Marquee`, `Overlay` (portal, focus trap, Escape, ref-counted scroll lock, focus restore; drawer/sheet/dialog sides), `icons`.
+
+`/dev/design` renders every piece on both surfaces for review. It is `noindex` and returns 404 in production builds.
+
+Not built yet: Tooltip, Switch, Radio, Toast.
+
+## Storefront shell
+
+Announcement bar, ivory sticky header with mega menu (built from catalogue groups and counts), search overlay with instant suggestions (`/` or Ctrl/Cmd+K), mobile menu sheet and bottom bar, charcoal footer, cart drawer. Contact details come from `src/lib/site-config.ts` (`NEXT_PUBLIC_*`) and are rendered only when configured. `PreviewIndicator` is the only place demo data is admitted, and only in development.
+
+Cart: one derived list (`items`) feeds the badge, drawer, cart page and checkout. Storage key is versioned (`ip-shap-cart-v2`), parsed with zod, quantities clamped to 1–99, unresolvable lines pruned with a notice, and tabs stay in sync.
 
 ## Layout principles
 
 - Full-bleed charcoal hero with warm-white type and one primary CTA
 - Editorial collection rows (border-led, not card grids in marketing sections)
 - Catalogue uses a consistent **4:5** product frame on warm-neutral `#E8E2D6` via `ProductImageFrame`
-- Orange used sparingly for CTAs, focus rings and demo badges
+- Orange is a fill on ivory (CTAs, badges) and text only on charcoal; never orange text on ivory
 - Product photography system: roles, processing status and zoom-on-demand (see `CONTENT_AND_IMAGES.md`)
 
 ## Motion stack (Phase 03)

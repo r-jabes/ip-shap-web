@@ -1,21 +1,35 @@
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
+import { ChromeOverlays } from "@/components/layout/ChromeOverlays";
+import { ChromeProvider } from "@/components/layout/ChromeProvider";
+import { MobileBottomBar } from "@/components/layout/MobileBottomBar";
+import { PreviewIndicator } from "@/components/layout/PreviewIndicator";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SkipLink } from "@/components/SkipLink";
+import { buildNavData } from "@/lib/navigation";
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
+  const nav = buildNavData();
+
   return (
     <CartProvider>
-      <div className="flex min-h-screen flex-col bg-brand-warm-white text-brand-charcoal">
-        <SkipLink />
-        <SiteHeader />
-        <main id="main-content" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
+      <ChromeProvider>
+        <div className="flex min-h-dvh flex-col bg-brand-warm-white pb-[var(--bottom-bar-h)] text-brand-charcoal lg:pb-0">
+          <SkipLink />
+          <AnnouncementBar />
+          <SiteHeader nav={nav} />
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter nav={nav} />
+        </div>
         <CartDrawer />
-      </div>
+        <ChromeOverlays nav={nav} />
+        <MobileBottomBar />
+        <PreviewIndicator />
+      </ChromeProvider>
     </CartProvider>
   );
 }

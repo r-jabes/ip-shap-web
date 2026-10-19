@@ -4,9 +4,9 @@ import { AddToCartForm } from "@/components/product/AddToCartForm";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { DemoBadge } from "@/components/ui/DemoBadge";
 import { formatDemoPrice } from "@/domain/catalogue";
-import { getProductBySlug, listProducts } from "@/lib/catalogue";
+import { getCategories, getProductBySlug, listProducts } from "@/lib/catalogue";
+import { chatHref } from "@/lib/site-config";
 
 type Params = Promise<{ slug: string }>;
 
@@ -31,13 +31,13 @@ export async function generateMetadata({
 function availabilityLabel(value: string) {
   switch (value) {
     case "in_stock":
-      return "In stock (demo)";
+      return "In stock";
     case "low_stock":
-      return "Low stock (demo)";
+      return "Low stock";
     case "out_of_stock":
-      return "Out of stock (demo)";
+      return "Out of stock";
     default:
-      return "Availability unknown — to confirm";
+      return "Ask us about availability";
   }
 }
 
@@ -47,67 +47,68 @@ export default async function ProductPage({ params }: { params: Params }) {
   if (!product) notFound();
 
   const unavailable = product.availability === "out_of_stock";
+  const category = getCategories().find((c) => c.slug === product.categorySlug);
 
   return (
     <Container className="py-10 lg:py-14">
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
         <ProductGallery images={product.images} productName={product.name} />
         <div>
-          <DemoBadge>{product.demoLabel}</DemoBadge>
-          <p className="mt-4 text-xs tracking-[0.14em] text-brand-dark-neutral uppercase">
+          <p className="text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
             {product.brandName}
-            {product.categorySlug ? ` · ${product.categorySlug}` : ""}
+            {category ? ` · ${category.name}` : ""}
           </p>
           <h1
-            className="mt-2 font-display leading-tight"
+            className="font-display mt-2 leading-tight"
             style={{ fontSize: "var(--type-h2)" }}
           >
             {product.name}
           </h1>
-          <p className="mt-4 text-2xl font-medium">
+          <p className="font-display mt-4 text-3xl tabular">
             {formatDemoPrice(product.price)}
-            <span className="ml-2 text-sm font-normal text-brand-dark-neutral">
-              demo price — not confirmed
-            </span>
           </p>
-          <p className="mt-2 text-sm text-brand-dark-neutral">
+          <p className="mt-2 text-sm text-ink-muted">
             {availabilityLabel(product.availability)}
           </p>
-          <p className="mt-6 max-w-prose text-brand-dark-neutral">
+          <p className="mt-6 max-w-prose text-ink-muted">
             {product.description}
           </p>
 
           <div className="mt-8">
-            <AddToCartForm productId={product.id} disabled={unavailable} />
+            <AddToCartForm
+              productId={product.id}
+              productName={product.name}
+              disabled={unavailable}
+            />
             {unavailable ? (
-              <p className="mt-3 text-sm text-brand-dark-neutral">
-                This demo SKU is marked out of stock for UI testing.
+              <p className="mt-3 text-sm text-ink-muted">
+                This one is out of stock right now.{" "}
+                <a
+                  href={chatHref()}
+                  className="font-semibold underline underline-offset-4"
+                >
+                  Ask us when it is back.
+                </a>
               </p>
             ) : null}
           </div>
 
-          <div className="mt-10 border-t border-brand-dark-neutral/15 pt-6 text-sm text-brand-dark-neutral">
-            <h2 className="font-display text-lg text-brand-charcoal">
-              Details
-            </h2>
-            <ul className="mt-3 list-disc space-y-1 pl-5">
-              <li>
-                Volume, ABV, origin and stock are not published as verified
-                facts.
-              </li>
-              {product.images.some(
-                (image) => image.isSharedMultiProductPhoto,
-              ) ? (
-                <li>
-                  Image is a shared multi-product photograph — not a verified
-                  individual product shot.
-                </li>
+          <div className="mt-10 border-t border-line pt-6 text-sm">
+            <h2 className="font-display text-lg">Details</h2>
+            <dl className="mt-3 grid grid-cols-[7rem_1fr] gap-y-2 text-ink-muted">
+              <dt className="font-semibold text-brand-charcoal">Brand</dt>
+              <dd>{product.brandName}</dd>
+              {category ? (
+                <>
+                  <dt className="font-semibold text-brand-charcoal">Range</dt>
+                  <dd>{category.name}</dd>
+                </>
               ) : null}
-              <li>
-                Price and identity are provisional until THE IP SHAP BUSINESS
-                LTD confirms them.
-              </li>
-            </ul>
+              <dt className="font-semibold text-brand-charcoal">
+                Availability
+              </dt>
+              <dd>{availabilityLabel(product.availability)}</dd>
+            </dl>
             <Button href="/shop" variant="ghost" className="mt-6">
               Back to shop
             </Button>

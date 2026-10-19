@@ -2,221 +2,197 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useId, useRef } from "react";
-import { formatDemoPrice } from "@/domain/catalogue";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
-import { getProductById } from "@/lib/catalogue";
+import { IconButton } from "@/components/ui/IconButton";
+import { Overlay } from "@/components/ui/Overlay";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
+import { BagIcon, CloseIcon, TrashIcon } from "@/components/ui/icons";
+import { formatDemoPrice } from "@/domain/catalogue";
 import { primaryCatalogueImage } from "@/lib/product-image";
 
 export function CartDrawer() {
   const {
-    lines,
+    items,
     isOpen,
     closeCart,
     setQuantity,
     removeItem,
     itemCount,
+    subtotal,
     feedback,
+    notice,
+    dismissNotice,
+    hydrated,
   } = useCart();
-  const titleId = useId();
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  const panelRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const previous = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeCart();
-        return;
-      }
-      if (event.key !== "Tab" || !panelRef.current) return;
-      const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusable.length === 0) return;
-      const first = focusable[0]!;
-      const last = focusable[focusable.length - 1]!;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-      previous?.focus();
-    };
-  }, [isOpen, closeCart]);
-
-  if (!isOpen) return null;
-
-  const populated = lines
-    .map((line) => {
-      const product = getProductById(line.productId);
-      if (!product) return null;
-      return { line, product };
-    })
-    .filter(Boolean) as Array<{
-    line: (typeof lines)[number];
-    product: NonNullable<ReturnType<typeof getProductById>>;
-  }>;
-
-  const subtotal = populated.reduce(
-    (sum, entry) => sum + entry.product.price.amount * entry.line.quantity,
-    0,
-  );
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <button
-        type="button"
-        className="drawer-backdrop absolute inset-0 bg-brand-charcoal/50"
-        aria-label="Close cart"
-        onClick={closeCart}
-      />
-      <aside
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="drawer-panel relative flex h-full w-full max-w-md flex-col bg-brand-warm-white text-brand-charcoal shadow-xl"
-      >
-        <div className="flex items-center justify-between border-b border-brand-dark-neutral/15 px-5 py-4">
-          <h2 id={titleId} className="font-display text-2xl">
-            Cart ({itemCount})
-          </h2>
+    <Overlay
+      open={isOpen}
+      onClose={closeCart}
+      side="right"
+      label="Shopping cart"
+      panelClassName="flex h-dvh w-screen max-w-[28rem] flex-col bg-brand-warm-white text-brand-charcoal shadow-[var(--shadow-overlay)] sm:rounded-l-[var(--radius-panel)]"
+    >
+      <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+        <h2 className="font-display flex items-baseline gap-3 text-2xl">
+          Your cart
+          {itemCount > 0 ? (
+            <span className="text-base font-semibold text-ink-muted tabular">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
+            </span>
+          ) : null}
+        </h2>
+        <IconButton label="Close cart" size="sm" onClick={closeCart}>
+          <CloseIcon size={18} />
+        </IconButton>
+      </div>
+
+      {notice ? (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 bg-paper-2 px-5 py-3 text-sm sm:px-6"
+        >
+          <p>{notice}</p>
           <button
-            ref={closeRef}
             type="button"
-            onClick={closeCart}
-            className="text-sm underline-offset-4 transition-opacity duration-[var(--motion-fast)] hover:underline"
+            onClick={dismissNotice}
+            className="shrink-0 font-semibold underline underline-offset-4"
           >
-            Close
+            Dismiss
           </button>
         </div>
-        {feedback ? (
-          <p
-            className="border-b border-brand-dark-neutral/10 bg-brand-warm-white px-5 py-2 text-sm text-brand-dark-neutral"
-            role="status"
-          >
-            {feedback}
+      ) : null}
+
+      {feedback ? (
+        <p
+          role="status"
+          className="border-b border-line px-5 py-2.5 text-sm text-ink-muted sm:px-6"
+        >
+          {feedback}
+        </p>
+      ) : null}
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+        {!hydrated ? (
+          <p className="py-10 text-center text-sm text-ink-muted">
+            Loading your cart…
           </p>
-        ) : null}
-
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          {populated.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="font-display text-xl">Your cart is empty</p>
-              <p className="mt-2 text-sm text-brand-dark-neutral">
-                Add drinks from the shop to continue to checkout.
-              </p>
-              <Button href="/shop" className="mt-6" onClick={closeCart}>
-                Shop drinks
-              </Button>
-            </div>
-          ) : (
-            <ul className="space-y-5">
-              {populated.map(({ line, product }) => {
-                const image = primaryCatalogueImage(product.images);
-                return (
-                  <li key={product.id} className="flex gap-3">
-                    <div className="relative h-24 w-20 shrink-0 bg-[#E8E2D6]">
-                      {image ? (
-                        <Image
-                          src={image.src}
-                          alt=""
-                          fill
-                          className="object-contain"
-                          sizes="80px"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        href={`/product/${product.slug}`}
-                        onClick={closeCart}
-                        className="font-medium underline-offset-2 hover:underline"
-                      >
-                        {product.name}
-                      </Link>
-                      <p className="text-sm text-brand-dark-neutral">
-                        {formatDemoPrice(product.price)} · demo
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <label
-                          className="sr-only"
-                          htmlFor={`qty-${product.id}`}
-                        >
-                          Quantity for {product.name}
-                        </label>
-                        <input
-                          id={`qty-${product.id}`}
-                          type="number"
-                          min={1}
-                          value={line.quantity}
-                          onChange={(event) =>
-                            setQuantity(
-                              product.id,
-                              Number.parseInt(event.target.value, 10) || 1,
-                            )
-                          }
-                          className="w-16 border border-brand-dark-neutral/30 bg-transparent px-2 py-1 text-sm"
-                        />
-                        <button
-                          type="button"
-                          className="text-xs underline"
-                          onClick={() => removeItem(product.id)}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        {populated.length > 0 ? (
-          <div className="border-t border-brand-dark-neutral/15 px-5 py-4">
-            <div className="flex justify-between text-sm">
-              <span>Subtotal (demo)</span>
-              <span className="font-medium">
-                {formatDemoPrice({ amount: subtotal, currency: "RWF" })}
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-brand-dark-neutral">
-              Checkout recalculates prices server-side and creates the order
-              before any WhatsApp hand-off.
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center py-14 text-center">
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-paper-2">
+              <BagIcon size={34} />
+            </span>
+            <p className="font-display mt-6 text-2xl">Your cart is empty</p>
+            <p className="mt-2 max-w-xs text-sm text-ink-muted">
+              Add a few bottles and they will wait for you here.
             </p>
-            <Button
-              href="/checkout"
-              className="mt-4 w-full"
-              onClick={closeCart}
-            >
-              Checkout
-            </Button>
-            <Button
-              href="/cart"
-              variant="ghost"
-              className="mt-2 w-full"
-              onClick={closeCart}
-            >
-              View cart page
+            <Button href="/shop" className="mt-7" onClick={closeCart}>
+              Start shopping
             </Button>
           </div>
-        ) : null}
-      </aside>
-    </div>
+        ) : (
+          <ul className="divide-y divide-line">
+            {items.map(({ product, quantity }) => {
+              const image = primaryCatalogueImage(product.images);
+              const lineTotal = product.price.amount * quantity;
+              return (
+                <li key={product.id} className="flex gap-4 py-5 first:pt-0">
+                  <Link
+                    href={`/product/${product.slug}`}
+                    onClick={closeCart}
+                    className="relative h-28 w-[5.5rem] shrink-0 overflow-hidden rounded-[var(--radius-frame)] bg-paper-2"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  >
+                    {image ? (
+                      <Image
+                        src={image.src}
+                        alt=""
+                        fill
+                        sizes="88px"
+                        className="object-cover"
+                      />
+                    ) : null}
+                  </Link>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-ink-muted uppercase">
+                          {product.brandName}
+                        </p>
+                        <Link
+                          href={`/product/${product.slug}`}
+                          onClick={closeCart}
+                          className="font-display mt-0.5 block text-lg leading-tight underline-offset-4 hover:underline"
+                        >
+                          {product.name}
+                        </Link>
+                      </div>
+                      <IconButton
+                        label={`Remove ${product.name}`}
+                        size="sm"
+                        className="-mt-1 -mr-2 shrink-0"
+                        onClick={() => removeItem(product.id)}
+                      >
+                        <TrashIcon size={16} />
+                      </IconButton>
+                    </div>
+                    <p className="mt-1 text-sm text-ink-muted tabular">
+                      {formatDemoPrice(product.price)}
+                    </p>
+                    <div className="mt-auto flex items-center justify-between gap-3 pt-3">
+                      <QuantityStepper
+                        size="sm"
+                        value={quantity}
+                        label={`Quantity of ${product.name}`}
+                        onChange={(next) => setQuantity(product.id, next)}
+                      />
+                      <p className="font-semibold tabular">
+                        {formatDemoPrice({
+                          amount: lineTotal,
+                          currency: "RWF",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {items.length > 0 ? (
+        <div className="border-t border-line bg-brand-warm-white px-5 py-5 sm:px-6">
+          <div className="flex items-baseline justify-between">
+            <span className="font-semibold">Subtotal</span>
+            <span className="font-display text-2xl tabular">
+              {formatDemoPrice({ amount: subtotal, currency: "RWF" })}
+            </span>
+          </div>
+          <p className="mt-1.5 text-sm text-ink-muted">
+            Delivery and availability are confirmed with you before the order is
+            final.
+          </p>
+          <Button
+            href="/checkout"
+            size="lg"
+            className="mt-4 w-full"
+            onClick={closeCart}
+          >
+            Checkout
+          </Button>
+          <Button
+            href="/cart"
+            variant="link"
+            className="mt-2 w-full"
+            onClick={closeCart}
+          >
+            View full cart
+          </Button>
+        </div>
+      ) : null}
+    </Overlay>
   );
 }

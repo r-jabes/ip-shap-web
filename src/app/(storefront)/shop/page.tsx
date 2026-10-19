@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { ProductGrid } from "@/components/catalogue/ProductGrid";
 import { ShopFilters } from "@/components/catalogue/ShopFilters";
 import { Container } from "@/components/ui/Container";
-import { DemoBadge } from "@/components/ui/DemoBadge";
 import type { AvailabilityFilter } from "@/domain/catalogue";
 import Link from "next/link";
 import {
@@ -15,7 +14,8 @@ import {
 
 export const metadata: Metadata = {
   title: "Shop",
-  description: "Demo drinks catalogue for THE IP SHAP BUSINESS LTD prototype.",
+  description:
+    "Browse whisky, vodka, gin and wine from THE IP SHAP BUSINESS LTD in Rwanda.",
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -83,11 +83,10 @@ export default async function ShopPage({
             Shop drinks
           </h1>
           <p className="mt-2 max-w-xl text-sm text-brand-dark-neutral">
-            Provisional catalogue from client photography. Prices inferred from
-            filenames require confirmation before launch.
+            Spirits and wine, ready to order. Pick what you like and send your
+            order on WhatsApp.
           </p>
         </div>
-        <DemoBadge>Provisional catalogue</DemoBadge>
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">
@@ -100,7 +99,7 @@ export default async function ShopPage({
             <span className="font-medium text-brand-charcoal">
               {products.length}
             </span>{" "}
-            of {total} demo product{total === 1 ? "" : "s"}
+            of {total} product{total === 1 ? "" : "s"}
             {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}
           </p>
           <ProductGrid products={products} />

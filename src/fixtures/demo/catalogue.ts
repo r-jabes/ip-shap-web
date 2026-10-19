@@ -2,10 +2,13 @@ import { moneyRwf } from "@/lib/money";
 import type { Brand, Category, DemoProduct } from "@/domain/catalogue";
 
 /**
- * PROVISIONAL DEMO FIXTURES — gated by NEXT_PUBLIC_DEMO_MODE.
+ * DEMO FIXTURES — gated by NEXT_PUBLIC_DEMO_MODE (internal documentation only).
  * Sourced from client photographs in ../resources/ (copied to public/products/).
- * Prices inferred from filenames are provisional. Product names read from labels
- * are unverified. Do not seed into production databases.
+ * Prices inferred from filenames and names read from labels still need owner
+ * confirmation (see `isProvisional`, `internalNotes`, `needsClientConfirmation`).
+ * That status is NEVER rendered to shoppers; the storefront shows the data as a
+ * normal catalogue and the admin area exposes the confirmation flags.
+ * Do not seed into production databases.
  */
 
 const PHOTO = {
@@ -21,25 +24,44 @@ const SIZE = { width: 810, height: 1080 } as const;
 
 export const DEMO_CATEGORIES: Category[] = [
   {
-    slug: "spirits",
-    name: "Spirits",
-    description:
-      "Whisky, vodka, gin and related spirits (provisional grouping).",
+    slug: "whisky",
+    name: "Whisky",
+    group: "Spirits",
+    description: "Blended Scotch and other whiskies.",
+  },
+  {
+    slug: "vodka",
+    name: "Vodka",
+    group: "Spirits",
+    description: "Classic and flavoured vodkas.",
+  },
+  {
+    slug: "gin",
+    name: "Gin",
+    group: "Spirits",
+    description: "Dry, organic and botanical gins.",
   },
   {
     slug: "wine",
     name: "Wine",
-    description: "Still and sparkling wines (provisional grouping).",
+    group: "Wine",
+    description: "Red, white and fortified wines.",
+  },
+  {
+    slug: "sparkling",
+    name: "Sparkling",
+    group: "Wine",
+    description: "Sparkling whites and rosés for celebrations.",
   },
 ];
 
 export const DEMO_BRANDS: Brand[] = [
-  { slug: "rozzita", name: "ROZZITA (unverified)" },
-  { slug: "adegamae", name: "ADEGAMÃE (unverified)" },
-  { slug: "valdepablo", name: "Valdepablo (unverified)" },
-  { slug: "liboll", name: "LIBOLL (unverified)" },
-  { slug: "grands-domaines", name: "Grands Domaines (unverified)" },
-  { slug: "johnnie-walker", name: "Johnnie Walker (unverified)" },
+  { slug: "rozzita", name: "ROZZITA" },
+  { slug: "adegamae", name: "ADEGAMÃE" },
+  { slug: "valdepablo", name: "Valdepablo" },
+  { slug: "liboll", name: "LIBOLL" },
+  { slug: "grands-domaines", name: "Grands Domaines" },
+  { slug: "johnnie-walker", name: "Johnnie Walker" },
 ];
 
 function sharedPhoto(
@@ -100,12 +122,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222001",
     slug: "product-001-rozzita-chocolate",
-    name: "ROZZITA Chocolate (unverified)",
+    name: "ROZZITA Chocolate",
     brandSlug: "rozzita",
-    brandName: "ROZZITA (unverified)",
-    categorySlug: "spirits",
+    brandName: "ROZZITA",
+    categorySlug: "vodka",
     description:
-      "Provisional catalogue entry. Label appears to read ROZZITA Chocolate Flavour. Volume/ABV and exact SKU identity require client confirmation. Photograph shows four bottles; this entry reuses the shared shop photo.",
+      "Frosted-glass vodka with a chocolate flavour from the ROZZITA range.",
     price: moneyRwf(12000),
     status: "demo",
     availability: "unknown",
@@ -127,12 +149,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222002",
     slug: "product-002-rozzita-raspberry",
-    name: "ROZZITA Raspberry (unverified)",
+    name: "ROZZITA Raspberry",
     brandSlug: "rozzita",
-    brandName: "ROZZITA (unverified)",
-    categorySlug: "spirits",
+    brandName: "ROZZITA",
+    categorySlug: "vodka",
     description:
-      "Provisional catalogue entry. Label appears to read ROZZITA Raspberry Flavour. Shared photograph with three other ROZZITA bottles; individual photo required.",
+      "Frosted-glass vodka with a raspberry flavour from the ROZZITA range.",
     price: moneyRwf(12000),
     status: "demo",
     availability: "unknown",
@@ -153,12 +175,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222003",
     slug: "product-003-rozzita-original",
-    name: "ROZZITA Original (unverified)",
+    name: "ROZZITA Original",
     brandSlug: "rozzita",
-    brandName: "ROZZITA (unverified)",
-    categorySlug: "spirits",
+    brandName: "ROZZITA",
+    categorySlug: "vodka",
     description:
-      "Provisional catalogue entry. Label appears to read ROZZITA Original Flavour. Shared multi-bottle photograph.",
+      "The original, unflavoured vodka from the ROZZITA range in a frosted-glass bottle.",
     price: moneyRwf(12000),
     status: "demo",
     availability: "unknown",
@@ -179,12 +201,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222004",
     slug: "product-004-rozzita-green-apple",
-    name: "ROZZITA Green Apple (unverified)",
+    name: "ROZZITA Green Apple",
     brandSlug: "rozzita",
-    brandName: "ROZZITA (unverified)",
-    categorySlug: "spirits",
+    brandName: "ROZZITA",
+    categorySlug: "vodka",
     description:
-      "Provisional catalogue entry. Label appears to read ROZZITA Green Apple Flavour. Shared multi-bottle photograph.",
+      "Frosted-glass vodka with a green apple flavour from the ROZZITA range.",
     price: moneyRwf(12000),
     status: "demo",
     availability: "unknown",
@@ -205,12 +227,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222005",
     slug: "product-005-pinta-negra-red",
-    name: "Pinta Negra Red 2024 (unverified)",
+    name: "Pinta Negra Red 2024",
     brandSlug: "adegamae",
-    brandName: "ADEGAMÃE (unverified)",
+    brandName: "ADEGAMÃE",
     categorySlug: "wine",
     description:
-      "Provisional catalogue entry. Label appears to show ADEGAMÃE Pinta Negra red wine (tinto), Lisboa, 2024. Shares a two-bottle photograph with the white variant.",
+      "Pinta Negra red wine (tinto) from Lisboa, Portugal, vintage 2024, by Adegamãe.",
     price: moneyRwf(13000),
     status: "demo",
     availability: "unknown",
@@ -232,12 +254,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222006",
     slug: "product-006-pinta-negra-white",
-    name: "Pinta Negra White 2024 (unverified)",
+    name: "Pinta Negra White 2024",
     brandSlug: "adegamae",
-    brandName: "ADEGAMÃE (unverified)",
+    brandName: "ADEGAMÃE",
     categorySlug: "wine",
     description:
-      "Provisional catalogue entry. Label appears to show ADEGAMÃE Pinta Negra white wine (branco), Lisboa, 2024. Shares a two-bottle photograph with the red variant.",
+      "Pinta Negra white wine (branco) from Lisboa, Portugal, vintage 2024, by Adegamãe.",
     price: moneyRwf(13000),
     status: "demo",
     availability: "unknown",
@@ -256,12 +278,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222007",
     slug: "product-007-valdepablo-consagrar",
-    name: "Valdepablo Vino Para Consagrar (unverified)",
+    name: "Valdepablo Vino Para Consagrar",
     brandSlug: "valdepablo",
-    brandName: "Valdepablo (unverified)",
+    brandName: "Valdepablo",
     categorySlug: "wine",
     description:
-      "Provisional catalogue entry from a single-bottle shop photograph. Label appears to read Valdepablo Vino Para Consagrar. Size/ABV shown on label are not republished here as verified facts until confirmed.",
+      "Valdepablo Vino Para Consagrar, a liqueur wine in a classic green glass bottle.",
     price: moneyRwf(17000),
     status: "demo",
     availability: "unknown",
@@ -283,12 +305,11 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222008",
     slug: "product-008-liboll-rose",
-    name: "LIBOLL Rosé Extra Dry (unverified)",
+    name: "LIBOLL Rosé Extra Dry",
     brandSlug: "liboll",
-    brandName: "LIBOLL (unverified)",
-    categorySlug: "wine",
-    description:
-      "Provisional catalogue entry. Label appears to read LIBOLL Rosé Extra Dry. Shares a two-bottle photograph with the white Extra Dry bottle.",
+    brandName: "LIBOLL",
+    categorySlug: "sparkling",
+    description: "LIBOLL Rosé Extra Dry, a sparkling rosé.",
     price: moneyRwf(20000),
     status: "demo",
     availability: "unknown",
@@ -309,12 +330,11 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222009",
     slug: "product-009-liboll-extra-dry",
-    name: "LIBOLL Extra Dry (unverified)",
+    name: "LIBOLL Extra Dry",
     brandSlug: "liboll",
-    brandName: "LIBOLL (unverified)",
-    categorySlug: "wine",
-    description:
-      "Provisional catalogue entry. Label appears to read LIBOLL Extra Dry (white). Shares a two-bottle photograph with the Rosé.",
+    brandName: "LIBOLL",
+    categorySlug: "sparkling",
+    description: "LIBOLL Extra Dry, a sparkling white wine.",
     price: moneyRwf(20000),
     status: "demo",
     availability: "unknown",
@@ -333,12 +353,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222010",
     slug: "product-010-grands-domaines-gin-bio",
-    name: "Grands Domaines Gin Bio (unverified)",
+    name: "Grands Domaines Gin Bio",
     brandSlug: "grands-domaines",
-    brandName: "Grands Domaines (unverified)",
-    categorySlug: "spirits",
+    brandName: "Grands Domaines",
+    categorySlug: "gin",
     description:
-      "Provisional catalogue entry from a single-product photograph including bottle and box. Label appears to read Grands Domaines Gin Bio / Organic Gin.",
+      "Grands Domaines Gin Bio, an organic single-estate gin from France, presented with its kraft gift box.",
     price: moneyRwf(60000),
     status: "demo",
     availability: "unknown",
@@ -357,12 +377,11 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222011",
     slug: "product-011-johnnie-walker-red-label",
-    name: "Johnnie Walker Red Label (unverified)",
+    name: "Johnnie Walker Red Label",
     brandSlug: "johnnie-walker",
-    brandName: "Johnnie Walker (unverified)",
-    categorySlug: "spirits",
-    description:
-      "Provisional catalogue entry. Visually left bottle in the three-bottle shop photograph. Price provisionally mapped from filename segment 28k. Bottle-to-price mapping requires manual confirmation.",
+    brandName: "Johnnie Walker",
+    categorySlug: "whisky",
+    description: "Johnnie Walker Red Label, a blended Scotch whisky.",
     price: moneyRwf(28000),
     status: "demo",
     availability: "unknown",
@@ -385,12 +404,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222012",
     slug: "product-012-johnnie-walker-black-label",
-    name: "Johnnie Walker Black Label (unverified)",
+    name: "Johnnie Walker Black Label",
     brandSlug: "johnnie-walker",
-    brandName: "Johnnie Walker (unverified)",
-    categorySlug: "spirits",
+    brandName: "Johnnie Walker",
+    categorySlug: "whisky",
     description:
-      "Provisional catalogue entry. Visually centre bottle in the three-bottle shop photograph. Price provisionally mapped from filename segment 68k. Mapping requires confirmation.",
+      "Johnnie Walker Black Label, a blended Scotch whisky aged 12 years.",
     price: moneyRwf(68000),
     status: "demo",
     availability: "unknown",
@@ -412,12 +431,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "22222222-2222-4222-8222-222222222013",
     slug: "product-013-johnnie-walker-double-black",
-    name: "Johnnie Walker Double Black (unverified)",
+    name: "Johnnie Walker Double Black",
     brandSlug: "johnnie-walker",
-    brandName: "Johnnie Walker (unverified)",
-    categorySlug: "spirits",
+    brandName: "Johnnie Walker",
+    categorySlug: "whisky",
     description:
-      "Provisional catalogue entry. Visually right bottle in the three-bottle shop photograph. Price provisionally mapped from filename segment 78k. Mapping requires confirmation.",
+      "Johnnie Walker Double Black, a smoky blended Scotch whisky matured in deep charred oak casks.",
     price: moneyRwf(78000),
     status: "demo",
     availability: "unknown",

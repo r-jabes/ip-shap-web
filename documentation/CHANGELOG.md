@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — UI redesign R0 + R1 (foundations and global shell)
+
+- Logo: reversed asset for dark surfaces, `BrandLogo` now requires `tone`; ivory header, charcoal footer/menu
+- Tokens and type: Archivo + DM Sans, new radii/shadows/motion tokens, pointer cursors and focus rings restored under Tailwind v4
+- Component kit in `components/ui` and `/dev/design` reference page (dev only)
+- Header with mega menu, mobile menu, bottom bar, search overlay with suggestions, announcement bar, footer, cart drawer
+- Cart integrity: badge, drawer, cart page and checkout read one derived list; versioned storage; stale lines pruned with a notice
+- Customer-facing copy no longer mentions demo/provisional/unverified/prototype; `PreviewIndicator` (dev only) replaces it; a test guards this
+- Catalogue grouped into Whisky, Vodka, Gin, Wine, Sparkling; contact details from `NEXT_PUBLIC_*` via `site-config`
+
 ## 0.9.0 — Phase 08 hardening (2026-10-19)
 
 - Security headers/CSP, middleware request id, open-redirect helper

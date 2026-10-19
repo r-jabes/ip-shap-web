@@ -66,7 +66,7 @@ export function ShopFilters({
             }
           }}
           className="mt-2 w-full border border-brand-dark-neutral/25 bg-transparent px-3 py-2 text-sm"
-          placeholder="Search demo drinks"
+          placeholder="Search drinks"
         />
       </div>
       <fieldset>
@@ -131,8 +131,8 @@ export function ShopFilters({
           className="mt-2 w-full border border-brand-dark-neutral/25 bg-transparent px-3 py-2 text-sm"
         >
           <option value="all">All</option>
-          <option value="in_stock">In stock (demo)</option>
-          <option value="unknown">Unknown (demo)</option>
+          <option value="in_stock">In stock</option>
+          <option value="unknown">Ask us</option>
         </select>
       </div>
       <div>

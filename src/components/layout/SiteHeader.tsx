@@ -1,22 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { useCart } from "@/components/cart/CartProvider";
+import { useChrome } from "@/components/layout/ChromeProvider";
+import { MegaMenu } from "@/components/layout/MegaMenu";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import {
+  BagIcon,
+  MenuIcon,
+  SearchIcon,
+  WhatsAppIcon,
+} from "@/components/ui/icons";
+import type { NavData } from "@/lib/navigation";
+import { chatHref } from "@/lib/site-config";
 
-const navLinks = [
-  { href: "/shop", label: "Shop" },
-  { href: "/shop?category=spirits", label: "Spirits" },
-  { href: "/shop?category=wine", label: "Wine" },
+const links = [
   { href: "/about", label: "About" },
+  { href: "/delivery", label: "Delivery" },
   { href: "/contact", label: "Contact" },
 ];
 
-export function SiteHeader() {
+export function SiteHeader({ nav }: { nav: NavData }) {
   const { itemCount, openCart, feedback } = useCart();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { openSearch, openMenu } = useChrome();
+  const pathname = usePathname();
   const [pulse, setPulse] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const previousCount = useRef(itemCount);
 
   useEffect(() => {
@@ -27,65 +40,101 @@ export function SiteHeader() {
     return () => window.clearTimeout(id);
   }, [itemCount]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-brand-dark-neutral/20 bg-brand-charcoal text-brand-warm-white">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center border border-brand-warm-white/25 text-sm transition-opacity duration-[var(--motion-fast)] lg:hidden"
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-nav"
-            onClick={() => setMobileOpen((value) => !value)}
+    <header
+      className={`sticky top-0 z-40 border-b bg-brand-warm-white/95 backdrop-blur-md transition-shadow duration-[var(--motion-ui)] motion-reduce:transition-none ${
+        scrolled
+          ? "border-line shadow-[0_10px_30px_-22px_rgb(32_32_30/0.55)]"
+          : "border-transparent"
+      }`}
+    >
+      <div className="mx-auto flex h-[var(--header-h)] w-full max-w-7xl items-center gap-2 px-4 sm:px-6 lg:gap-4 lg:px-8">
+        <div className="lg:hidden">
+          <IconButton
+            label="Open menu"
+            onClick={openMenu}
+            aria-haspopup="dialog"
           >
-            <span className="sr-only">Menu</span>
-            <span aria-hidden="true">{mobileOpen ? "✕" : "☰"}</span>
-          </button>
-          <BrandLogo height={34} priority />
+            <MenuIcon size={22} />
+          </IconButton>
         </div>
 
-        <nav aria-label="Primary" className="hidden lg:block">
-          <ul className="flex items-center gap-6 text-sm">
-            {navLinks.map((link) => (
-              <li key={link.href + link.label}>
-                <Link
-                  href={link.href}
-                  className="underline-offset-4 transition-opacity duration-[var(--motion-fast)] hover:opacity-80 hover:underline"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+        <BrandLogo tone="on-paper" height={40} priority className="shrink-0" />
+
+        <nav aria-label="Primary" className="ml-4 hidden lg:block">
+          <ul className="flex items-center gap-1">
+            <MegaMenu nav={nav} />
+            {links.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    aria-current={active ? "page" : undefined}
+                    className="inline-flex h-11 items-center rounded-full px-4 text-[0.95rem] font-semibold transition-colors duration-[var(--motion-fast)] hover:bg-paper-2"
+                  >
+                    <span
+                      className={`border-b-2 pb-0.5 ${active ? "border-brand-burnt-orange" : "border-transparent"}`}
+                    >
+                      {link.label}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <form action="/shop" className="hidden md:block" role="search">
-            <label htmlFor="header-search" className="sr-only">
-              Search drinks
-            </label>
-            <input
-              id="header-search"
-              name="q"
-              type="search"
-              placeholder="Search"
-              className="w-40 border border-brand-warm-white/25 bg-transparent px-3 py-2 text-sm text-brand-warm-white placeholder:text-brand-warm-white/50 lg:w-48"
-            />
-          </form>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openSearch}
+            aria-haspopup="dialog"
+            className="hidden h-11 items-center gap-3 rounded-full border border-brand-charcoal/25 bg-transparent pr-3 pl-4 text-sm text-ink-muted transition-colors duration-[var(--motion-fast)] hover:border-brand-charcoal md:inline-flex md:w-56 lg:w-64"
+          >
+            <SearchIcon size={18} className="text-brand-charcoal" />
+            <span className="flex-1 text-left">Search drinks</span>
+            <kbd className="rounded-md border border-line px-1.5 py-0.5 font-sans text-xs">
+              /
+            </kbd>
+          </button>
+
+          <div className="hidden xl:block">
+            <Button
+              href={chatHref("Hello, I would like to place an order.")}
+              size="sm"
+              variant="ghost"
+              iconLeft={<WhatsAppIcon size={17} />}
+            >
+              Order on WhatsApp
+            </Button>
+          </div>
+
           <button
             type="button"
             onClick={openCart}
-            className="relative border border-brand-warm-white/25 px-3 py-2 text-sm transition-colors duration-[var(--motion-ui)] hover:border-brand-burnt-orange"
-            aria-label={`Open cart, ${itemCount} items`}
+            aria-haspopup="dialog"
+            aria-label={`Open cart, ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-charcoal bg-brand-charcoal text-brand-warm-white transition-[transform,background-color] duration-[var(--motion-fast)] hover:bg-brand-dark-neutral active:scale-95 motion-reduce:transition-none"
           >
-            Cart
-            <span
-              className={`ml-2 inline-flex min-w-5 items-center justify-center bg-brand-burnt-orange px-1.5 text-xs text-brand-charcoal ${
-                pulse ? "cart-count--pulse" : ""
-              }`}
-            >
-              {itemCount}
-            </span>
+            <BagIcon size={20} />
+            {itemCount > 0 ? (
+              <span
+                aria-hidden="true"
+                className={`absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-brand-warm-white bg-brand-burnt-orange px-1 text-[0.7rem] leading-none font-bold text-brand-charcoal tabular ${
+                  pulse ? "cart-count--pulse" : ""
+                }`}
+              >
+                {itemCount > 99 ? "99+" : itemCount}
+              </span>
+            ) : null}
           </button>
         </div>
       </div>
@@ -93,42 +142,6 @@ export function SiteHeader() {
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {feedback}
       </p>
-
-      {mobileOpen ? (
-        <nav
-          id="mobile-nav"
-          aria-label="Mobile"
-          className="border-t border-brand-warm-white/10 lg:hidden"
-        >
-          <ul className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4 sm:px-6">
-            {navLinks.map((link) => (
-              <li key={link.href + link.label}>
-                <Link
-                  href={link.href}
-                  className="block py-2 text-sm"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-            <li>
-              <form action="/shop" className="pt-2" role="search">
-                <label htmlFor="mobile-search" className="sr-only">
-                  Search drinks
-                </label>
-                <input
-                  id="mobile-search"
-                  name="q"
-                  type="search"
-                  placeholder="Search drinks"
-                  className="w-full border border-brand-warm-white/25 bg-transparent px-3 py-2 text-sm"
-                />
-              </form>
-            </li>
-          </ul>
-        </nav>
-      ) : null}
     </header>
   );
 }

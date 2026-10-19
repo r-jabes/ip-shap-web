@@ -8,6 +8,11 @@ Never commit real secrets. Values below are names and purposes only.
 | ------------------------------- | ------------------------------------------------------- |
 | `NEXT_PUBLIC_APP_URL`           | Canonical site URL (metadata, absolute links)           |
 | `NEXT_PUBLIC_DEMO_MODE`         | `true`/`false` — enables clearly labelled demo fixtures |
+| `NEXT_PUBLIC_WHATSAPP_E164`     | Business WhatsApp number, e.g. `+2507…`. Unset hides all WhatsApp links (they fall back to `/contact`) |
+| `NEXT_PUBLIC_PHONE_E164`        | Business phone number. Unset hides it                    |
+| `NEXT_PUBLIC_CONTACT_EMAIL`     | Public contact email. Unset hides it                     |
+| `NEXT_PUBLIC_ADDRESS`           | Public address / location line. Unset hides it           |
+| `NEXT_PUBLIC_OPENING_HOURS`     | Opening hours text. Unset hides it                       |
 | `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL (browser-safe)                     |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/publishable key (RLS-enforced)            |
 

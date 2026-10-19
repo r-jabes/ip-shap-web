@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/content/PlaceholderPage";
-import { SHORT_BRAND } from "@/lib/brand";
+import { InfoPage } from "@/components/content/InfoPage";
+import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = { title: "About" };
 
 export default function AboutPage() {
   return (
-    <PlaceholderPage
+    <InfoPage
       title={`About ${SHORT_BRAND}`}
-      intro="THE IP SHAP BUSINESS LTD is a single-retailer drinks business preparing an online storefront for Rwanda. Brand story copy below is a placeholder for owner confirmation."
+      intro={`${LEGAL_NAME} is a drinks retailer based in Rwanda, focused on a tight range of wines and spirits.`}
       sections={[
         {
-          heading: "What this prototype is",
-          body: "A client-facing visual direction for shopping UX — not a live ordering system. Demo products use temporary names and placeholder imagery.",
+          heading: "What we sell",
+          body: "Whisky, vodka, gin, red wine and sparkling wine, chosen for the bottles people ask for most.",
         },
         {
-          heading: "What comes next",
-          body: "After visual approval: client product photography, confirmed prices, motion polish, inventory admin, checkout, payments and delivery configuration.",
+          heading: "How to order",
+          body: "Add your bottles to the cart, check out, and send the order to us on WhatsApp. We confirm availability and delivery with you directly.",
         },
       ]}
     />

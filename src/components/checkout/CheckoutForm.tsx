@@ -112,9 +112,8 @@ export function CheckoutForm({
           <legend className="font-display text-xl">Delivery</legend>
           {zones.length === 0 ? (
             <p className="text-sm text-brand-dark-neutral">
-              Delivery zones and fees are not configured yet. You can still
-              place a WhatsApp-assisted order for manual confirmation — no fee
-              is invented or promised.
+              We confirm your delivery fee with you after you place the order.
+              Nothing is charged on this page.
             </p>
           ) : (
             <label className="grid gap-1 text-sm">
@@ -207,7 +206,7 @@ export function CheckoutForm({
                 We create your order first, then you can message the shop.
                 Opening WhatsApp is not payment confirmation.
                 {!whatsappConfigured
-                  ? " WhatsApp number is not configured yet — you will still get an order reference."
+                  ? " You will get an order reference to quote when you contact us."
                   : ""}
               </span>
             </span>
@@ -225,7 +224,7 @@ export function CheckoutForm({
               <span className="mt-1 block text-brand-dark-neutral">
                 {onlinePaymentEnabled
                   ? "Pay online after the order is created."
-                  : "Unavailable until a Rwanda-capable payment provider is verified."}
+                  : "Not available yet. Pay when we confirm your order."}
               </span>
             </span>
           </label>

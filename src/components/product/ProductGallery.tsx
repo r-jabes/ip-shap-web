@@ -203,12 +203,6 @@ export function ProductGallery({
         Showing image {index + 1} of {safeImages.length} for {productName}
       </p>
 
-      {current.isSharedMultiProductPhoto ? (
-        <p className="mt-2 text-xs text-brand-dark-neutral">
-          Shared multi-product photograph — pending individual SKU photo.
-        </p>
-      ) : null}
-
       {lightboxOpen ? (
         <div className="lightbox-enter fixed inset-0 z-50 flex items-center justify-center bg-brand-charcoal/90 p-4">
           <div

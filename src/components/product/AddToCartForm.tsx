@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
 
 export function AddToCartForm({
   productId,
+  productName,
   disabled,
 }: {
   productId: string;
+  productName: string;
   disabled?: boolean;
 }) {
   const { addItem } = useCart();
@@ -16,34 +19,19 @@ export function AddToCartForm({
 
   return (
     <form
-      className="flex flex-wrap items-end gap-3"
+      className="flex flex-wrap items-center gap-3"
       onSubmit={(event) => {
         event.preventDefault();
         addItem(productId, quantity);
       }}
     >
-      <div>
-        <label
-          htmlFor="quantity"
-          className="block text-xs tracking-[0.1em] uppercase"
-        >
-          Quantity
-        </label>
-        <input
-          id="quantity"
-          type="number"
-          min={1}
-          value={quantity}
-          onChange={(event) =>
-            setQuantity(
-              Math.max(1, Number.parseInt(event.target.value, 10) || 1),
-            )
-          }
-          className="mt-1 w-24 border border-brand-dark-neutral/30 bg-transparent px-3 py-2"
-          disabled={disabled}
-        />
-      </div>
-      <Button type="submit" disabled={disabled}>
+      <QuantityStepper
+        value={quantity}
+        label={`Quantity of ${productName}`}
+        onChange={setQuantity}
+        disabled={disabled}
+      />
+      <Button type="submit" size="lg" disabled={disabled}>
         Add to cart
       </Button>
     </form>

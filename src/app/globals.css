@@ -1,22 +1,55 @@
 @import "tailwindcss";
 
 /*
-  Brand tokens — THE IP SHAP BUSINESS LTD
-  Source of truth: prompts/BRAND_IDENTITY.md
+  Design tokens — THE IP SHAP BUSINESS LTD
+  Palette source of truth: prompts/BRAND_IDENTITY.md (closed palette).
+  Usage rules: documentation/MOTION_AND_DESIGN_SYSTEM.md
 */
 :root {
+  /* Brand palette (do not add colours without owner approval) */
   --brand-charcoal: #20201e;
   --brand-warm-white: #f5f1e8;
   --brand-burnt-orange: #f07836;
   --brand-dark-neutral: #343430;
+
+  /* Neutral roles derived from the palette */
+  --paper-2: #e8e2d6; /* product-photo surface, subtle panels */
+  --ink-muted: #5c5a54; /* secondary text on paper (6.2:1) */
+  --line: color-mix(in srgb, var(--brand-charcoal) 14%, transparent);
+  --line-strong: color-mix(in srgb, var(--brand-charcoal) 32%, transparent);
+
   --background: var(--brand-warm-white);
   --foreground: var(--brand-charcoal);
-  --focus-ring: var(--brand-burnt-orange);
-  --type-display: clamp(2.5rem, 5vw + 1rem, 4.5rem);
-  --type-h2: clamp(1.75rem, 2vw + 1rem, 2.5rem);
+
+  /*
+    Focus ring: charcoal on light surfaces, orange on dark ones (orange on ivory
+    is only 2.5:1 and fails WCAG non-text contrast). `.on-ink` flips it.
+  */
+  --focus-ring: var(--brand-charcoal);
+
+  /* Shape */
+  --radius-panel: 28px;
+  --radius-frame: 20px;
+  --radius-arch: 999px 999px 24px 24px;
+
+  /* Elevation: hard "sticker" offset for buttons, soft shadow for overlays only */
+  --shadow-sticker: 4px 4px 0 0 var(--brand-charcoal);
+  --shadow-sticker-hover: 6px 6px 0 0 var(--brand-charcoal);
+  --shadow-overlay: 0 24px 60px -20px rgb(32 32 30 / 0.45);
+
+  /* Layout */
+  --header-h: 4.5rem;
+  --announcement-h: 2.25rem;
+  --bottom-bar-h: 4rem;
+
+  /* Type scale (fluid) */
+  --type-hero: clamp(3.25rem, 1.75rem + 8vw, 9.5rem);
+  --type-display: clamp(2.5rem, 1.5rem + 4vw, 5rem);
+  --type-h2: clamp(1.75rem, 1.2rem + 2.2vw, 3rem);
+  --type-h3: clamp(1.25rem, 1rem + 0.9vw, 1.75rem);
   --type-body: clamp(1rem, 0.2vw + 0.95rem, 1.125rem);
 
-  /* Motion tokens — Phase 03 */
+  /* Motion tokens */
   --motion-fast: 140ms;
   --motion-ui: 220ms;
   --motion-editorial: 520ms;
@@ -24,6 +57,7 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-ui: cubic-bezier(0.33, 1, 0.68, 1);
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -33,28 +67,107 @@
   --color-brand-warm-white: var(--brand-warm-white);
   --color-brand-burnt-orange: var(--brand-burnt-orange);
   --color-brand-dark-neutral: var(--brand-dark-neutral);
+  --color-paper-2: var(--paper-2);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-size: var(--type-body);
-  line-height: 1.6;
+@layer base {
+  html {
+    scroll-padding-top: calc(var(--header-h) + 1rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-size: var(--type-body);
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Tailwind v4 preflight no longer sets pointer cursors; restore them. */
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label[for],
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  [role="menuitem"],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="range"]:not(:disabled),
+  input[type="submit"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"],
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--brand-burnt-orange) 40%, transparent);
+  }
+
+  /* Number inputs: hide spinners, we use steppers */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
-.font-display {
-  font-family: var(--font-display), ui-serif, Georgia, serif;
+/* Dark surface helper: flips the focus ring colour for everything inside. */
+@layer base {
+  .on-ink {
+    --focus-ring: var(--brand-burnt-orange);
+  }
 }
 
-::selection {
-  background: color-mix(in srgb, var(--brand-burnt-orange) 35%, transparent);
-}
+/* Components layer so Tailwind utilities (font-bold, leading-*, etc.) can still override. */
+@layer components {
+  .font-display {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    font-stretch: 108%;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
 
-:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 3px;
+  .font-display-hero {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--type-hero);
+    font-weight: 900;
+    font-stretch: 118%;
+    letter-spacing: -0.035em;
+    line-height: 0.92;
+    text-transform: uppercase;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Signature shape: tall arch window for product photography */
+  .arch {
+    border-radius: var(--radius-arch);
+    overflow: hidden;
+  }
 }
 
 /* —— Hero entrance (stagger ~700ms total) —— */
@@ -137,8 +250,8 @@ body {
   animation: gallery-fade var(--motion-ui) var(--ease-soft) both;
 }
 
-/* —— Drawer / modal enter —— */
-@keyframes drawer-backdrop-in {
+/* —— Overlays: backdrop + panels (drawer right/left, top sheet, bottom sheet, dialog) —— */
+@keyframes overlay-backdrop-in {
   from {
     opacity: 0;
   }
@@ -147,21 +260,10 @@ body {
   }
 }
 
-@keyframes drawer-panel-in {
+@keyframes overlay-from-right {
   from {
     opacity: 0;
-    transform: translateX(1rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes drawer-panel-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(-1rem);
+    transform: translateX(1.5rem);
   }
   to {
     opacity: 1;
@@ -169,29 +271,81 @@ body {
   }
 }
 
-@keyframes lightbox-in {
+@keyframes overlay-from-left {
   from {
     opacity: 0;
+    transform: translateX(-1.5rem);
   }
   to {
     opacity: 1;
+    transform: translateX(0);
   }
 }
 
+@keyframes overlay-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes overlay-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes overlay-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.overlay-backdrop {
+  animation: overlay-backdrop-in var(--motion-ui) var(--ease-soft) both;
+}
+.overlay-from-right {
+  animation: overlay-from-right var(--motion-ui) var(--ease-settle) both;
+}
+.overlay-from-left {
+  animation: overlay-from-left var(--motion-ui) var(--ease-settle) both;
+}
+.overlay-from-top {
+  animation: overlay-from-top var(--motion-ui) var(--ease-settle) both;
+}
+.overlay-from-bottom {
+  animation: overlay-from-bottom var(--motion-ui) var(--ease-settle) both;
+}
+.overlay-pop {
+  animation: overlay-pop var(--motion-ui) var(--ease-settle) both;
+}
+
+/* Legacy names still referenced by the gallery lightbox */
 .drawer-backdrop {
-  animation: drawer-backdrop-in var(--motion-ui) var(--ease-soft) both;
+  animation: overlay-backdrop-in var(--motion-ui) var(--ease-soft) both;
 }
-
 .drawer-panel {
-  animation: drawer-panel-in var(--motion-ui) var(--ease-ui) both;
+  animation: overlay-from-right var(--motion-ui) var(--ease-ui) both;
 }
-
 .drawer-panel-left {
-  animation: drawer-panel-in-left var(--motion-ui) var(--ease-ui) both;
+  animation: overlay-from-left var(--motion-ui) var(--ease-ui) both;
 }
-
 .lightbox-enter {
-  animation: lightbox-in var(--motion-ui) var(--ease-soft) both;
+  animation: overlay-backdrop-in var(--motion-ui) var(--ease-soft) both;
 }
 
 /* —— Cart count feedback —— */
@@ -201,12 +355,52 @@ body {
     transform: scale(1);
   }
   40% {
-    transform: scale(1.12);
+    transform: scale(1.18);
   }
 }
 
 .cart-count--pulse {
   animation: cart-pulse var(--motion-ui) var(--ease-ui);
+}
+
+/* —— Marquee (range names strip). Pure CSS, transform only. —— */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 38s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* —— Skeleton shimmer —— */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    100deg,
+    var(--paper-2) 30%,
+    color-mix(in srgb, var(--paper-2) 60%, white) 50%,
+    var(--paper-2) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -222,12 +416,28 @@ body {
   .hero-media,
   .hero-stagger > *,
   .gallery-crossfade,
+  .overlay-backdrop,
+  .overlay-from-right,
+  .overlay-from-left,
+  .overlay-from-top,
+  .overlay-from-bottom,
+  .overlay-pop,
   .drawer-backdrop,
   .drawer-panel,
   .drawer-panel-left,
   .lightbox-enter,
-  .cart-count--pulse {
+  .cart-count--pulse,
+  .skeleton {
     animation: none !important;
+  }
+
+  .marquee-track {
+    animation: none !important;
+    flex-wrap: wrap;
+    width: auto;
+  }
+  .marquee-track > [aria-hidden="true"] {
+    display: none;
   }
 
   .hero-media {

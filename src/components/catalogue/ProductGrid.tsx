@@ -7,7 +7,7 @@ export function ProductGrid({ products }: { products: DemoProduct[] }) {
       <div className="border border-dashed border-brand-dark-neutral/30 px-6 py-16 text-center">
         <h2 className="font-display text-2xl">No drinks match these filters</h2>
         <p className="mt-2 text-brand-dark-neutral">
-          Clear filters or browse another collection. Demo catalogue only.
+          Clear the filters or browse another range.
         </p>
       </div>
     );
