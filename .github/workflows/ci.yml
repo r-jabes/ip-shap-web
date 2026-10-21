@@ -19,6 +19,12 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
+      # Fail CI on critical production advisories. Known Next-bundled PostCSS
+      # highs are documented in documentation/SECURITY.md until a planned Next upgrade.
+      - name: Audit production dependencies (critical)
+        run: npm run audit:prod
+      - name: Audit production dependencies (report)
+        run: npm audit --omit=dev --audit-level=high || true
       - run: npm run build
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000

@@ -58,12 +58,15 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 | `npm run test`         | Vitest                 |
 | `npm run format`       | Prettier write         |
 | `npm run format:check` | Prettier check         |
+| `npm run audit:prod`   | `npm audit` criticals (omit dev) |
 
 ## Documentation index
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md)
 - [DECISIONS.md](./DECISIONS.md)
 - [ENVIRONMENT.md](./ENVIRONMENT.md)
+- [PLATFORM_BOOTSTRAP.md](./PLATFORM_BOOTSTRAP.md)
+- [THREAT_MODEL.md](./THREAT_MODEL.md)
 - [DATA_MODEL.md](./DATA_MODEL.md)
 - [SECURITY.md](./SECURITY.md)
 - [TESTING.md](./TESTING.md)
@@ -80,4 +83,5 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 
 - **Phase 00–08:** foundations through hardening (see CHANGELOG)
 - **UI redesign R0–R8:** foundations → shell → home → shop → product → cart/checkout → content → motion/quality gates → admin restyle
-- **Next (data):** resume storefront rebuild / Supabase catalogue when UI is approved (`PHASE_10_STOREFRONT_REBUILD_PLAN.md`)
+- **Handover P0:** platform bootstrap (env matrix, threat model, CI audit) — see `PLATFORM_BOOTSTRAP.md`
+- **Next:** `prompts/IMPLEMENTATION_PHASES.md` **P1** (durable Supabase data layer)

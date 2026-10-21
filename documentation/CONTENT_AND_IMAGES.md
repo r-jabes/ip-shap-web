@@ -176,3 +176,20 @@ UI motion (hover scale, gallery crossfade, reveals) must not imply the physical 
 - [ ] Logo contrast OK on header/footer
 - [ ] Favicon correct in production build
 - [ ] Derivatives only in public buckets; originals private
+
+## Commercial document IDs
+
+Public codes for orders, quotations, and invoices use `createDocumentId()` (`src/lib/document-id.ts`):
+
+| Kind | Prefix | Shape |
+| ---- | ------ | ----- |
+| Order | `IPS-` | `IPS-` + 16 Crockford Base32 chars |
+| Quotation | `QT-` | same body length |
+| Invoice | `INV-` | same body length |
+
+- Cryptographically random (`crypto.randomBytes`); ~80 bits entropy  
+- Crockford Base32 (no ambiguous I/L/O/U) for phone/WhatsApp reading  
+- **Never** year + serial (`2026-0001`) — that reveals how many documents exist  
+- Database primary keys remain UUIDs; only the customer-facing code is prefixed random  
+
+PDF footers: legal name, opaque reference, issue date — no “snapshot / frozen record / not an e-signature” meta commentary unless counsel requires a specific line.

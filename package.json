@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "audit:prod": "npm audit --omit=dev --audit-level=critical"
   },
   "dependencies": {
     "next": "^15.5.28",

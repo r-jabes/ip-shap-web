@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { createDocumentId } from "@/lib/document-id";
 import type { DemoProduct } from "@/domain/catalogue";
 import { adminGetProduct, adminListProducts } from "@/lib/admin/store";
 import { getProductById, listProducts } from "@/lib/catalogue";
@@ -108,12 +109,9 @@ function isPubliclyOrderable(product: DemoProduct): boolean {
   );
 }
 
-function makeReference(now = new Date()): string {
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  const suffix = randomBytes(2).toString("hex").toUpperCase();
-  return `IPS-${y}${m}${d}-${suffix}`;
+/** Public order ref — opaque CSPRNG id (no date/serial). See document-id.ts. */
+function makeReference(): string {
+  return createDocumentId("order");
 }
 
 function makeLookupToken(): string {
@@ -234,7 +232,7 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
 
   const order: StoredOrder = {
     id: randomUUID(),
-    reference: makeReference(now),
+    reference: makeReference(),
     lookupToken: makeLookupToken(),
     channel: input.channel,
     fulfilmentStatus: "awaiting_confirmation",

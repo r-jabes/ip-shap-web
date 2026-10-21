@@ -1,39 +1,73 @@
 # Frontend environment variables
 
-Never commit real secrets. Values below are names and purposes only.
+Never commit real secrets. Paste values only into host secret managers (Vercel) or local `.env.local` (gitignored).
 
-## Public (`NEXT_PUBLIC_*`)
+## Environments
 
-| Variable                        | Purpose                                                 |
-| ------------------------------- | ------------------------------------------------------- |
-| `NEXT_PUBLIC_APP_URL`           | Canonical site URL (metadata, absolute links)           |
-| `NEXT_PUBLIC_DEMO_MODE`         | `true`/`false` — enables clearly labelled demo fixtures |
-| `NEXT_PUBLIC_WHATSAPP_E164`     | Business WhatsApp number, e.g. `+2507…`. Unset hides all WhatsApp links (they fall back to `/contact`) |
-| `NEXT_PUBLIC_PHONE_E164`        | Business phone number. Unset hides it                    |
-| `NEXT_PUBLIC_CONTACT_EMAIL`     | Public contact email. Unset hides it                     |
-| `NEXT_PUBLIC_ADDRESS`           | Public address / location line. Unset hides it           |
-| `NEXT_PUBLIC_OPENING_HOURS`     | Opening hours text. Unset hides it                       |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL (browser-safe)                     |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/publishable key (RLS-enforced)            |
+| Environment | `NEXT_PUBLIC_APP_URL` | `NEXT_PUBLIC_DEMO_MODE` | Supabase project | Notes |
+| ----------- | --------------------- | ----------------------- | ---------------- | ----- |
+| Local | `http://localhost:3000` | `true` allowed | optional / staging | Fixtures OK for UI work |
+| Staging | `https://staging.…` | Prefer `false` once P6 cutover | **Staging** project | Separate keys from prod |
+| Production | `https://…` (live domain) | **`false` required** | **Production** project | Never share staging keys |
 
-## Server-only
+**Rule:** staging and production must use **different** Supabase projects and secrets from day one (P0).
 
-| Variable                    | Purpose                                                               |
-| --------------------------- | --------------------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY` | Privileged Supabase key — server only, never shipped to the browser   |
-| `ADMIN_SESSION_SECRET`      | HMAC secret for admin session cookies (≥ 32 chars)                    |
-| `ADMIN_BOOTSTRAP_TOKEN`     | Operator-generated bootstrap token (≥ 16 chars); not a default pwd    |
-| `ADMIN_BOOTSTRAP_EMAIL`     | Optional allow-list email for bootstrap login                         |
-| `WHATSAPP_BUSINESS_E164`    | WhatsApp Business number for deep links (unset until confirmed)       |
-| `ONLINE_PAYMENT_ENABLED`    | `true` only after a Rwanda-capable provider is verified (default off) |
-| `PAYMENT_PROVIDER`          | `unselected` (default) or `sandbox` for tests only                    |
-| `PAYMENT_WEBHOOK_SECRET`    | HMAC secret for `/api/payments/webhook` (≥ 16 chars)                  |
-| `NODE_ENV`                  | Node runtime mode                                                     |
+## Public (`NEXT_PUBLIC_*`) — safe in the browser
+
+| Variable | Required | From phase | Purpose |
+| -------- | -------- | ---------- | ------- |
+| `NEXT_PUBLIC_APP_URL` | yes | P0 | Canonical site URL (metadata, absolute links) |
+| `NEXT_PUBLIC_DEMO_MODE` | yes | P0 | `true`/`false` — demo catalogue fixtures. **Must be `false` in production** |
+| `NEXT_PUBLIC_SUPABASE_URL` | from P1 | P1 | Supabase API URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from P1 | P1 | Anon key (RLS enforced) |
+| `NEXT_PUBLIC_WHATSAPP_E164` | optional | P7 | Her WhatsApp (Contact us). Unset hides WA CTAs |
+| `NEXT_PUBLIC_PHONE_E164` | optional | P7 | His call number. Unset hides phone |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | optional | P7 | Public contact email |
+| `NEXT_PUBLIC_ADDRESS` | optional | P7 | Public address line |
+| `NEXT_PUBLIC_OPENING_HOURS` | optional | P7 | Hours text |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | from P8 | P8 | Cloudflare Turnstile site key |
+| `NEXT_PUBLIC_SENTRY_DSN` | from P8 | P8 | Browser error reporting (public DSN) |
+
+## Server-only — never `NEXT_PUBLIC_*`
+
+| Variable | Required | From phase | Purpose |
+| -------- | -------- | ---------- | ------- |
+| `SUPABASE_SERVICE_ROLE_KEY` | from P1 | P1 | Privileged DB — **server only** |
+| `ADMIN_SESSION_SECRET` | local/bootstrap | P0–P2 | HMAC admin cookies (≥ 32 chars). Retire primary use after P2 Auth |
+| `ADMIN_BOOTSTRAP_TOKEN` | local/bootstrap | P0–P2 | Bootstrap login (≥ 16 chars). Break-glass after P2 |
+| `ADMIN_BOOTSTRAP_EMAIL` | optional | P0–P2 | Allow-list for bootstrap |
+| `WHATSAPP_BUSINESS_E164` | optional | P7 | Same as public WA if needed server-side (Contact us) |
+| `ORDER_NOTIFY_EMAILS` | from P5 | P5 | Comma-separated staff emails for new orders |
+| `EMAIL_FROM` | from P5 | P5 | From address for transactional mail |
+| `RESEND_API_KEY` | from P5 | P5 | Resend API key (or swap provider; keep name stable in docs) |
+| `TURNSTILE_SECRET_KEY` | from P8 | P8 | Turnstile secret |
+| `SENTRY_DSN` | from P8 | P8 | Server Sentry DSN |
+| `ONLINE_PAYMENT_ENABLED` | default `false` | — | Stay `false` (MoMo out of handover scope) |
+| `PAYMENT_PROVIDER` | default `unselected` | — | `unselected` or `sandbox` (tests only) |
+| `PAYMENT_WEBHOOK_SECRET` | if sandbox | — | HMAC for sandbox webhooks |
+| `NODE_ENV` | runtime | — | `development` / `test` / `production` |
+
+## `NEXT_PUBLIC_DEMO_MODE` policy
+
+| Mode | Behaviour |
+| ---- | --------- |
+| `true` | May load `src/fixtures/demo` catalogue; PreviewIndicator in shell |
+| `false` | Production path — fixtures must not appear (enforced from P6; fail closed) |
+
+Production deploy checklist must set `NEXT_PUBLIC_DEMO_MODE=false`.
 
 ## Validation
 
-`src/lib/env.ts` validates public and server env with Zod. Call `getServerEnv()` only on the server.
+`src/lib/env.ts` validates with Zod. Call `getServerEnv()` only on the server (or Vitest).
 
 ## Local template
 
-Copy `.env.example` to `.env.local` and fill values when Supabase is provisioned.
+```bash
+cp .env.example .env.local
+```
+
+Fill values when accounts exist. Never commit `.env.local`.
+
+## Ownership
+
+Client (or holding company) owns: domain, Vercel team, Supabase org, Resend (or email) account, Cloudflare (DNS/Turnstile). Developers get invite access — not personal ownership of production secrets.

@@ -38,7 +38,9 @@ Documented in `ENVIRONMENT.md` / `OPERATIONS.md`. Production should migrate to S
 
 `npm audit --omit=dev` reported Next-bundled PostCSS advisories and `sharp`/libvips issues. Prefer a planned Next.js patch upgrade over `--force` to Next 16. Track until cleared.
 
-## Threat model (storefront summary)
+## Threat model
+
+Full P0 one-pager: [`THREAT_MODEL.md`](./THREAT_MODEL.md). Platform accounts: [`PLATFORM_BOOTSTRAP.md`](./PLATFORM_BOOTSTRAP.md).
 
 | Surface      | Risk            | Control                                     |
 | ------------ | --------------- | ------------------------------------------- |
@@ -48,6 +50,11 @@ Documented in `ENVIRONMENT.md` / `OPERATIONS.md`. Production should migrate to S
 | Webhooks     | Forged paid     | HMAC verify; idempotent event ids           |
 | Redirects    | Open redirect   | `safeInternalPath`                          |
 | Logs         | Secret leak     | Redacting logger                            |
+
+## CI dependency audit (P0)
+
+- `npm run audit:prod` — fails on **critical** production advisories (required in CI).
+- High/moderate from Next-bundled PostCSS: tracked below; do **not** `audit fix --force` to Next 16 without a planned upgrade phase.
 
 ## Alcohol / legal note
 
