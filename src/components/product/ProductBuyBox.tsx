@@ -21,7 +21,7 @@ export function ProductBuyBox({
   siblings: DemoProduct[];
 }) {
   const unavailable = product.availability === "out_of_stock";
-  const whatsappMessage = `Hello — I would like to order ${product.name}.`;
+  const whatsappMessage = `Hello — I have a question about ${product.name}.`;
   const onSale = !!sampleCompareAtPrice(product.price);
 
   return (
@@ -84,7 +84,7 @@ export function ProductBuyBox({
           className="w-full"
           iconLeft={<WhatsAppIcon size={18} />}
         >
-          Order on WhatsApp
+          Ask about this bottle
         </Button>
         {unavailable ? (
           <p className="text-sm text-ink-muted">

@@ -33,27 +33,31 @@ export function HomeWhatsAppBand() {
                 aria-hidden="true"
                 className="h-px w-8 bg-current opacity-60"
               />
-              WhatsApp
+              Contact us
             </p>
             <h2
               className="font-display mt-3 text-balance"
               style={{ fontSize: "var(--type-h2)" }}
             >
-              Ready to order? Say hello.
+              Questions? Say hello.
             </h2>
             <p className="mt-4 max-w-lg text-brand-warm-white/75">
-              Wines and spirits from a retailer based in {SITE.country}. Browse
-              online, then send your order on WhatsApp — we reply with
-              confirmation.
+              Wines and spirits from a retailer based in {SITE.country}. Place
+              orders on this site — WhatsApp is for Contact us if you need a
+              hand.
             </p>
-            <div className="mt-8">
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button href="/shop" variant="on-dark" size="lg">
+                Browse the shop
+              </Button>
               <Button
-                href={chatHref("Hello — I would like to order from IP SHAP.")}
-                variant="on-dark"
+                href={chatHref("Hello — I have a question about IP SHAP.")}
+                variant="ghost"
                 size="lg"
+                className="border-brand-warm-white/40 text-brand-warm-white"
                 iconLeft={<WhatsAppIcon size={18} />}
               >
-                Chat with us
+                Contact us
               </Button>
             </div>
           </Reveal>

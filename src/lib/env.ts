@@ -52,6 +52,12 @@ const serverEnvSchema = z.object({
   PAYMENT_PROVIDER: z.enum(["unselected", "sandbox"]).default("unselected"),
   /** HMAC secret for sandbox webhook verification (server only). */
   PAYMENT_WEBHOOK_SECRET: z.string().min(16).optional(),
+  /** Comma-separated staff emails for new-order alerts (P5). */
+  ORDER_NOTIFY_EMAILS: z.string().optional(),
+  /** From address for Resend transactional mail (P5). Plain email or `Name <email>`. */
+  EMAIL_FROM: z.string().min(3).optional(),
+  /** Resend API key — server only (P5). */
+  RESEND_API_KEY: z.string().min(1).optional(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -79,6 +85,9 @@ function readServerEnv(): ServerEnv {
     ONLINE_PAYMENT_ENABLED: process.env.ONLINE_PAYMENT_ENABLED ?? "false",
     PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER ?? "unselected",
     PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET,
+    ORDER_NOTIFY_EMAILS: process.env.ORDER_NOTIFY_EMAILS,
+    EMAIL_FROM: process.env.EMAIL_FROM,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
     NODE_ENV: process.env.NODE_ENV,
   });
 }

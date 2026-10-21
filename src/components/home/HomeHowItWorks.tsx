@@ -12,8 +12,8 @@ const STEPS = [
     body: "Set quantities and check out with your name and delivery details.",
   },
   {
-    title: "Send on WhatsApp",
-    body: "We confirm availability, delivery and payment with you directly.",
+    title: "We confirm",
+    body: "We confirm availability, delivery and payment with you after you place the order.",
   },
 ] as const;
 
@@ -26,7 +26,7 @@ export function HomeHowItWorks() {
             index="04"
             eyebrow="Ordering"
             title="How ordering works"
-            intro="No charge on this site. You send the order; we confirm it with you."
+            intro="No charge on this site until we confirm with you. Check out here, then we follow up."
           />
         </Reveal>
 

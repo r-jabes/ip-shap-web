@@ -231,20 +231,19 @@ export function CheckoutForm({
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
             <h2 className="font-display text-2xl">How to finish</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              WhatsApp-assisted is the usual path. We create the order first,
-              then you message the shop.
+              Place the order on this site. We confirm availability, delivery
+              and payment with you afterwards.
             </p>
             <div className="mt-5 grid gap-3">
               <ChannelOption
                 selected={channel === "whatsapp_assisted"}
                 onSelect={() => setChannel("whatsapp_assisted")}
-                title="WhatsApp-assisted order"
+                title="Place order"
                 description={
                   whatsappConfigured
-                    ? "Place the order here, then continue on WhatsApp. Opening WhatsApp is not payment."
-                    : "Place the order here and keep your reference to contact us. Opening WhatsApp is not payment."
+                    ? "We create your order here. You can message us from the confirmation page if you have a question — that is Contact us, not checkout."
+                    : "We create your order here and keep your reference for follow-up. Nothing is charged on this page."
                 }
-                icon
               />
               <ChannelOption
                 selected={channel === "online_payment"}
@@ -320,11 +319,6 @@ export function CheckoutForm({
             className="mt-6 w-full"
             disabled={pending}
             loading={pending}
-            iconLeft={
-              channel === "whatsapp_assisted" ? (
-                <WhatsAppIcon size={18} />
-              ) : undefined
-            }
           >
             {pending
               ? "Placing order…"

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { formatRwf } from "@/lib/money";
-import { buildWhatsAppDeepLink, lookupOrder } from "@/lib/orders/store";
+import { lookupOrderDurable } from "@/lib/orders/durable";
+import { buildWhatsAppDeepLink } from "@/lib/orders/store";
 import { chatHref } from "@/lib/site-config";
 
 export const metadata: Metadata = {
@@ -30,14 +31,15 @@ export default async function OrderConfirmationPage({
   const { token, payment } = await searchParams;
   if (!token) notFound();
 
-  const order = lookupOrder(decodeURIComponent(reference), token);
+  const order = await lookupOrderDurable(decodeURIComponent(reference), token);
   if (!order) notFound();
 
+  // Contact us about this order — WhatsApp is not the checkout path.
   const whatsapp = buildWhatsAppDeepLink(order);
   const messageHref =
     whatsapp ??
     chatHref(
-      `Hello — I placed order ${order.reference} and would like to confirm it.`,
+      `Hello — I placed order ${order.reference} and would like to ask about it.`,
     );
   const sandboxPending = payment === "sandbox_pending";
 

@@ -134,7 +134,7 @@ export function buildWhatsAppDeepLink(order: StoredOrder): string | undefined {
   const phone = whatsappE164()?.replace(/\D/g, "");
   if (!phone) return undefined;
   const text = encodeURIComponent(
-    `Hello IP SHAP, I placed order ${order.reference}. Total: ${order.total.amount} RWF.`,
+    `Hello IP SHAP, I have a question about order ${order.reference}. Total: ${order.total.amount} RWF.`,
   );
   return `https://wa.me/${phone}?text=${text}`;
 }

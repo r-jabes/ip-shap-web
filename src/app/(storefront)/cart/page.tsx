@@ -28,7 +28,7 @@ export default function CartPage() {
       </h1>
       <p className="mt-3 max-w-xl text-ink-muted">
         Review your drinks, then check out. We confirm availability, delivery
-        and payment with you on WhatsApp.
+        and payment with you after you place the order.
       </p>
 
       {!hydrated ? (
@@ -40,8 +40,8 @@ export default function CartPage() {
           </span>
           <p className="font-display mt-8 text-3xl">Your cart is empty</p>
           <p className="mx-auto mt-2 max-w-sm text-ink-muted">
-            Find something you like and add it here — then send the order on
-            WhatsApp.
+            Find something you like and add it here, then check out on this
+            site.
           </p>
           <Button href="/shop" className="mt-8">
             Start shopping
@@ -130,8 +130,8 @@ export default function CartPage() {
               </span>
             </div>
             <p className="mt-4 text-sm text-ink-muted">
-              Delivery fee and timing are agreed with you on WhatsApp before the
-              order is final. Nothing is charged on this page.
+              Delivery fee and timing are agreed with you when we confirm the
+              order. Nothing is charged on this page.
             </p>
             <Button href="/checkout" size="lg" className="mt-6 w-full">
               Proceed to checkout

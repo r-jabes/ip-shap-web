@@ -7,7 +7,7 @@ import { SITE } from "@/lib/site-config";
 
 const TRUST = [
   `Based in ${SITE.country}`,
-  "Order confirmed on WhatsApp",
+  "Order confirmed with you",
   "Prices in Rwandan francs (RWF)",
   "Legal drinking age required",
 ] as const;
@@ -15,7 +15,7 @@ const TRUST = [
 const FAQ_TEASERS = [
   {
     q: "How do I order?",
-    a: "Add bottles to your cart, check out, and send the order on WhatsApp.",
+    a: "Add bottles to your cart, check out on this site, and we confirm with you.",
   },
   {
     q: "When do I pay?",

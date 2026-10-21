@@ -22,11 +22,12 @@ No live catalogue or order API calls are implemented yet. Environment slots for 
 2. Update frontend domain types / validators to match
 3. Note the contract version in both changelogs
 
-### WhatsApp-assisted orders (later)
+### In-app orders (P5)
 
-1. Create the order server-side first
-2. Only then present a WhatsApp deep link
+1. Create the order server-side first (durable when service role is set)
+2. WhatsApp is Contact us only — never the checkout path
 3. Never treat “opened WhatsApp” as payment or order confirmation
+4. Staff email via Resend is best-effort; order commit must not depend on it
 
 ### Online payments (later)
 

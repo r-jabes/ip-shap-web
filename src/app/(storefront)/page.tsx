@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     absolute: `${SHORT_BRAND} | Wines & spirits in Rwanda`,
   },
   description:
-    "Browse whisky, wine, sparkling, vodka and gin from THE IP SHAP BUSINESS LTD. Add bottles to your cart and send your order on WhatsApp.",
+    "Browse whisky, wine, sparkling, vodka and gin from THE IP SHAP BUSINESS LTD. Add bottles to your cart and check out on this site.",
 };
 
 export default function HomePage() {

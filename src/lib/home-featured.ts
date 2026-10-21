@@ -36,11 +36,11 @@ export function getHomeFeaturedSlides(): HomeFeaturedSlide[] {
       eyebrow: "Featured",
       title: "Gin, boxed and ready",
       intro:
-        "A bottle worth gifting — or keeping. Browse the gin shelf, then send your order on WhatsApp.",
+        "A bottle worth gifting — or keeping. Browse the gin shelf, then check out on this site.",
       points: [
         "Organic single-estate gin from France",
         "Presented with its kraft gift box",
-        "Add to cart, then confirm on WhatsApp",
+        "Add to cart, then check out here",
       ],
       ctaLabel: "Shop gin",
       href: "/shop?category=gin",
@@ -55,7 +55,7 @@ export function getHomeFeaturedSlides(): HomeFeaturedSlide[] {
       eyebrow: "Spotlight",
       title: "Whisky on the shelf",
       intro:
-        "Blended Scotch and more — start with whisky, then send your order on WhatsApp.",
+        "Blended Scotch and more — start with whisky, then check out on this site.",
       points: [
         "Browse labels and compare bottles",
         "Add what you want to the cart",
@@ -78,7 +78,7 @@ export function getHomeFeaturedSlides(): HomeFeaturedSlide[] {
       points: [
         "Rosé and extra-dry styles",
         "Prices in Rwandan francs (RWF)",
-        "Order confirmed on WhatsApp",
+        "Order confirmed with you",
       ],
       ctaLabel: "Shop sparkling",
       href: "/shop?category=sparkling",
@@ -93,7 +93,7 @@ export function getHomeFeaturedSlides(): HomeFeaturedSlide[] {
       eyebrow: "On the shelf",
       title: "Red and white, ready to pour",
       intro:
-        "Pick a bottle for dinner or a gift. Check out, then send the order on WhatsApp.",
+        "Pick a bottle for dinner or a gift. Check out on this site — we confirm with you.",
       points: [
         "Red, white and fortified wines",
         "Quantities set in the cart",

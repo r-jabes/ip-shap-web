@@ -2,6 +2,7 @@
 
 ## Unreleased — UI redesign R0–R8 + handover P0–P4
 
+- Handover **P5**: durable orders (Supabase + opaque refs), secure lookup, staff email on place (Resend), admin inbox + message customer, WhatsApp CTAs = Contact us only
 - Handover **P4**: stock engine — reserve (decrement counted on-hand) at order place, restore on cancel; confirm/payment do not touch stock; low-stock dashboard; adjust audit
 - Handover **P0**: env matrix (staging vs prod), `PLATFORM_BOOTSTRAP.md`, `THREAT_MODEL.md`, CI critical dependency audit, expanded `.env.example`
 - Admin restyle (R8): `/admin` shell, login, dashboard, products, stock, orders and import use storefront tokens, sticker buttons, Field kit and panel frames — look only, no new behaviour

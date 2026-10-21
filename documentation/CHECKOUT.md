@@ -11,8 +11,10 @@
 1. Contact name + phone (Rwanda-first validation; international `+` allowed).
 2. Optional delivery address fields (district/sector/cell/village/directions).
 3. Delivery zone selector only when zones exist; otherwise fee shown as unavailable.
-4. Channel: WhatsApp-assisted (default) or online payment (disabled until `ONLINE_PAYMENT_ENABLED=true`).
+4. Channel: place-order (default, DB enum `whatsapp_assisted`) or online payment (disabled until `ONLINE_PAYMENT_ENABLED=true`). WhatsApp is **Contact us**, not the checkout path.
 5. Client sends `idempotencyKey` (UUID) to prevent duplicate orders on double submit.
+6. When Supabase service role is configured, orders persist to Postgres and stock is reserved via `reserve_order_stock`. Otherwise the in-memory store is used (local/demo).
+7. Staff receive a Resend email when `EMAIL_FROM`, `RESEND_API_KEY`, and `ORDER_NOTIFY_EMAILS` are set. Email failure does not roll back the order.
 
 ## Confirmation (`/order/[reference]?token=…`)
 

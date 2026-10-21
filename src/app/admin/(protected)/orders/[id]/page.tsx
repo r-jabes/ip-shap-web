@@ -6,12 +6,17 @@ import {
 } from "@/components/admin/admin-ui";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Field";
+import { WhatsAppIcon } from "@/components/ui/icons";
 import {
   adminMarkPaymentAction,
   adminTransitionFulfilmentAction,
 } from "@/app/admin/order-actions";
 import { formatDemoPrice } from "@/domain/catalogue";
-import { getOrderById } from "@/lib/orders/store";
+import {
+  customerTelHref,
+  customerWhatsAppHref,
+} from "@/lib/orders/customer-contact";
+import { getOrderByIdDurable } from "@/lib/orders/durable";
 
 type Params = Promise<{ id: string }>;
 
@@ -24,8 +29,14 @@ export default async function AdminOrderDetailPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const order = getOrderById(id);
+  const order = await getOrderByIdDurable(id);
   if (!order) notFound();
+
+  const customerWa = customerWhatsAppHref(
+    order.customerPhone,
+    `Hello ${order.customerName}, regarding your order ${order.reference}…`,
+  );
+  const customerTel = customerTelHref(order.customerPhone);
 
   return (
     <div className="space-y-8">
@@ -44,6 +55,34 @@ export default async function AdminOrderDetailPage({
           {query.paid ? "Payment recorded." : "Order updated."}
         </AdminStatus>
       ) : null}
+
+      <AdminPanel>
+        <h2 className="font-display text-xl">Message customer</h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          Opens a link to the customer&apos;s phone — not the shop Contact us
+          number.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {customerWa ? (
+            <Button
+              href={customerWa}
+              variant="secondary"
+              size="sm"
+              iconLeft={<WhatsAppIcon size={16} />}
+            >
+              WhatsApp customer
+            </Button>
+          ) : null}
+          {customerTel ? (
+            <Button href={customerTel} variant="ghost" size="sm">
+              Call customer
+            </Button>
+          ) : null}
+          {!customerWa && !customerTel ? (
+            <p className="text-sm text-ink-muted">No usable customer phone.</p>
+          ) : null}
+        </div>
+      </AdminPanel>
 
       <ul className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
         {(

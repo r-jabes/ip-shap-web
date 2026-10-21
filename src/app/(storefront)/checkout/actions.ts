@@ -3,13 +3,13 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { consumeRateLimit } from "@/lib/admin/rate-limit";
-import { notifyOrderEvent } from "@/lib/notifications/log";
+import { notifyNewOrder } from "@/lib/notifications/notify";
 import {
-  createOrder,
-  lookupOrder,
+  createOrderDurable,
+  lookupOrderDurable,
   toOrderSummary,
-  type CheckoutChannel,
-} from "@/lib/orders/store";
+} from "@/lib/orders/durable";
+import type { CheckoutChannel } from "@/lib/orders/store";
 import { initiateOrderPayment } from "@/lib/payments/initiate";
 
 export type CheckoutActionState = {
@@ -45,7 +45,7 @@ export async function placeOrderAction(
 
   let order;
   try {
-    order = createOrder({
+    order = await createOrderDurable({
       channel,
       items,
       customerName: String(formData.get("customerName") ?? ""),
@@ -73,12 +73,18 @@ export async function placeOrderAction(
     };
   }
 
-  notifyOrderEvent({
-    templateId: "order_awaiting_confirmation",
-    orderReference: order.reference,
-    idempotencyKey: `order-created-${order.id}`,
-    variables: { channel: order.channel },
-  });
+  // Order is committed — email failures must not undo it.
+  try {
+    await notifyNewOrder(order);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "notification_error",
+        orderReference: order.reference,
+        error: error instanceof Error ? error.message : "unknown",
+      }),
+    );
+  }
 
   const summary = toOrderSummary(order);
   let confirmPath = `/order/${encodeURIComponent(summary.reference)}?token=${encodeURIComponent(summary.lookupToken)}`;
@@ -87,7 +93,6 @@ export async function placeOrderAction(
     try {
       const payment = initiateOrderPayment(order);
       if (payment?.redirectUrl) {
-        // Sandbox redirect only — never treat as paid until webhook verifies.
         order.paymentStatus = "pending";
         confirmPath = payment.redirectUrl.replace(/^https?:\/\/[^/]+/, "");
       }
@@ -115,7 +120,7 @@ export async function lookupOrderAction(formData: FormData): Promise<void> {
 
   const reference = String(formData.get("reference") ?? "").trim();
   const token = String(formData.get("token") ?? "").trim();
-  const order = lookupOrder(reference, token);
+  const order = await lookupOrderDurable(reference, token);
   if (!order) {
     redirect(`/order/lookup?error=${encodeURIComponent("Order not found.")}`);
   }

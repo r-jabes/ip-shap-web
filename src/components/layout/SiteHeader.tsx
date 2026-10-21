@@ -108,12 +108,12 @@ export function SiteHeader({ nav }: { nav: NavData }) {
 
           <div className="hidden xl:block">
             <Button
-              href={chatHref("Hello, I would like to place an order.")}
+              href={chatHref("Hello, I would like to ask a question.")}
               size="sm"
               variant="ghost"
               iconLeft={<WhatsAppIcon size={17} />}
             >
-              Order on WhatsApp
+              Contact us
             </Button>
           </div>
 

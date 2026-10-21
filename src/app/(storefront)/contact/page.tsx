@@ -89,7 +89,7 @@ export default function ContactPage() {
                 Preferred
               </span>
               <span className="font-display mt-3 block text-3xl">
-                Order on WhatsApp
+                Contact us on WhatsApp
               </span>
               <span className="mt-2 block text-brand-warm-white/75">
                 {formatPhoneDisplay(SITE.whatsappDigits)}

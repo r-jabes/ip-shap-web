@@ -29,20 +29,20 @@ export function HomeHero() {
               {SHORT_BRAND}
             </h1>
             <p className="mt-3 max-w-md text-sm text-ink-muted sm:text-base">
-              Whisky, wine and more — pick your bottles, then send the order on
-              WhatsApp.
+              Whisky, wine and more — pick your bottles and check out on this
+              site.
             </p>
             <div className="mt-5 flex flex-wrap gap-3 sm:mt-6">
               <Button href="/shop" variant="primary" size="lg">
                 Shop now
               </Button>
               <Button
-                href={chatHref()}
+                href={chatHref("Hello, I would like to ask a question.")}
                 variant="secondary"
                 size="lg"
                 iconLeft={<WhatsAppIcon size={18} />}
               >
-                Order on WhatsApp
+                Contact us
               </Button>
               <Button href="/shop" variant="ghost" size="lg">
                 View all

@@ -16,7 +16,7 @@ export default function DeliveryPage() {
         {
           index: "01",
           heading: "Fees and timing",
-          body: "Both depend on where you are. We confirm them on WhatsApp before the order is final.",
+          body: "Both depend on where you are. We confirm them with you before the order is final.",
         },
         {
           index: "02",

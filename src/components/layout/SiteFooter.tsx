@@ -45,11 +45,11 @@ export function SiteFooter({ nav }: { nav: NavData }) {
           </h2>
           <div className="flex flex-wrap gap-3">
             <Button
-              href={chatHref("Hello, I would like to place an order.")}
+              href={chatHref("Hello, I would like to ask a question.")}
               variant="primary"
               iconLeft={<WhatsAppIcon size={18} />}
             >
-              Order on WhatsApp
+              Contact us
             </Button>
             <Button href="/shop" variant="on-dark">
               Browse the shop
@@ -62,7 +62,8 @@ export function SiteFooter({ nav }: { nav: NavData }) {
             <BrandLogo tone="on-ink" height={48} />
             <p className="mt-5 max-w-xs text-[0.95rem] text-brand-warm-white/70">
               Wines, spirits and more from a retailer based in {SITE.country}.
-              Browse online and send your order on WhatsApp.
+              Browse online, check out on this site, then contact us if you need
+              help.
             </p>
           </div>
 

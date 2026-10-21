@@ -23,8 +23,9 @@ export default function CheckoutPage() {
         Checkout
       </h1>
       <p className="mt-3 max-w-2xl text-ink-muted">
-        Guest checkout — no account needed. We create your order, then you
-        finish with us on WhatsApp. Nothing is charged on this page.
+        Guest checkout — no account needed. We create your order on this site,
+        then confirm availability, delivery and payment with you. Nothing is
+        charged on this page.
       </p>
       <div className="mt-10">
         <CheckoutFormClient

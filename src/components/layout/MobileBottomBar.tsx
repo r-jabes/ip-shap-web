@@ -52,7 +52,7 @@ export function MobileBottomBar() {
         Search
       </button>
       <a
-        href={chatHref("Hello, I would like to place an order.")}
+        href={chatHref("Hello, I would like to ask a question.")}
         {...(chatHref().startsWith("http")
           ? { target: "_blank", rel: "noopener noreferrer" }
           : {})}

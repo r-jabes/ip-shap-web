@@ -12,7 +12,7 @@ const FAQS = [
   {
     question: "How do I order?",
     answer:
-      "Add bottles to your cart, check out, and send the order to us on WhatsApp. We confirm it with you before anything is final.",
+      "Add bottles to your cart and check out on this site. We confirm the order with you before anything is final. WhatsApp is for Contact us if you have a question.",
   },
   {
     question: "When do I pay?",

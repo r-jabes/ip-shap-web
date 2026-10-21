@@ -6,23 +6,23 @@ import {
   AdminTh,
 } from "@/components/admin/admin-ui";
 import { formatDemoPrice } from "@/domain/catalogue";
-import { listOrders } from "@/lib/orders/store";
+import { listOrdersDurable } from "@/lib/orders/durable";
 
-export default function AdminOrdersPage() {
-  const orders = listOrders();
+export default async function AdminOrdersPage() {
+  const orders = await listOrdersDurable();
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Orders"
-        description="Confirm WhatsApp-assisted orders, record verified payments, and advance fulfilment. Payment is never assumed from a browser redirect."
+        description="Confirm new orders, record verified payments, and advance fulfilment. Payment is never assumed from a browser redirect."
       />
 
       <AdminTable>
         <thead>
           <tr>
             <AdminTh>Reference</AdminTh>
-            <AdminTh>Channel</AdminTh>
+            <AdminTh>Customer</AdminTh>
             <AdminTh>Fulfilment</AdminTh>
             <AdminTh>Payment</AdminTh>
             <AdminTh>Total</AdminTh>
@@ -33,7 +33,10 @@ export default function AdminOrdersPage() {
           {orders.map((order) => (
             <tr key={order.id}>
               <AdminTd className="font-mono text-xs">{order.reference}</AdminTd>
-              <AdminTd>{order.channel}</AdminTd>
+              <AdminTd>
+                <span className="block font-medium">{order.customerName}</span>
+                <span className="text-xs text-ink-muted">{order.customerPhone}</span>
+              </AdminTd>
               <AdminTd>{order.fulfilmentStatus}</AdminTd>
               <AdminTd>{order.paymentStatus}</AdminTd>
               <AdminTd className="tabular">

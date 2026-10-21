@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/admin/session";
 import { roleHasPermission } from "@/lib/admin/roles";
 import { notifyOrderEvent } from "@/lib/notifications/log";
-import { markManualPayment, transitionFulfilment } from "@/lib/orders/store";
+import {
+  markManualPaymentDurable,
+  transitionFulfilmentDurable,
+} from "@/lib/orders/durable";
 import type { FulfilmentStatus } from "@/lib/orders/transitions";
 
 async function requireStaff() {
@@ -22,7 +25,12 @@ export async function adminTransitionFulfilmentAction(formData: FormData) {
   const to = String(formData.get("to") ?? "") as FulfilmentStatus;
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) throw new Error("Reason is required.");
-  const order = transitionFulfilment(orderId, to, reason, session.email);
+  const order = await transitionFulfilmentDurable(
+    orderId,
+    to,
+    reason,
+    session.email,
+  );
   notifyOrderEvent({
     templateId: to === "cancelled" ? "order_cancelled" : "fulfilment_update",
     orderReference: order.reference,
@@ -37,7 +45,7 @@ export async function adminMarkPaymentAction(formData: FormData) {
   const orderId = String(formData.get("orderId") ?? "");
   const reference = String(formData.get("paymentReference") ?? "").trim();
   const reason = String(formData.get("reason") ?? "").trim();
-  const order = markManualPayment(orderId, {
+  const order = await markManualPaymentDurable(orderId, {
     reference,
     reason,
     actorLabel: session.email,
