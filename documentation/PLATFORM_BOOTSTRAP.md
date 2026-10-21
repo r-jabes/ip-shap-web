@@ -12,9 +12,9 @@ Do **not** put API keys in chat — only confirm “created” and set values in
 | Supabase | Postgres, Auth, Storage | **Project A** | **Project B** (separate) | Client |
 | Vercel | Next.js host | Preview / staging env | Production env | Client |
 | Resend (or Postmark) | Staff order emails | Test domain / API key | Live domain / API key | Client |
-| Cloudflare | DNS + Turnstile (P7/P8) | Optional early | Required for domain | Client |
+| Cloudflare | DNS (+ Turnstile later) | Optional | Required for custom domain | Client |
 | Domain registrar | `.rw` / `.com` | — | Live hostname | Client |
-| Sentry | Errors (P8) | Optional | Recommended | Client / dev |
+| Sentry | Errors | Later | Recommended at launch | Client / dev |
 
 ## Vercel environment mapping
 
@@ -38,6 +38,7 @@ Local Rwanda `07…` numbers stored as E.164 `+2507…`. Set the same values in 
 | Her (Rosine) | WhatsApp — Contact us | `+250790801271` | `NEXT_PUBLIC_WHATSAPP_E164`, `WHATSAPP_BUSINESS_E164` |
 | Him (Patrick) | Voice calls | `+250788937270` | `NEXT_PUBLIC_PHONE_E164` |
 | Business | Public email | `patrickiradukunda505@gmail.com` | `NEXT_PUBLIC_CONTACT_EMAIL` |
+| Business | Address | `29 KK 218 St, Kigali, Rwanda` | `NEXT_PUBLIC_ADDRESS` |
 | Hours | Opening | 08:00–20:00 | `NEXT_PUBLIC_OPENING_HOURS` |
 | Both | New-order email alerts | `yadufashijerosine@gmail.com`, `patrickiradukunda505@gmail.com` | `ORDER_NOTIFY_EMAILS` |
 | Her | New-order human follow-up | Same WhatsApp as Contact us | (no Cloud API yet — email is primary) |

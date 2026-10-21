@@ -1,74 +1,54 @@
 # Frontend environment variables
 
-Never commit real secrets. Paste values only into host secret managers (Vercel) or local `.env.local` (gitignored).
+Paste secrets only into Vercel or `.env.local` (gitignored). Never commit real keys.
 
-## Environments
+## Staging setup (you already have Vercel + Supabase)
 
-| Environment | `NEXT_PUBLIC_APP_URL` | `NEXT_PUBLIC_DEMO_MODE` | Supabase project | Notes |
-| ----------- | --------------------- | ----------------------- | ---------------- | ----- |
-| Local | `http://localhost:3000` | `true` allowed | optional / staging | Fixtures OK for UI work |
-| Staging | `https://staging.…` | Prefer `false` once P6 cutover | **Staging** project | Separate keys from prod |
-| Production | `https://…` (live domain) | **`false` required** | **Production** project | Never share staging keys |
+1. **Supabase (staging project)** → Settings → API: copy URL, anon key, service_role key.  
+2. From `backend/`: `npx supabase link --project-ref <ref>` then `npm run db:push`, then `npm run db:seed:p1`.  
+3. Create Auth users + `admin_profiles` rows (see `../backend/documentation/OPERATIONS.md`).  
+4. **Vercel** → frontend project → Environment Variables → set the table below for **Preview** (and Production only when ready, with a **different** Supabase project).  
+5. Root directory = `frontend`. Redeploy. Set `NEXT_PUBLIC_APP_URL` to the deployed URL.  
+6. Smoke: `/shop`, `/admin/login`, checkout, `/api/health`.
 
-**Rule:** staging and production must use **different** Supabase projects and secrets from day one (P0).
+Local UI-only: `NEXT_PUBLIC_DEMO_MODE=true` is fine. Hosted staging: use **`false`**.
 
-## Public (`NEXT_PUBLIC_*`) — safe in the browser
+## Variables you need now
 
-| Variable | Required | From phase | Purpose |
-| -------- | -------- | ---------- | ------- |
-| `NEXT_PUBLIC_APP_URL` | yes | P0 | Canonical site URL (metadata, absolute links) |
-| `NEXT_PUBLIC_DEMO_MODE` | yes | P0 | `true`/`false` — demo catalogue fixtures. **Must be `false` in production** |
-| `NEXT_PUBLIC_SUPABASE_URL` | from P1 | P1 | Supabase API URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from P1 | P1 | Anon key (RLS enforced) |
-| `NEXT_PUBLIC_WHATSAPP_E164` | optional | P7 | Her WhatsApp (Contact us). Unset hides WA CTAs |
-| `NEXT_PUBLIC_PHONE_E164` | optional | P7 | His call number. Unset hides phone |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | optional | P7 | Public contact email |
-| `NEXT_PUBLIC_ADDRESS` | optional | P7 | Public address line |
-| `NEXT_PUBLIC_OPENING_HOURS` | optional | P7 | Hours text |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | from P8 | P8 | Cloudflare Turnstile site key (widget on checkout/contact) |
-| `NEXT_PUBLIC_SENTRY_DSN` | from P8 | P8 | Browser error reporting (public DSN) |
+| Variable | Where | Value / notes |
+| -------- | ----- | ------------- |
+| `NEXT_PUBLIC_APP_URL` | Public | Staging URL, e.g. `https://….vercel.app` |
+| `NEXT_PUBLIC_DEMO_MODE` | Public | Staging/prod: **`false`**. Local only: `true` OK |
+| `NEXT_PUBLIC_SUPABASE_URL` | Public | Staging project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Staging anon key |
+| `NEXT_PUBLIC_WHATSAPP_E164` | Public | `+250790801271` |
+| `NEXT_PUBLIC_PHONE_E164` | Public | `+250788937270` |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Public | `patrickiradukunda505@gmail.com` |
+| `NEXT_PUBLIC_ADDRESS` | Public | `29 KK 218 St, Kigali, Rwanda` |
+| `NEXT_PUBLIC_OPENING_HOURS` | Public | `08:00–20:00` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server | Staging service_role — never `NEXT_PUBLIC_*` |
+| `ADMIN_SESSION_SECRET` | Server | Random ≥ 32 chars |
+| `ADMIN_BOOTSTRAP_TOKEN` | Server | Random ≥ 16 chars (break-glass login) |
+| `WHATSAPP_BUSINESS_E164` | Server | `+250790801271` |
+| `ORDER_NOTIFY_EMAILS` | Server | `yadufashijerosine@gmail.com,patrickiradukunda505@gmail.com` |
+| `EMAIL_FROM` | Server | `IP SHAP Orders <orders@verified-domain>` after Resend domain verify |
+| `RESEND_API_KEY` | Server | Resend API key (orders still place without email if unset) |
+| `ONLINE_PAYMENT_ENABLED` | Server | `false` |
+| `PAYMENT_PROVIDER` | Server | `unselected` |
 
-## Server-only — never `NEXT_PUBLIC_*`
+Template: `.env.example` → `cp .env.example .env.local`.
 
-| Variable | Required | From phase | Purpose |
-| -------- | -------- | ---------- | ------- |
-| `SUPABASE_SERVICE_ROLE_KEY` | from P1 | P1 | Privileged DB — **server only** |
-| `ADMIN_SESSION_SECRET` | yes (admin) | P0–P2 | HMAC cookie for admin session after Auth (≥ 32 chars) |
-| `ADMIN_BOOTSTRAP_TOKEN` | optional | P0–P2 | Break-glass login only (≥ 16 chars). Prefer Supabase Auth |
-| `ADMIN_BOOTSTRAP_EMAIL` | optional | P0–P2 | Allow-list for break-glass email |
-| `WHATSAPP_BUSINESS_E164` | optional | P7 | Same as public WA if needed server-side (Contact us) |
-| `ORDER_NOTIFY_EMAILS` | from P5 | P5 | Comma-separated staff emails for new orders |
-| `EMAIL_FROM` | from P5 | P5 | From address for transactional mail (`orders@domain` or `IP SHAP Orders <orders@domain>`) |
-| `RESEND_API_KEY` | from P5 | P5 | Resend API key (or swap provider; keep name stable in docs) |
-| `TURNSTILE_SECRET_KEY` | from P8 | P8 | Turnstile secret — when set, checkout/contact require a valid token |
-| `SENTRY_DSN` | from P8 | P8 | Server Sentry DSN |
-| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | optional | P8 | Source-map upload in CI only |
-| `ONLINE_PAYMENT_ENABLED` | default `false` | — | Stay `false` (MoMo out of handover scope) |
-| `PAYMENT_PROVIDER` | default `unselected` | — | `unselected` or `sandbox` (tests only) |
-| `PAYMENT_WEBHOOK_SECRET` | if sandbox | — | HMAC for sandbox webhooks |
-| `NODE_ENV` | runtime | — | `development` / `test` / `production` |
+## Not needed yet (omit until you enable them)
 
-## `NEXT_PUBLIC_DEMO_MODE` policy
+Turnstile, Sentry, payment webhook secret, bootstrap email allow-list. Code stays optional when these are unset.
+
+## `NEXT_PUBLIC_DEMO_MODE`
 
 | Mode | Behaviour |
 | ---- | --------- |
-| `true` | Local/UI only — may load `src/fixtures/demo`. **Ignored in `NODE_ENV=production` builds** (P6) |
-| `false` | Storefront uses published Supabase catalogue via repository + cache. Empty if no service/anon config (fail closed) |
-
-Production deploy checklist must set `NEXT_PUBLIC_DEMO_MODE=false` (and production builds refuse fixtures anyway).
+| `true` | Local fixtures OK. **Ignored in production builds** (always durable path) |
+| `false` | Published Supabase catalogue — empty shop if DB/keys missing |
 
 ## Validation
 
-`src/lib/env.ts` validates with Zod. Call `getServerEnv()` only on the server (or Vitest).
-
-## Local template
-
-```bash
-cp .env.example .env.local
-```
-
-Fill values when accounts exist. Never commit `.env.local`.
-
-## Ownership
-
-Client (or holding company) owns: domain, Vercel team, Supabase org, Resend (or email) account, Cloudflare (DNS/Turnstile). Developers get invite access — not personal ownership of production secrets.
+`src/lib/env.ts` (Zod). Call `getServerEnv()` only on the server.
