@@ -12,6 +12,7 @@ import {
 } from "@/fixtures/demo/catalogue";
 import type { AdminSession } from "@/lib/admin/session";
 import { moneyRwf } from "@/lib/money";
+import { isLowStockItem } from "@/lib/stock/engine";
 
 export type StockAdjustmentRecord = {
   id: string;
@@ -107,8 +108,23 @@ export function adminDashboardCounts() {
     unknownStock: products.filter((p) => p.availability === "unknown").length,
     outOfStock: products.filter((p) => p.availability === "out_of_stock")
       .length,
+    lowStock: products.filter((p) =>
+      isLowStockItem({
+        availability: p.availability,
+        quantity: p.stockQuantity,
+      }),
+    ).length,
     recentAdjustments: getStore().adjustments.length,
   };
+}
+
+export function adminListLowStockProducts() {
+  return adminListProducts().filter((p) =>
+    isLowStockItem({
+      availability: p.availability,
+      quantity: p.stockQuantity,
+    }),
+  );
 }
 
 export type AdminProductInput = {

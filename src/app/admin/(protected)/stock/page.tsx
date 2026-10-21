@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { adjustStockAction } from "@/app/admin/actions";
-import { adminListAdjustments, adminListProducts } from "@/lib/admin/store";
+import { adminListProductsDurable } from "@/lib/admin/catalogue-durable";
+import { listAdjustmentsDurable } from "@/lib/stock/durable";
 
 export default async function AdminStockPage({
   searchParams,
@@ -17,14 +18,14 @@ export default async function AdminStockPage({
   searchParams: Promise<{ adjusted?: string }>;
 }) {
   const params = await searchParams;
-  const products = adminListProducts();
-  const adjustments = adminListAdjustments(25);
+  const products = await adminListProductsDurable();
+  const adjustments = await listAdjustmentsDurable(25);
 
   return (
     <div className="space-y-8">
       <AdminPageHeader
         title="Stock control"
-        description="Every adjustment records actor, previous/new values and reason. Negative stock is rejected. Unknown stock must not be treated as in stock."
+        description="Every adjustment records actor, previous/new values and reason. Negative stock is rejected. Unknown stock must not be treated as in stock. Order confirm decrements atomically; cancel restores."
       />
 
       {params.adjusted ? <AdminStatus>Stock adjusted.</AdminStatus> : null}

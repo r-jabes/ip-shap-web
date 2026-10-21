@@ -34,11 +34,9 @@ import {
   adminUpsertProductDurable,
 } from "@/lib/admin/catalogue-durable";
 import { uploadProductImage } from "@/lib/admin/media/upload";
-import {
-  adminAdjustStock,
-  type AdminProductInput,
-} from "@/lib/admin/store";
+import type { AdminProductInput } from "@/lib/admin/store";
 import { getServerEnv } from "@/lib/env";
+import { adjustStockDurable } from "@/lib/stock/durable";
 
 async function requireSession(
   permission?: AdminPermission,
@@ -303,7 +301,7 @@ export async function adjustStockAction(formData: FormData) {
       ? null
       : Number.parseInt(expectedRaw, 10);
 
-  adminAdjustStock(session, {
+  await adjustStockDurable(session, {
     productId,
     newQuantity,
     newAvailability,

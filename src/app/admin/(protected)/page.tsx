@@ -8,12 +8,14 @@ import {
   adminDashboardCounts,
   adminListAdjustments,
   adminListAudits,
+  adminListLowStockProducts,
 } from "@/lib/admin/store";
 
 export default function AdminDashboardPage() {
   const counts = adminDashboardCounts();
   const adjustments = adminListAdjustments(5);
   const audits = adminListAudits(8);
+  const lowStock = adminListLowStockProducts().slice(0, 8);
 
   return (
     <div className="space-y-10">
@@ -46,12 +48,40 @@ export default function AdminDashboardPage() {
             ["Draft / demo", counts.draft],
             ["Archived", counts.archived],
             ["Unknown stock", counts.unknownStock],
+            ["Low stock", counts.lowStock],
             ["Out of stock", counts.outOfStock],
           ] as const
         ).map(([label, value]) => (
           <AdminStat key={label} label={label} value={value} />
         ))}
       </ul>
+
+      <AdminPanel>
+        <h2 className="font-display text-xl">Low stock</h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          Counted stock at or below the low-stock threshold (unknown excluded).
+        </p>
+        {lowStock.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-muted">None right now.</p>
+        ) : (
+          <ul className="mt-4 space-y-2 text-sm">
+            {lowStock.map((product) => (
+              <li
+                key={product.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 border-t border-brand-charcoal/10 pt-2 first:border-t-0 first:pt-0"
+              >
+                <span className="font-medium">{product.name}</span>
+                <span className="tabular text-ink-muted">
+                  {product.availability}
+                  {typeof product.stockQuantity === "number"
+                    ? ` · qty ${product.stockQuantity}`
+                    : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </AdminPanel>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminPanel>

@@ -159,6 +159,94 @@ describe("createOrder", () => {
     ).toThrow(/stock/i);
   });
 
+  it("decrements on confirm and restores on cancel", async () => {
+    const { adminGetProduct, adminUpsertProduct } =
+      await import("@/lib/admin/store");
+    const { cancelOrder, createOrder, transitionFulfilment } =
+      await import("./store");
+    const product = adminUpsertProduct(
+      {
+        sub: "test",
+        email: "owner@example.com",
+        role: "owner",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      {
+        slug: `confirm-stock-${Date.now()}`,
+        name: "Confirm Stock",
+        description: "Confirm/cancel stock",
+        priceAmount: 4000,
+        brandSlug: "test-brand",
+        brandName: "Test Brand",
+        status: "published",
+        availability: "in_stock",
+        isProvisional: true,
+        stockQuantity: 5,
+      },
+    );
+    const order = createOrder({
+      channel: "whatsapp_assisted",
+      items: [{ productId: product.id, quantity: 2 }],
+      customerName: "Ada",
+      customerPhone: "+250788123456",
+      idempotencyKey: "11111111-1111-4111-8111-111111111201",
+    });
+    transitionFulfilment(order.id, "confirmed", "Paid offline", "staff@x.com");
+    expect(adminGetProduct(product.id)?.stockQuantity).toBe(3);
+    expect(order.stockCommitted).toBe(true);
+    cancelOrder(order.id, "Customer cancelled");
+    expect(adminGetProduct(product.id)?.stockQuantity).toBe(5);
+    expect(order.stockCommitted).toBe(false);
+  });
+
+  it("prevents oversell when parallel confirms race after stock shrinks", async () => {
+    const { adminGetProduct, adminUpsertProduct } =
+      await import("@/lib/admin/store");
+    const { commitOrderStock, createOrder } = await import("./store");
+    const product = adminUpsertProduct(
+      {
+        sub: "test",
+        email: "owner@example.com",
+        role: "owner",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      {
+        slug: `race-stock-${Date.now()}`,
+        name: "Race Stock",
+        description: "Concurrent confirm",
+        priceAmount: 4000,
+        brandSlug: "test-brand",
+        brandName: "Test Brand",
+        status: "published",
+        availability: "in_stock",
+        isProvisional: true,
+        stockQuantity: 2,
+      },
+    );
+    const first = createOrder({
+      channel: "whatsapp_assisted",
+      items: [{ productId: product.id, quantity: 1 }],
+      customerName: "Ada",
+      customerPhone: "+250788123456",
+      idempotencyKey: "11111111-1111-4111-8111-111111111202",
+    });
+    const second = createOrder({
+      channel: "whatsapp_assisted",
+      items: [{ productId: product.id, quantity: 1 }],
+      customerName: "Bea",
+      customerPhone: "+250788123457",
+      idempotencyKey: "11111111-1111-4111-8111-111111111203",
+    });
+
+    // Simulate an external shrink between reserve and confirm.
+    const live = adminGetProduct(product.id)!;
+    live.stockQuantity = 1;
+
+    commitOrderStock(first.id);
+    expect(adminGetProduct(product.id)?.stockQuantity).toBe(0);
+    expect(() => commitOrderStock(second.id)).toThrow(/stock/i);
+  });
+
   it("applies webhooks idempotently and never downgrades paid", async () => {
     const { createOrder, applyPaymentStatusFromWebhook } =
       await import("./store");

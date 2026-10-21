@@ -12,6 +12,11 @@ import {
   type FulfilmentStatus,
   type PaymentStatus,
 } from "@/lib/orders/transitions";
+import {
+  availabilityAfterDecrement,
+  availabilityAfterRestore,
+  isCountedStock,
+} from "@/lib/stock/engine";
 
 export type CheckoutChannel = "whatsapp_assisted" | "online_payment";
 
@@ -48,6 +53,8 @@ export type StoredOrder = {
   deliveryZoneId?: string;
   idempotencyKey: string;
   stockReserved: boolean;
+  /** True after confirm decremented on-hand inventory. */
+  stockCommitted: boolean;
   reservationExpiresAt: string | null;
   statusHistory: Array<{
     from: FulfilmentStatus | null;
@@ -135,11 +142,95 @@ export function buildWhatsAppDeepLink(order: StoredOrder): string | undefined {
   return `https://wa.me/${phone}?text=${text}`;
 }
 
-/** Available units = on-hand qty minus open reservations (unknown qty → null). */
+/** Available units = on-hand qty minus open reservations (unknown ≠ counted). */
 function remainingStock(product: DemoProduct): number | null {
-  if (typeof product.stockQuantity !== "number") return null;
+  if (
+    !isCountedStock({
+      availability: product.availability,
+      quantity: product.stockQuantity,
+    })
+  ) {
+    return null;
+  }
   const reserved = getStore().reservations.get(product.id) ?? 0;
-  return product.stockQuantity - reserved;
+  return (product.stockQuantity as number) - reserved;
+}
+
+function releaseReservation(order: StoredOrder) {
+  if (!order.stockReserved) return;
+  const store = getStore();
+  for (const item of order.items) {
+    const reserved = store.reservations.get(item.productId) ?? 0;
+    store.reservations.set(
+      item.productId,
+      Math.max(0, reserved - item.quantity),
+    );
+  }
+  order.stockReserved = false;
+  order.reservationExpiresAt = null;
+}
+
+/** Lock semantics for in-memory confirm: decrement on-hand, clear reservation. */
+export function commitOrderStock(orderId: string): StoredOrder {
+  const store = getStore();
+  const order = store.orders.find((row) => row.id === orderId);
+  if (!order) throw new Error("Order not found");
+  if (order.stockCommitted) return order;
+
+  for (const item of order.items) {
+    const product = resolveProduct(item.productId);
+    if (!product) continue;
+    if (
+      !isCountedStock({
+        availability: product.availability,
+        quantity: product.stockQuantity,
+      })
+    ) {
+      continue;
+    }
+    const onHand = product.stockQuantity as number;
+    if (onHand < item.quantity) {
+      throw new Error(
+        `Insufficient stock for ${product.name} (have ${onHand}, need ${item.quantity}).`,
+      );
+    }
+    const nextQty = onHand - item.quantity;
+    product.stockQuantity = nextQty;
+    product.availability = availabilityAfterDecrement(
+      product.availability,
+      nextQty,
+    );
+  }
+
+  releaseReservation(order);
+  order.stockCommitted = true;
+  order.updatedAt = new Date().toISOString();
+  return order;
+}
+
+function restoreCommittedStock(order: StoredOrder) {
+  if (!order.stockCommitted) return;
+  for (const item of order.items) {
+    const product = resolveProduct(item.productId);
+    if (!product) continue;
+    if (
+      !isCountedStock({
+        availability: product.availability,
+        quantity: product.stockQuantity,
+      }) &&
+      product.availability === "unknown"
+    ) {
+      continue;
+    }
+    if (typeof product.stockQuantity !== "number") continue;
+    const nextQty = product.stockQuantity + item.quantity;
+    product.stockQuantity = nextQty;
+    product.availability = availabilityAfterRestore(
+      product.availability,
+      nextQty,
+    );
+  }
+  order.stockCommitted = false;
 }
 
 export function createOrder(input: CreateOrderInput): StoredOrder {
@@ -255,6 +346,7 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     deliveryZoneId: zone?.id,
     idempotencyKey: input.idempotencyKey,
     stockReserved: reservationPlan.length > 0,
+    stockCommitted: false,
     reservationExpiresAt:
       reservationPlan.length > 0 ? reservationExpiresAt : null,
     statusHistory: [
@@ -290,16 +382,10 @@ export function cancelOrder(orderId: string, reason: string): StoredOrder {
   assertFulfilmentTransition(order.fulfilmentStatus, "cancelled");
   if (order.fulfilmentStatus === "cancelled") return order;
 
-  if (order.stockReserved) {
-    for (const item of order.items) {
-      const reserved = store.reservations.get(item.productId) ?? 0;
-      store.reservations.set(
-        item.productId,
-        Math.max(0, reserved - item.quantity),
-      );
-    }
-    order.stockReserved = false;
-    order.reservationExpiresAt = null;
+  if (order.stockCommitted) {
+    restoreCommittedStock(order);
+  } else {
+    releaseReservation(order);
   }
 
   order.statusHistory.push({
@@ -366,6 +452,10 @@ export function transitionFulfilment(
 
   if (to === "cancelled") {
     return cancelOrder(orderId, reason);
+  }
+
+  if (to === "confirmed") {
+    commitOrderStock(orderId);
   }
 
   order.statusHistory.push({
