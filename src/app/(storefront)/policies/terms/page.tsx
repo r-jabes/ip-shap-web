@@ -2,10 +2,15 @@ import type { Metadata } from "next";
 import { InfoPage } from "@/components/content/InfoPage";
 import { Button } from "@/components/ui/Button";
 import { LEGAL_NAME } from "@/lib/brand";
+import { SITE } from "@/lib/site-config";
 
 export const metadata: Metadata = { title: "Terms of sale" };
 
 export default function TermsPage() {
+  const hoursNote = SITE.hours
+    ? ` Usual opening hours: ${SITE.hours} (Africa/Kigali).`
+    : "";
+
   return (
     <InfoPage
       eyebrow="Policies"
@@ -19,7 +24,7 @@ export default function TermsPage() {
         },
         {
           heading: "Orders",
-          body: "An order is final once we have confirmed it with you. Availability, delivery fee and timing are agreed at confirmation.",
+          body: `An order is created when you complete checkout on this site. It becomes final once we have confirmed it with you. Availability, delivery fee and timing are agreed at confirmation.${hoursNote}`,
         },
         {
           heading: "Prices",
@@ -27,7 +32,11 @@ export default function TermsPage() {
         },
         {
           heading: "Payment",
-          body: "You are not charged on this website. Payment is agreed when we confirm the order with you.",
+          body: "You are not charged on this website for the usual order path. Payment is agreed when we confirm the order with you. Opening WhatsApp or visiting a page is never proof of payment.",
+        },
+        {
+          heading: "Contact",
+          body: "Questions about an order should go through the Contact page channels we publish (WhatsApp, call or email). We only use details the business has confirmed.",
         },
       ]}
       action={

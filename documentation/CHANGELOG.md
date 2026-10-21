@@ -2,6 +2,7 @@
 
 ## Unreleased — UI redesign R0–R8 + handover P0–P4
 
+- Handover **P7**: rate-limited search suggest API + pg_trgm RPC; product/shop/home SEO (canonical + JSON-LD); crawler-safe age gate; contact/policies use confirmed client channels
 - Handover **P6**: storefront cutover to published Supabase catalogue (shop/PDP/home/nav/cart/search); production blocks demo fixtures; catalogue cache tag + revalidate on admin publish
 - Handover **P5**: durable orders (Supabase + opaque refs), secure lookup, branded staff email on place (Resend HTML + text), admin inbox + message customer, WhatsApp CTAs = Contact us only
 - Handover **P4**: stock engine — reserve (decrement counted on-hand) at order place, restore on cancel; confirm/payment do not touch stock; low-stock dashboard; adjust audit

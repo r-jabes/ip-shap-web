@@ -5,6 +5,7 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductRelated } from "@/components/product/ProductRelated";
 import { ProductStickyBar } from "@/components/product/ProductStickyBar";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import {
@@ -14,6 +15,11 @@ import {
   getRelatedProductsDurable,
   listProductsDurable,
 } from "@/lib/catalogue";
+import {
+  breadcrumbJsonLd,
+  productJsonLd,
+  productMetadata,
+} from "@/lib/seo";
 
 type Params = Promise<{ slug: string }>;
 
@@ -32,10 +38,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await getProductBySlugDurable(slug);
   if (!product) return { title: "Product" };
-  return {
-    title: product.name,
-    description: product.description,
-  };
+  return productMetadata(product);
 }
 
 export default async function ProductPage({ params }: { params: Params }) {
@@ -50,8 +53,19 @@ export default async function ProductPage({ params }: { params: Params }) {
   ]);
   const category = categories.find((c) => c.slug === product.categorySlug);
 
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop" },
+    ...(category
+      ? [{ name: category.name, path: `/shop?category=${category.slug}` }]
+      : []),
+    { name: product.name, path: `/product/${product.slug}` },
+  ];
+
   return (
     <>
+      <JsonLd data={productJsonLd(product)} />
+      <JsonLd data={breadcrumbJsonLd(crumbs)} />
       <Container className="py-8 pb-[calc(var(--bottom-bar-h)+5.5rem)] lg:py-12 lg:pb-16">
         <Breadcrumbs
           items={[

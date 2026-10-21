@@ -6,6 +6,7 @@ import { HomeHowItWorks } from "@/components/home/HomeHowItWorks";
 import { HomeRangeTicker } from "@/components/home/HomeRangeTicker";
 import { HomeTrustFaq } from "@/components/home/HomeTrustFaq";
 import { HomeWhatsAppBand } from "@/components/home/HomeWhatsAppBand";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { SHORT_BRAND } from "@/lib/brand";
 import {
   getCachedCategories,
@@ -13,6 +14,8 @@ import {
 } from "@/lib/catalogue/cache";
 import { getHomeFeaturedSlidesDurable } from "@/lib/home-featured";
 import { getHomeCollectionsDurable } from "@/lib/range-media";
+import { organizationJsonLd } from "@/lib/seo";
+import { SITE } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: {
@@ -42,6 +45,13 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd
+        data={organizationJsonLd({
+          telephone: SITE.phoneDigits,
+          email: SITE.email,
+          address: SITE.address,
+        })}
+      />
       <HomeHero />
       <HomeRangeTicker items={tickerItems} />
       <HomeCollections tiles={collections} />

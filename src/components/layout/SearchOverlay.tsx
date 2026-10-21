@@ -3,15 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chip } from "@/components/ui/Chip";
 import { IconButton } from "@/components/ui/IconButton";
 import { Overlay } from "@/components/ui/Overlay";
 import { ArrowRightIcon, CloseIcon, SearchIcon } from "@/components/ui/icons";
 import { formatDemoPrice } from "@/domain/catalogue";
-import { useCatalogue } from "@/components/catalogue/CatalogueProvider";
 import type { NavGroup } from "@/lib/navigation";
-import { suggestCategories, suggestProducts } from "@/lib/search-suggest";
+import type { ProductSuggestion } from "@/lib/search-suggest";
 import { chatHref } from "@/lib/site-config";
 
 const RECENT_KEY = "ip-shap-recent-searches-v1";
@@ -58,26 +57,54 @@ export function SearchOverlay({
   const resultsRef = useRef<HTMLUListElement>(null);
   const [query, setQuery] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
+  const [products, setProducts] = useState<ProductSuggestion[]>([]);
+  const [matchedCategories, setMatchedCategories] = useState<
+    Array<{ slug: string; name: string }>
+  >([]);
 
   useEffect(() => {
     if (open) {
       setRecent(readRecent());
     } else {
       setQuery("");
+      setProducts([]);
+      setMatchedCategories([]);
     }
   }, [open]);
 
-  const { categories, products: catalogue } = useCatalogue();
-  const products = useMemo(
-    () => suggestProducts(query, categories, 6, catalogue),
-    [query, categories, catalogue],
-  );
-  const matchedCategories = useMemo(
-    () => suggestCategories(query, categories),
-    [query, categories],
-  );
   const trimmed = query.trim();
   const hasQuery = trimmed.length >= 2;
+
+  // Debounced rate-limited suggest API (P7).
+  useEffect(() => {
+    if (!hasQuery) {
+      setProducts([]);
+      setMatchedCategories([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/search/suggest?q=${encodeURIComponent(trimmed)}`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) return;
+        const body = (await res.json()) as {
+          products?: ProductSuggestion[];
+          categories?: Array<{ slug: string; name: string }>;
+        };
+        setProducts(body.products ?? []);
+        setMatchedCategories(body.categories ?? []);
+      } catch {
+        // Aborted or network — keep prior results
+      }
+    }, 200);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [trimmed, hasQuery]);
 
   function submit(term: string) {
     const value = term.trim();

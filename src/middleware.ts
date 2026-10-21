@@ -1,32 +1,22 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Edge middleware: block obvious enumeration paths and attach request id.
- * Authorisation still happens in Server Components / Actions / RLS.
+ * Forward pathname for age-gate returnTo. Does not block crawlers or humans —
+ * the AgeGate UI is decided in the storefront layout.
  */
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Do not expose source maps or env dumps if misconfigured.
-  if (
-    pathname.endsWith(".map") ||
-    pathname === "/.env" ||
-    pathname.startsWith("/.env.")
-  ) {
-    return new NextResponse(null, { status: 404 });
-  }
-
-  const response = NextResponse.next();
-  response.headers.set(
-    "x-request-id",
-    request.headers.get("x-request-id") ?? crypto.randomUUID(),
+  const headers = new Headers(request.headers);
+  headers.set(
+    "x-pathname",
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
   );
-  return response;
+  return NextResponse.next({
+    request: { headers },
+  });
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|branding/|products/|api/).*)",
   ],
 };

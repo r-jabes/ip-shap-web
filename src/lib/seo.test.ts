@@ -28,6 +28,24 @@ const product: CatalogueProduct = {
   ],
 };
 
+describe("organizationJsonLd", () => {
+  it("includes legal name and optional contact", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
+    vi.stubEnv("NEXT_PUBLIC_DEMO_MODE", "false");
+    const { resetEnvCacheForTests } = await import("./env");
+    resetEnvCacheForTests();
+    const { organizationJsonLd } = await import("./seo");
+    const json = organizationJsonLd({
+      telephone: "250788937270",
+      email: "patrickiradukunda505@gmail.com",
+    });
+    expect(json["@type"]).toBe("LiquorStore");
+    expect(json.legalName).toBe("THE IP SHAP BUSINESS LTD");
+    expect(json.telephone).toBe("+250788937270");
+    expect(json.email).toBe("patrickiradukunda505@gmail.com");
+  });
+});
+
 describe("productJsonLd", () => {
   afterEach(() => {
     vi.resetModules();

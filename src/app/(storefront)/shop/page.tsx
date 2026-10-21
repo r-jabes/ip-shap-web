@@ -16,22 +16,41 @@ import {
   listProductsDurable,
   paginateProducts,
 } from "@/lib/catalogue";
+import { shopMetadata } from "@/lib/seo";
 import {
   buildShopHref,
   parseShopSearchParams,
   shopQueryToFilters,
 } from "@/lib/shop-query";
 
-export const metadata: Metadata = {
-  title: "Shop",
-  description:
-    "Browse whisky, vodka, gin and wine from THE IP SHAP BUSINESS LTD in Rwanda.",
-};
-
 /** Revalidate when catalogue cache tag is busted; also soft TTL. */
 export const revalidate = 3600;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const query = parseShopSearchParams(params);
+  const categories = await getCategoriesDurable();
+  const activeCategory =
+    query.categories.length === 1
+      ? categories.find((category) => category.slug === query.categories[0])
+      : undefined;
+  return shopMetadata({
+    category: activeCategory,
+    q: query.q,
+    hasExtraFilters:
+      query.brands.length > 0 ||
+      query.availability !== "all" ||
+      typeof query.minPrice === "number" ||
+      typeof query.maxPrice === "number" ||
+      query.categories.length > 1,
+  });
+}
 
 export default async function ShopPage({
   searchParams,

@@ -67,6 +67,7 @@ One-page baseline for handover phases P1–P9. Update when trust boundaries chan
 | P3 | Secure uploads |
 | P4 | Atomic stock |
 | P5 | Email notify; Contact-us WhatsApp only |
+| P7 | Age gate (cookie; crawlers exempt); search suggest rate limit |
 | P8 | Turnstile, Sentry, audit criticals, restore drill |
 
 ## Incident basics

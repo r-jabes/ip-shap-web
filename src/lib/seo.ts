@@ -165,6 +165,36 @@ export function breadcrumbJsonLd(
   };
 }
 
+/** Organization / LiquorStore JSON-LD for the homepage. */
+export function organizationJsonLd(input?: {
+  telephone?: string | null;
+  email?: string | null;
+  address?: string | null;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "LiquorStore",
+    name: SHORT_BRAND,
+    legalName: LEGAL_NAME,
+    url: absoluteUrl("/"),
+    priceRange: "RWF",
+    areaServed: "RW",
+    ...(input?.telephone
+      ? { telephone: input.telephone.startsWith("+") ? input.telephone : `+${input.telephone}` }
+      : {}),
+    ...(input?.email ? { email: input.email } : {}),
+    ...(input?.address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: input.address,
+            addressCountry: "RW",
+          },
+        }
+      : {}),
+  };
+}
+
 export function formatPriceForSeo(product: CatalogueProduct): string {
   return formatDemoPrice(product.price);
 }
