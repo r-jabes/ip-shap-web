@@ -52,7 +52,7 @@ Never commit real secrets. Paste values only into host secret managers (Vercel) 
 | Mode | Behaviour |
 | ---- | --------- |
 | `true` | May load `src/fixtures/demo` catalogue; PreviewIndicator in shell |
-| `false` | Production path — fixtures must not appear (enforced from P6; fail closed) |
+| `false` | Production path — sync helpers return empty; use `getCatalogueRepository()` / `listProductsDurable` for Supabase. Fixtures must not appear (fail closed from P1) |
 
 Production deploy checklist must set `NEXT_PUBLIC_DEMO_MODE=false`.
 

@@ -43,7 +43,13 @@ export function decodeSession(
       Buffer.from(payloadB64, "base64url").toString("utf8"),
     ) as AdminSession;
     if (!session.exp || session.exp * 1000 < Date.now()) return null;
-    if (session.role !== "owner" && session.role !== "staff") return null;
+    if (
+      session.role !== "owner" &&
+      session.role !== "manager" &&
+      session.role !== "staff"
+    ) {
+      return null;
+    }
     return session;
   } catch {
     return null;
