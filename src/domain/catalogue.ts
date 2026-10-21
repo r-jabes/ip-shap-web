@@ -32,6 +32,9 @@ export type DemoProduct = Product & {
   barcode?: string;
   /** Null means unknown quantity. */
   stockQuantity?: number | null;
+  /** Home / featured rails (P3). */
+  isFeatured?: boolean;
+  featuredSort?: number;
 };
 
 /** Alias used by SEO/admin layers. */

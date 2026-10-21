@@ -97,5 +97,7 @@ export function mapProductRow(row: ProductRow): DemoProduct {
       row.availability) as ProductAvailability,
     demoLabel: "",
     stockQuantity: inventory?.quantity ?? null,
+    isFeatured: Boolean(row.is_featured),
+    featuredSort: row.featured_sort ?? 0,
   };
 }

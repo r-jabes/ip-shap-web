@@ -10,6 +10,8 @@ const links = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/categories", label: "Categories" },
+  { href: "/admin/brands", label: "Brands" },
   { href: "/admin/stock", label: "Stock" },
   { href: "/admin/import", label: "Import", permission: "import:run" as const },
   {

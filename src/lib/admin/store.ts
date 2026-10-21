@@ -1,6 +1,15 @@
 import { randomUUID } from "node:crypto";
-import type { DemoProduct, ProductAvailability } from "@/domain/catalogue";
-import { DEMO_PRODUCTS } from "@/fixtures/demo/catalogue";
+import type {
+  Brand,
+  Category,
+  DemoProduct,
+  ProductAvailability,
+} from "@/domain/catalogue";
+import {
+  DEMO_BRANDS,
+  DEMO_CATEGORIES,
+  DEMO_PRODUCTS,
+} from "@/fixtures/demo/catalogue";
 import type { AdminSession } from "@/lib/admin/session";
 import { moneyRwf } from "@/lib/money";
 
@@ -28,6 +37,8 @@ export type AuditEvent = {
 
 type AdminStore = {
   products: DemoProduct[];
+  categories: Category[];
+  brands: Brand[];
   adjustments: StockAdjustmentRecord[];
   audits: AuditEvent[];
 };
@@ -45,7 +56,11 @@ function getStore(): AdminStore {
           product.availability === "unknown"
             ? null
             : (product.stockQuantity ?? 0),
+        isFeatured: product.isFeatured ?? false,
+        featuredSort: product.featuredSort ?? 0,
       })),
+      categories: structuredClone(DEMO_CATEGORIES),
+      brands: structuredClone(DEMO_BRANDS),
       adjustments: [],
       audits: [],
     };
@@ -111,7 +126,53 @@ export type AdminProductInput = {
   sku?: string;
   barcode?: string;
   stockQuantity: number | null;
+  isFeatured?: boolean;
+  featuredSort?: number;
 };
+
+export function adminListCategoriesMemory(): Category[] {
+  return [...getStore().categories].sort((a, b) =>
+    a.name.localeCompare(b.name, "en"),
+  );
+}
+
+export function adminListBrandsMemory(): Brand[] {
+  return [...getStore().brands].sort((a, b) =>
+    a.name.localeCompare(b.name, "en"),
+  );
+}
+
+export function adminUpsertCategoryMemory(
+  actor: AdminSession,
+  input: { slug: string; name: string; description: string },
+): Category {
+  const store = getStore();
+  const index = store.categories.findIndex((row) => row.slug === input.slug);
+  const next: Category = {
+    slug: input.slug,
+    name: input.name,
+    description: input.description,
+  };
+  if (index >= 0) store.categories[index] = next;
+  else store.categories.push(next);
+  writeAudit(actor, "category.upsert", "category", input.slug, {
+    name: input.name,
+  });
+  return next;
+}
+
+export function adminUpsertBrandMemory(
+  actor: AdminSession,
+  input: { slug: string; name: string },
+): Brand {
+  const store = getStore();
+  const index = store.brands.findIndex((row) => row.slug === input.slug);
+  const next: Brand = { slug: input.slug, name: input.name };
+  if (index >= 0) store.brands[index] = next;
+  else store.brands.push(next);
+  writeAudit(actor, "brand.upsert", "brand", input.slug, { name: input.name });
+  return next;
+}
 
 export function adminUpsertProduct(
   actor: AdminSession,
@@ -147,6 +208,8 @@ export function adminUpsertProduct(
       sku: input.sku,
       barcode: input.barcode,
       stockQuantity: input.stockQuantity,
+      isFeatured: input.isFeatured ?? previous.isFeatured ?? false,
+      featuredSort: input.featuredSort ?? previous.featuredSort ?? 0,
       demoLabel:
         input.status === "demo" || input.isProvisional
           ? "Provisional"
@@ -175,6 +238,8 @@ export function adminUpsertProduct(
     sku: input.sku,
     barcode: input.barcode,
     stockQuantity: input.stockQuantity,
+    isFeatured: input.isFeatured ?? false,
+    featuredSort: input.featuredSort ?? 0,
     demoLabel:
       input.status === "demo" || input.isProvisional ? "Provisional" : "Admin",
     images: [],

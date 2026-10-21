@@ -25,11 +25,17 @@ import {
   type AdminSession,
 } from "@/lib/admin/session";
 import {
+  adminApplyBulkImportDurable,
+  adminArchiveProductDurable,
+  adminExistingSlugsDurable,
+  adminGetProductDurable,
+  adminUpsertBrandDurable,
+  adminUpsertCategoryDurable,
+  adminUpsertProductDurable,
+} from "@/lib/admin/catalogue-durable";
+import { uploadProductImage } from "@/lib/admin/media/upload";
+import {
   adminAdjustStock,
-  adminArchiveProduct,
-  adminExistingSlugs,
-  adminGetProduct,
-  adminUpsertProduct,
   type AdminProductInput,
 } from "@/lib/admin/store";
 import { getServerEnv } from "@/lib/env";
@@ -146,7 +152,7 @@ export async function saveProductAction(formData: FormData) {
     throw new Error("Price must be a non-negative integer RWF amount.");
   }
 
-  const existing = id ? adminGetProduct(id) : undefined;
+  const existing = id ? await adminGetProductDurable(id) : undefined;
   const canSetPrice = roleHasPermission(session.role, "products:price");
   if (!canSetPrice) {
     if (!existing) {
@@ -174,6 +180,9 @@ export async function saveProductAction(formData: FormData) {
     }
   }
 
+  const featuredSortRaw = String(formData.get("featuredSort") ?? "0").trim();
+  const featuredSort = Number.parseInt(featuredSortRaw, 10);
+
   const input: AdminProductInput = {
     id,
     slug: String(formData.get("slug") ?? "").trim(),
@@ -192,9 +201,13 @@ export async function saveProductAction(formData: FormData) {
     sku: String(formData.get("sku") ?? "").trim() || undefined,
     barcode: String(formData.get("barcode") ?? "").trim() || undefined,
     stockQuantity,
+    isFeatured: formData.get("isFeatured") === "on",
+    featuredSort: Number.isInteger(featuredSort) && featuredSort >= 0
+      ? featuredSort
+      : 0,
   };
 
-  const product = adminUpsertProduct(session, input);
+  const product = await adminUpsertProductDurable(session, input);
   redirect(`/admin/products/${product.id}?saved=1`);
 }
 
@@ -205,8 +218,65 @@ export async function archiveProductAction(formData: FormData) {
   if (confirm !== "ARCHIVE") {
     throw new Error("Type ARCHIVE to confirm.");
   }
-  adminArchiveProduct(session, id);
+  await adminArchiveProductDurable(session, id);
   redirect("/admin/products?archived=1");
+}
+
+export async function saveCategoryAction(formData: FormData) {
+  const session = await requireSession("products:write");
+  const slug = String(formData.get("slug") ?? "")
+    .trim()
+    .toLowerCase();
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !name) {
+    throw new Error("Valid slug and name are required.");
+  }
+  await adminUpsertCategoryDurable(session, { slug, name, description });
+  redirect("/admin/categories?saved=1");
+}
+
+export async function saveBrandAction(formData: FormData) {
+  const session = await requireSession("products:write");
+  const slug = String(formData.get("slug") ?? "")
+    .trim()
+    .toLowerCase();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !name) {
+    throw new Error("Valid slug and name are required.");
+  }
+  await adminUpsertBrandDurable(session, { slug, name });
+  redirect("/admin/brands?saved=1");
+}
+
+export async function uploadProductImageAction(formData: FormData): Promise<{
+  error?: string;
+  ok?: boolean;
+}> {
+  await requireSession("products:write");
+  const productId = String(formData.get("productId") ?? "").trim();
+  const alt = String(formData.get("alt") ?? "").trim();
+  const file = formData.get("file");
+  if (!productId || !(file instanceof File)) {
+    return { error: "Product and image file are required." };
+  }
+  const product = await adminGetProductDurable(productId);
+  if (!product) return { error: "Product not found." };
+
+  const buffer = new Uint8Array(await file.arrayBuffer());
+  try {
+    await uploadProductImage({
+      productId,
+      bytes: buffer,
+      alt: alt || product.name,
+      role: "catalogue_primary",
+    });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Upload failed.",
+    };
+  }
+  return { ok: true };
 }
 
 export async function adjustStockAction(formData: FormData) {
@@ -250,9 +320,43 @@ export async function previewBulkImportAction(formData: FormData): Promise<{
   const csv = String(formData.get("csv") ?? "");
   const report = validateBulkImportCsv(csv, {
     dryRun: true,
-    existingSlugs: adminExistingSlugs(),
+    existingSlugs: await adminExistingSlugsDurable(),
   });
   return { reportJson: JSON.stringify(report) };
+}
+
+export async function applyBulkImportAction(formData: FormData): Promise<{
+  error?: string;
+  applied?: number;
+  reportJson?: string;
+}> {
+  const session = await requireSession("import:run");
+  const csv = String(formData.get("csv") ?? "");
+  const report = validateBulkImportCsv(csv, {
+    dryRun: false,
+    existingSlugs: new Set(),
+  });
+  if (report.invalidRows > 0) {
+    return {
+      error: "Fix invalid rows before applying.",
+      reportJson: JSON.stringify(report),
+    };
+  }
+  const rows = report.results
+    .filter((row) => row.ok)
+    .map((row) => {
+      if (!row.ok) throw new Error("unreachable");
+      return row.data;
+    });
+  try {
+    const result = await adminApplyBulkImportDurable(session, rows);
+    return { applied: result.applied, reportJson: JSON.stringify(report) };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Apply failed.",
+      reportJson: JSON.stringify(report),
+    };
+  }
 }
 
 export async function downloadBulkTemplateAction() {

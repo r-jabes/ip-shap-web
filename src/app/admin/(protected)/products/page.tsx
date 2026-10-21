@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { formatDemoPrice } from "@/domain/catalogue";
-import { adminListProducts } from "@/lib/admin/store";
+import { adminListProductsDurable } from "@/lib/admin/catalogue-durable";
 
 export default async function AdminProductsPage({
   searchParams,
@@ -18,7 +18,7 @@ export default async function AdminProductsPage({
 }) {
   const params = await searchParams;
   const q = (params.q ?? "").trim().toLowerCase();
-  let products = adminListProducts();
+  let products = await adminListProductsDurable();
   if (q) {
     products = products.filter((product) =>
       `${product.name} ${product.slug} ${product.brandName}`
@@ -31,7 +31,7 @@ export default async function AdminProductsPage({
     <div className="space-y-6">
       <AdminPageHeader
         title="Products"
-        description="Create, edit, publish and archive. Server actions enforce roles."
+        description="Create, edit, publish and archive. Writes go to Supabase when configured."
         actions={
           <Button href="/admin/products/new" variant="primary" size="sm">
             New product
@@ -63,6 +63,7 @@ export default async function AdminProductsPage({
           <tr>
             <AdminTh>Name</AdminTh>
             <AdminTh>Status</AdminTh>
+            <AdminTh>Featured</AdminTh>
             <AdminTh>Availability</AdminTh>
             <AdminTh>Stock</AdminTh>
             <AdminTh>Price</AdminTh>
@@ -77,6 +78,11 @@ export default async function AdminProductsPage({
                 <p className="text-xs text-ink-muted">{product.slug}</p>
               </AdminTd>
               <AdminTd>{product.status}</AdminTd>
+              <AdminTd>
+                {product.isFeatured
+                  ? `Yes (#${product.featuredSort ?? 0})`
+                  : "—"}
+              </AdminTd>
               <AdminTd>{product.availability}</AdminTd>
               <AdminTd className="tabular">
                 {product.stockQuantity === null ||

@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { previewBulkImportAction } from "@/app/admin/actions";
+import {
+  applyBulkImportAction,
+  previewBulkImportAction,
+} from "@/app/admin/actions";
 import { AdminPanel } from "@/components/admin/admin-ui";
 import { Button } from "@/components/ui/Button";
 import { Field, Textarea } from "@/components/ui/Field";
@@ -9,8 +12,10 @@ import type { BulkImportReport } from "@/lib/admin/bulk-import";
 import { BULK_IMPORT_HEADERS } from "@/lib/admin/bulk-import";
 
 export function BulkImportPanel() {
+  const [csv, setCsv] = useState("");
   const [report, setReport] = useState<BulkImportReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [applied, setApplied] = useState<number | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -22,26 +27,11 @@ export function BulkImportPanel() {
             {BULK_IMPORT_HEADERS.join(",")}
           </code>
         </p>
-        <form
-          className="mt-4 space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const formData = new FormData(event.currentTarget);
-            setError(null);
-            startTransition(async () => {
-              try {
-                const result = await previewBulkImportAction(formData);
-                setReport(JSON.parse(result.reportJson) as BulkImportReport);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "Import failed");
-              }
-            });
-          }}
-        >
+        <div className="mt-4 space-y-4">
           <Field
             id="bulk-csv"
             label="CSV content"
-            hint="Dry-run preview — invalid rows are never skipped silently."
+            hint="Dry-run first. Apply runs in one database transaction when Supabase is configured."
           >
             <Textarea
               id="bulk-csv"
@@ -49,24 +39,84 @@ export function BulkImportPanel() {
               required
               rows={12}
               className="font-mono text-xs"
+              value={csv}
+              onChange={(event) => setCsv(event.target.value)}
               placeholder={`${BULK_IMPORT_HEADERS.join(",")}\n...`}
             />
           </Field>
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            loading={pending}
-            disabled={pending}
-          >
-            {pending ? "Validating…" : "Dry-run validate"}
-          </Button>
-        </form>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              loading={pending}
+              disabled={pending || !csv.trim()}
+              onClick={() => {
+                const formData = new FormData();
+                formData.set("csv", csv);
+                setError(null);
+                setApplied(null);
+                startTransition(async () => {
+                  try {
+                    const result = await previewBulkImportAction(formData);
+                    setReport(
+                      JSON.parse(result.reportJson) as BulkImportReport,
+                    );
+                  } catch (err) {
+                    setError(
+                      err instanceof Error ? err.message : "Import failed",
+                    );
+                  }
+                });
+              }}
+            >
+              {pending ? "Working…" : "Dry-run validate"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              loading={pending}
+              disabled={
+                pending ||
+                !csv.trim() ||
+                !report ||
+                report.invalidRows > 0 ||
+                report.validRows === 0
+              }
+              onClick={() => {
+                const formData = new FormData();
+                formData.set("csv", csv);
+                setError(null);
+                startTransition(async () => {
+                  const result = await applyBulkImportAction(formData);
+                  if (result.reportJson) {
+                    setReport(
+                      JSON.parse(result.reportJson) as BulkImportReport,
+                    );
+                  }
+                  if (result.error) setError(result.error);
+                  else if (typeof result.applied === "number") {
+                    setApplied(result.applied);
+                  }
+                });
+              }}
+            >
+              Apply import
+            </Button>
+          </div>
+        </div>
       </AdminPanel>
 
       {error ? (
         <p className="text-sm text-red-800" role="alert">
           {error}
+        </p>
+      ) : null}
+
+      {applied !== null ? (
+        <p className="text-sm text-brand-charcoal" role="status">
+          Applied {applied} row{applied === 1 ? "" : "s"}.
         </p>
       ) : null}
 
@@ -78,7 +128,7 @@ export function BulkImportPanel() {
             {report.invalidRows}
           </p>
           {report.duplicateSlugs.length > 0 ? (
-            <p>Duplicate slugs: {report.duplicateSlugs.join(", ")}</p>
+            <p>Duplicate slugs in file: {report.duplicateSlugs.join(", ")}</p>
           ) : null}
           <ul className="shop-filters-scroll max-h-80 space-y-2 overflow-y-auto">
             {report.results.map((row) => (
@@ -90,7 +140,7 @@ export function BulkImportPanel() {
                 {row.ok ? (
                   <span>
                     OK {row.data.slug}
-                    {row.duplicateOf ? " (duplicate)" : ""}
+                    {row.duplicateOf ? " (duplicate in file)" : ""}
                   </span>
                 ) : (
                   <span className="text-red-800">{row.errors.join("; ")}</span>
@@ -98,11 +148,6 @@ export function BulkImportPanel() {
               </li>
             ))}
           </ul>
-          <p className="text-ink-muted">
-            Apply/commit import against Supabase is deferred until the catalogue
-            is connected; dry-run validation is enforced now so operators can
-            prepare 300+ row files safely.
-          </p>
         </AdminPanel>
       ) : null}
     </div>

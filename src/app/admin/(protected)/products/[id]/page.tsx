@@ -4,11 +4,14 @@ import {
   AdminStatus,
 } from "@/components/admin/admin-ui";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 import { Button } from "@/components/ui/Button";
-import { getCategories } from "@/lib/catalogue";
+import {
+  adminGetProductDurable,
+  adminListCategoriesDurable,
+} from "@/lib/admin/catalogue-durable";
 import { roleHasPermission } from "@/lib/admin/roles";
 import { getAdminSession } from "@/lib/admin/session";
-import { adminGetProduct } from "@/lib/admin/store";
 
 type Params = Promise<{ id: string }>;
 
@@ -21,13 +24,14 @@ export default async function AdminEditProductPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const product = adminGetProduct(id);
+  const product = await adminGetProductDurable(id);
   if (!product) notFound();
 
   const session = await getAdminSession();
   const canEditPrice = session
     ? roleHasPermission(session.role, "products:price")
     : false;
+  const categories = await adminListCategoriesDurable();
 
   return (
     <div className="space-y-6">
@@ -43,9 +47,10 @@ export default async function AdminEditProductPage({
       {query.saved ? <AdminStatus>Saved.</AdminStatus> : null}
       <ProductForm
         product={product}
-        categories={getCategories()}
+        categories={categories}
         canEditPrice={canEditPrice}
       />
+      <ProductImageUpload productId={product.id} productName={product.name} />
     </div>
   );
 }

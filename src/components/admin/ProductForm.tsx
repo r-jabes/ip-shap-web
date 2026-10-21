@@ -185,6 +185,25 @@ export function ProductForm({
             label="Provisional / needs confirmation"
             defaultChecked={product?.isProvisional ?? true}
           />
+          <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
+            <Checkbox
+              name="isFeatured"
+              label="Featured on home"
+              defaultChecked={product?.isFeatured ?? false}
+            />
+            <Field
+              id="product-featured-sort"
+              label="Featured sort"
+              hint="Lower sorts first among featured products."
+            >
+              <Input
+                id="product-featured-sort"
+                name="featuredSort"
+                inputMode="numeric"
+                defaultValue={String(product?.featuredSort ?? 0)}
+              />
+            </Field>
+          </div>
           {dirty ? (
             <p className="text-sm text-brand-burnt-orange" role="status">
               Unsaved changes
