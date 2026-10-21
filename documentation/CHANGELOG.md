@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R8 + handover P0
+## Unreleased — UI redesign R0–R8 + handover P0–P4
 
+- Handover **P4**: stock engine — reserve (decrement counted on-hand) at order place, restore on cancel; confirm/payment do not touch stock; low-stock dashboard; adjust audit
 - Handover **P0**: env matrix (staging vs prod), `PLATFORM_BOOTSTRAP.md`, `THREAT_MODEL.md`, CI critical dependency audit, expanded `.env.example`
 - Admin restyle (R8): `/admin` shell, login, dashboard, products, stock, orders and import use storefront tokens, sticker buttons, Field kit and panel frames — look only, no new behaviour
 - Motion / quality (R7): cart fly-in + visible toast; `PageEnter` route settle (View Transitions deferred); shop `.content-settle`; story/FAQ reveals; `QUALITY_GATES.md`; motion + performance docs updated

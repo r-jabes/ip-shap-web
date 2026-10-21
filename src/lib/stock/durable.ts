@@ -78,10 +78,11 @@ export async function listAdjustmentsDurable(
   }));
 }
 
-export async function confirmOrderStockDurable(orderId: string): Promise<void> {
+/** Call after durable order + items insert — not on confirm/payment. */
+export async function reserveOrderStockDurable(orderId: string): Promise<void> {
   if (!hasSupabaseServiceConfig()) return;
   const client = getSupabaseServiceClient()!;
-  const { error } = await client.rpc("confirm_order_stock", {
+  const { error } = await client.rpc("reserve_order_stock", {
     p_order_id: orderId,
   });
   if (error) throw new Error(error.message);

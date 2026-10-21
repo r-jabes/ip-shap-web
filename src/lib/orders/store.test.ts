@@ -159,7 +159,7 @@ describe("createOrder", () => {
     ).toThrow(/stock/i);
   });
 
-  it("decrements on confirm and restores on cancel", async () => {
+  it("decrements on place and restores on cancel; confirm does not touch stock", async () => {
     const { adminGetProduct, adminUpsertProduct } =
       await import("@/lib/admin/store");
     const { cancelOrder, createOrder, transitionFulfilment } =
@@ -172,9 +172,9 @@ describe("createOrder", () => {
         exp: Math.floor(Date.now() / 1000) + 3600,
       },
       {
-        slug: `confirm-stock-${Date.now()}`,
-        name: "Confirm Stock",
-        description: "Confirm/cancel stock",
+        slug: `place-stock-${Date.now()}`,
+        name: "Place Stock",
+        description: "Place/cancel stock",
         priceAmount: 4000,
         brandSlug: "test-brand",
         brandName: "Test Brand",
@@ -191,18 +191,20 @@ describe("createOrder", () => {
       customerPhone: "+250788123456",
       idempotencyKey: "11111111-1111-4111-8111-111111111201",
     });
-    transitionFulfilment(order.id, "confirmed", "Paid offline", "staff@x.com");
     expect(adminGetProduct(product.id)?.stockQuantity).toBe(3);
     expect(order.stockCommitted).toBe(true);
+    expect(order.stockReserved).toBe(true);
+    transitionFulfilment(order.id, "confirmed", "Paid offline", "staff@x.com");
+    expect(adminGetProduct(product.id)?.stockQuantity).toBe(3);
     cancelOrder(order.id, "Customer cancelled");
     expect(adminGetProduct(product.id)?.stockQuantity).toBe(5);
     expect(order.stockCommitted).toBe(false);
   });
 
-  it("prevents oversell when parallel confirms race after stock shrinks", async () => {
+  it("prevents oversell when a second place-order would exceed on-hand", async () => {
     const { adminGetProduct, adminUpsertProduct } =
       await import("@/lib/admin/store");
-    const { commitOrderStock, createOrder } = await import("./store");
+    const { createOrder } = await import("./store");
     const product = adminUpsertProduct(
       {
         sub: "test",
@@ -213,7 +215,7 @@ describe("createOrder", () => {
       {
         slug: `race-stock-${Date.now()}`,
         name: "Race Stock",
-        description: "Concurrent confirm",
+        description: "Concurrent place",
         priceAmount: 4000,
         brandSlug: "test-brand",
         brandName: "Test Brand",
@@ -223,28 +225,31 @@ describe("createOrder", () => {
         stockQuantity: 2,
       },
     );
-    const first = createOrder({
+    createOrder({
       channel: "whatsapp_assisted",
       items: [{ productId: product.id, quantity: 1 }],
       customerName: "Ada",
       customerPhone: "+250788123456",
       idempotencyKey: "11111111-1111-4111-8111-111111111202",
     });
-    const second = createOrder({
+    expect(adminGetProduct(product.id)?.stockQuantity).toBe(1);
+    createOrder({
       channel: "whatsapp_assisted",
       items: [{ productId: product.id, quantity: 1 }],
       customerName: "Bea",
       customerPhone: "+250788123457",
       idempotencyKey: "11111111-1111-4111-8111-111111111203",
     });
-
-    // Simulate an external shrink between reserve and confirm.
-    const live = adminGetProduct(product.id)!;
-    live.stockQuantity = 1;
-
-    commitOrderStock(first.id);
     expect(adminGetProduct(product.id)?.stockQuantity).toBe(0);
-    expect(() => commitOrderStock(second.id)).toThrow(/stock/i);
+    expect(() =>
+      createOrder({
+        channel: "whatsapp_assisted",
+        items: [{ productId: product.id, quantity: 1 }],
+        customerName: "Cara",
+        customerPhone: "+250788123458",
+        idempotencyKey: "11111111-1111-4111-8111-111111111204",
+      }),
+    ).toThrow(/stock/i);
   });
 
   it("applies webhooks idempotently and never downgrades paid", async () => {

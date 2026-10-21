@@ -4,6 +4,7 @@
 
 - Stored in `localStorage` as product ID + quantity only (no prices, no PII).
 - Server validates product status, stock and recalculates integer RWF totals at checkout.
+- Counted stock is reserved (on-hand decremented) when the order is placed — not when staff confirm or payment clears. Cancel restores.
 
 ## Checkout (`/checkout`)
 
