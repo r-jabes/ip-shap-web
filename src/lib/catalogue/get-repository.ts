@@ -5,9 +5,10 @@ import { isDemoMode } from "@/lib/env";
 import { getSupabaseDataClient } from "@/lib/supabase/server";
 
 /**
- * Resolves the catalogue system of record:
- * - Demo mode → in-memory fixtures
+ * Resolves the catalogue system of record (P6):
+ * - Local demo mode → in-memory fixtures
  * - Otherwise → Supabase when configured, else empty (fail closed)
+ * - Production builds never use fixtures (`isDemoMode()` is always false)
  */
 export function getCatalogueRepository(): CatalogueRepository {
   if (isDemoMode()) {

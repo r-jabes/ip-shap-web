@@ -4,10 +4,9 @@ import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { formatDemoPrice } from "@/domain/catalogue";
-import { getHomeCollections } from "@/lib/range-media";
+import type { HomeCollectionTile } from "@/lib/range-media";
 
-export function HomeCollections() {
-  const tiles = getHomeCollections();
+export function HomeCollections({ tiles }: { tiles: HomeCollectionTile[] }) {
   const [lead, ...rest] = tiles;
 
   return (
@@ -51,7 +50,7 @@ function CollectionTile({
   tile,
   featured = false,
 }: {
-  tile: ReturnType<typeof getHomeCollections>[number];
+  tile: HomeCollectionTile;
   featured?: boolean;
 }) {
   return (

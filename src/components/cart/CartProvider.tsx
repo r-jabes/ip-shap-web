@@ -19,7 +19,8 @@ import {
   parseStoredCart,
   resolveCart,
 } from "@/lib/cart";
-import { getProductById } from "@/lib/catalogue";
+import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
+import { getProductById as getFixtureProductById } from "@/lib/catalogue";
 import { MOTION } from "@/lib/motion";
 
 type CartContextValue = {
@@ -56,6 +57,13 @@ function removalNotice(count: number): string {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const catalogue = useCatalogueOptional();
+  const resolveProduct = useCallback(
+    (id: string) =>
+      catalogue?.getProductById(id) ?? getFixtureProductById(id),
+    [catalogue],
+  );
+
   const [lines, setLines] = useState<CartLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -71,7 +79,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const stored = parseStoredCart(
         window.localStorage.getItem(CART_STORAGE_KEY),
       );
-      const { items, removed } = resolveCart(stored, getProductById);
+      const { items, removed } = resolveCart(stored, resolveProduct);
       setLines(
         items.map(({ productId, quantity }) => ({ productId, quantity })),
       );
@@ -80,7 +88,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Storage unavailable (private mode, quota): start with an empty cart.
     }
     setHydrated(true);
-  }, []);
+  }, [resolveProduct]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -96,14 +104,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== CART_STORAGE_KEY) return;
       const stored = parseStoredCart(event.newValue);
-      const { items } = resolveCart(stored, getProductById);
+      const { items } = resolveCart(stored, resolveProduct);
       setLines(
         items.map(({ productId, quantity }) => ({ productId, quantity })),
       );
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [resolveProduct]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -114,26 +122,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(id);
   }, [feedback]);
 
-  const addItem = useCallback((productId: string, quantity = 1) => {
-    const product = getProductById(productId);
-    if (!product) {
-      setFeedback("Sorry, that item is no longer available.");
-      return;
-    }
-    setLines((current) => {
-      const existing = current.find((line) => line.productId === productId);
-      if (existing) {
-        return current.map((line) =>
-          line.productId === productId
-            ? { ...line, quantity: clampQuantity(line.quantity + quantity) }
-            : line,
-        );
+  const addItem = useCallback(
+    (productId: string, quantity = 1) => {
+      const product = resolveProduct(productId);
+      if (!product) {
+        setFeedback("Sorry, that item is no longer available.");
+        return;
       }
-      return [...current, { productId, quantity: clampQuantity(quantity) }];
-    });
-    setFeedback(`Added ${product.name} to your cart`);
-    setIsOpen(true);
-  }, []);
+      setLines((current) => {
+        const existing = current.find((line) => line.productId === productId);
+        if (existing) {
+          return current.map((line) =>
+            line.productId === productId
+              ? { ...line, quantity: clampQuantity(line.quantity + quantity) }
+              : line,
+          );
+        }
+        return [...current, { productId, quantity: clampQuantity(quantity) }];
+      });
+      setFeedback(`Added ${product.name} to your cart`);
+      setIsOpen(true);
+    },
+    [resolveProduct],
+  );
 
   const setQuantity = useCallback((productId: string, quantity: number) => {
     setLines((current) => {
@@ -160,8 +171,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const dismissNotice = useCallback(() => setNotice(null), []);
 
   const items = useMemo(
-    () => resolveCart(lines, getProductById).items,
-    [lines],
+    () => resolveCart(lines, resolveProduct).items,
+    [lines, resolveProduct],
   );
 
   const value = useMemo<CartContextValue>(

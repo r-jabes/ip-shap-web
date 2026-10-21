@@ -1,4 +1,4 @@
-import type { Category } from "@/domain/catalogue";
+import type { Category, DemoProduct } from "@/domain/catalogue";
 import { getCategories, listProducts } from "@/lib/catalogue";
 import { primaryCatalogueImage } from "@/lib/product-image";
 
@@ -56,10 +56,12 @@ export function groupCategories(
   })).filter((group) => group.categories.length > 0);
 }
 
-export function buildNavData(): NavData {
-  const products = listProducts();
+export function buildNavDataFrom(
+  products: DemoProduct[],
+  categories: Category[],
+): NavData {
   const groups = groupCategories(
-    getCategories(),
+    categories,
     (slug) =>
       products.filter((product) => product.categorySlug === slug).length,
   );
@@ -85,4 +87,9 @@ export function buildNavData(): NavData {
           }
         : null,
   };
+}
+
+/** Sync demo path — prefer `buildNavDataFrom` with durable data on the storefront. */
+export function buildNavData(): NavData {
+  return buildNavDataFrom(listProducts(), getCategories());
 }

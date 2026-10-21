@@ -1,6 +1,7 @@
 import type { Category, DemoProduct } from "@/domain/catalogue";
 import { listProducts } from "@/lib/catalogue";
 import { normalizeSearchText } from "@/lib/search-normalize";
+import { primaryCatalogueImage } from "@/lib/product-image";
 
 /**
  * Instant search suggestions for the header overlay.
@@ -33,13 +34,14 @@ export function suggestProducts(
   rawQuery: string,
   categories: Category[],
   limit = 6,
+  catalogue: DemoProduct[] = listProducts(),
 ): ProductSuggestion[] {
   const query = normalizeSearchText(rawQuery).slice(0, 80);
   if (query.length < 2) return [];
   const categoryName = (slug?: string) =>
     categories.find((category) => category.slug === slug)?.name ?? "";
 
-  return listProducts()
+  return catalogue
     .map((product) => ({
       product,
       score: score(product, query, categoryName(product.categorySlug)),
@@ -51,9 +53,7 @@ export function suggestProducts(
     )
     .slice(0, limit)
     .map(({ product }) => {
-      const image = [...product.images].sort(
-        (a, b) => a.sortOrder - b.sortOrder,
-      )[0];
+      const image = primaryCatalogueImage(product.images);
       return {
         id: product.id,
         slug: product.slug,

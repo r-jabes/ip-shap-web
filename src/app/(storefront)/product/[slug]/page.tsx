@@ -8,17 +8,20 @@ import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import {
-  getBrandSiblings,
-  getCategories,
-  getProductBySlug,
-  getRelatedProducts,
-  listProducts,
+  getBrandSiblingsDurable,
+  getCategoriesDurable,
+  getProductBySlugDurable,
+  getRelatedProductsDurable,
+  listProductsDurable,
 } from "@/lib/catalogue";
 
 type Params = Promise<{ slug: string }>;
 
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
-  return listProducts().map((product) => ({ slug: product.slug }));
+  const products = await listProductsDurable();
+  return products.map((product) => ({ slug: product.slug }));
 }
 
 export async function generateMetadata({
@@ -27,7 +30,7 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugDurable(slug);
   if (!product) return { title: "Product" };
   return {
     title: product.name,
@@ -37,12 +40,15 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: { params: Params }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugDurable(slug);
   if (!product) notFound();
 
-  const category = getCategories().find((c) => c.slug === product.categorySlug);
-  const siblings = getBrandSiblings(product);
-  const related = getRelatedProducts(product, 4);
+  const [categories, siblings, related] = await Promise.all([
+    getCategoriesDurable(),
+    getBrandSiblingsDurable(product),
+    getRelatedProductsDurable(product, 4),
+  ]);
+  const category = categories.find((c) => c.slug === product.categorySlug);
 
   return (
     <>

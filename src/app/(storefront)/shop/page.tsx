@@ -10,10 +10,10 @@ import { ShopPagination } from "@/components/catalogue/ShopPagination";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { Container } from "@/components/ui/Container";
 import {
-  getBrands,
-  getCategories,
-  getFilterFacets,
-  listProducts,
+  getBrandsDurable,
+  getCategoriesDurable,
+  getFilterFacetsDurable,
+  listProductsDurable,
   paginateProducts,
 } from "@/lib/catalogue";
 import {
@@ -28,6 +28,9 @@ export const metadata: Metadata = {
     "Browse whisky, vodka, gin and wine from THE IP SHAP BUSINESS LTD in Rwanda.",
 };
 
+/** Revalidate when catalogue cache tag is busted; also soft TTL. */
+export const revalidate = 3600;
+
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function ShopPage({
@@ -38,16 +41,18 @@ export default async function ShopPage({
   const params = await searchParams;
   const query = parseShopSearchParams(params);
   const filters = shopQueryToFilters(query);
-  const allProducts = listProducts(filters);
+  const [allProducts, facets, categories, brands] = await Promise.all([
+    listProductsDurable(filters),
+    getFilterFacetsDurable(filters),
+    getCategoriesDurable(),
+    getBrandsDurable(),
+  ]);
   const {
     items: products,
     page,
     totalPages,
     total,
   } = paginateProducts(allProducts, query.page);
-  const facets = getFilterFacets(filters);
-  const categories = getCategories();
-  const brands = getBrands();
 
   const categoryNames = Object.fromEntries(
     categories.map((category) => [category.slug, category.name]),

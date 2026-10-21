@@ -1,29 +1,18 @@
 import Link from "next/link";
-import { getCategories, listProducts } from "@/lib/catalogue";
 
-type TickerItem = {
+export type RangeTickerItem = {
   index: string;
   name: string;
   count: number;
   href: string;
 };
 
-function buildItems(): TickerItem[] {
-  return getCategories().map((category, i) => ({
-    index: String(i + 1).padStart(2, "0"),
-    name: category.name,
-    count: listProducts({ categorySlug: category.slug }).length,
-    href: `/shop?category=${category.slug}`,
-  }));
-}
-
 /**
  * Range strip under the hero: every range is a link (index, name, bottle
  * count), alternating solid and outlined type on charcoal. Scrolls slowly,
  * pauses on hover, and becomes a static centred list under reduced motion.
  */
-export function HomeRangeTicker() {
-  const items = buildItems();
+export function HomeRangeTicker({ items }: { items: RangeTickerItem[] }) {
 
   const row = (hidden: boolean) => (
     <ul

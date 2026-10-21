@@ -3,7 +3,7 @@
 ## Guest cart
 
 - Stored in `localStorage` as product ID + quantity only (no prices, no PII).
-- Server validates product status, stock and recalculates integer RWF totals at checkout.
+- Cart UI resolves lines against the published catalogue snapshot from the server shell; checkout still validates product status, stock and recalculates integer RWF totals on the server (never trust client prices).
 - Counted stock is reserved (on-hand decremented) when the order is placed — not when staff confirm or payment clears. Cancel restores.
 
 ## Checkout (`/checkout`)

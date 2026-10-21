@@ -51,10 +51,10 @@ Never commit real secrets. Paste values only into host secret managers (Vercel) 
 
 | Mode | Behaviour |
 | ---- | --------- |
-| `true` | May load `src/fixtures/demo` catalogue; PreviewIndicator in shell |
-| `false` | Production path — sync helpers return empty; use `getCatalogueRepository()` / `listProductsDurable` for Supabase. Fixtures must not appear (fail closed from P1) |
+| `true` | Local/UI only — may load `src/fixtures/demo`. **Ignored in `NODE_ENV=production` builds** (P6) |
+| `false` | Storefront uses published Supabase catalogue via repository + cache. Empty if no service/anon config (fail closed) |
 
-Production deploy checklist must set `NEXT_PUBLIC_DEMO_MODE=false`.
+Production deploy checklist must set `NEXT_PUBLIC_DEMO_MODE=false` (and production builds refuse fixtures anyway).
 
 ## Validation
 

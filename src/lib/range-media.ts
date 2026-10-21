@@ -1,6 +1,6 @@
 import type { MoneyRwf } from "@/lib/money";
 import { moneyRwf } from "@/lib/money";
-import { listProducts } from "@/lib/catalogue";
+import { listProducts, listProductsDurable } from "@/lib/catalogue";
 
 /**
  * One photograph per product range (UI redesign photo allocation).
@@ -56,6 +56,16 @@ export function fromPriceForCategory(categorySlug: string): MoneyRwf | null {
   return moneyRwf(Math.min(...amounts));
 }
 
+export async function fromPriceForCategoryDurable(
+  categorySlug: string,
+): Promise<MoneyRwf | null> {
+  const amounts = (
+    await listProductsDurable({ categorySlug })
+  ).map((p) => p.price.amount);
+  if (amounts.length === 0) return null;
+  return moneyRwf(Math.min(...amounts));
+}
+
 export type RangePhoto = (typeof RANGE_MEDIA)[keyof typeof RANGE_MEDIA];
 
 export type HomeCollectionTile = {
@@ -69,7 +79,9 @@ export type HomeCollectionTile = {
 };
 
 /** Home collections bento: Wine, Sparkling, Vodka (Whisky is the hero; Gin is the spotlight). */
-export function getHomeCollections(): HomeCollectionTile[] {
+export function getHomeCollections(
+  prices?: Partial<Record<"wine" | "sparkling" | "vodka", MoneyRwf | null>>,
+): HomeCollectionTile[] {
   return [
     {
       index: "01",
@@ -77,7 +89,7 @@ export function getHomeCollections(): HomeCollectionTile[] {
       name: "Wine",
       href: "/shop?category=wine",
       blurb: "Red, white and fortified bottles.",
-      fromPrice: fromPriceForCategory("wine"),
+      fromPrice: prices?.wine ?? fromPriceForCategory("wine"),
       image: RANGE_MEDIA.wine,
     },
     {
@@ -86,7 +98,7 @@ export function getHomeCollections(): HomeCollectionTile[] {
       name: "Sparkling",
       href: "/shop?category=sparkling",
       blurb: "Bubbles for celebrations.",
-      fromPrice: fromPriceForCategory("sparkling"),
+      fromPrice: prices?.sparkling ?? fromPriceForCategory("sparkling"),
       image: RANGE_MEDIA.sparkling,
     },
     {
@@ -95,10 +107,21 @@ export function getHomeCollections(): HomeCollectionTile[] {
       name: "Vodka",
       href: "/shop?category=vodka",
       blurb: "Classic and flavoured.",
-      fromPrice: fromPriceForCategory("vodka"),
+      fromPrice: prices?.vodka ?? fromPriceForCategory("vodka"),
       image: RANGE_MEDIA.vodka,
     },
   ];
+}
+
+export async function getHomeCollectionsDurable(): Promise<
+  HomeCollectionTile[]
+> {
+  const [wine, sparkling, vodka] = await Promise.all([
+    fromPriceForCategoryDurable("wine"),
+    fromPriceForCategoryDurable("sparkling"),
+    fromPriceForCategoryDurable("vodka"),
+  ]);
+  return getHomeCollections({ wine, sparkling, vodka });
 }
 
 export const HOME_MARQUEE_RANGES = [

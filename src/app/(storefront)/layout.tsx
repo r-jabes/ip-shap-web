@@ -1,6 +1,6 @@
 import { SiteShell } from "@/components/SiteShell";
 
-export default function StorefrontLayout({
+export default async function StorefrontLayout({
   children,
 }: {
   children: React.ReactNode;

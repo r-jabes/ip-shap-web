@@ -9,17 +9,16 @@ import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
-import { getCategories } from "@/lib/catalogue";
+import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
 import { sampleCompareAtPrice } from "@/lib/sample-pricing";
 
 export function ProductCard({ product }: { product: DemoProduct }) {
   const { addItem } = useCart();
+  const catalogue = useCatalogueOptional();
   const [quickOpen, setQuickOpen] = useState(false);
   const image = primaryCatalogueImage(product.images);
-  const categoryName = getCategories().find(
-    (category) => category.slug === product.categorySlug,
-  )?.name;
+  const categoryName = catalogue?.categoryName(product.categorySlug);
   const unavailable = product.availability === "out_of_stock";
   const onSale = !!sampleCompareAtPrice(product.price);
 

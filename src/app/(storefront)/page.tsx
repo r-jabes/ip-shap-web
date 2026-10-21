@@ -7,7 +7,12 @@ import { HomeRangeTicker } from "@/components/home/HomeRangeTicker";
 import { HomeTrustFaq } from "@/components/home/HomeTrustFaq";
 import { HomeWhatsAppBand } from "@/components/home/HomeWhatsAppBand";
 import { SHORT_BRAND } from "@/lib/brand";
-import { getHomeFeaturedSlides } from "@/lib/home-featured";
+import {
+  getCachedCategories,
+  getCachedPublishedProducts,
+} from "@/lib/catalogue/cache";
+import { getHomeFeaturedSlidesDurable } from "@/lib/home-featured";
+import { getHomeCollectionsDurable } from "@/lib/range-media";
 
 export const metadata: Metadata = {
   title: {
@@ -17,14 +22,29 @@ export const metadata: Metadata = {
     "Browse whisky, wine, sparkling, vodka and gin from THE IP SHAP BUSINESS LTD. Add bottles to your cart and check out on this site.",
 };
 
-export default function HomePage() {
-  const featured = getHomeFeaturedSlides();
+export const revalidate = 3600;
+
+export default async function HomePage() {
+  const [featured, collections, categories, products] = await Promise.all([
+    getHomeFeaturedSlidesDurable(),
+    getHomeCollectionsDurable(),
+    getCachedCategories(),
+    getCachedPublishedProducts(),
+  ]);
+
+  const tickerItems = categories.map((category, i) => ({
+    index: String(i + 1).padStart(2, "0"),
+    name: category.name,
+    count: products.filter((product) => product.categorySlug === category.slug)
+      .length,
+    href: `/shop?category=${category.slug}`,
+  }));
 
   return (
     <>
       <HomeHero />
-      <HomeRangeTicker />
-      <HomeCollections />
+      <HomeRangeTicker items={tickerItems} />
+      <HomeCollections tiles={collections} />
       <HomeFeatured slides={featured} />
       <HomeHowItWorks />
       <HomeWhatsAppBand />

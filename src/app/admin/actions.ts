@@ -35,6 +35,7 @@ import {
 } from "@/lib/admin/catalogue-durable";
 import { uploadProductImage } from "@/lib/admin/media/upload";
 import type { AdminProductInput } from "@/lib/admin/store";
+import { revalidateCatalogue } from "@/lib/catalogue/cache";
 import { getServerEnv } from "@/lib/env";
 import { adjustStockDurable } from "@/lib/stock/durable";
 
@@ -206,6 +207,11 @@ export async function saveProductAction(formData: FormData) {
   };
 
   const product = await adminUpsertProductDurable(session, input);
+  revalidateCatalogue();
+  if (product.slug) {
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath(`/product/${product.slug}`);
+  }
   redirect(`/admin/products/${product.id}?saved=1`);
 }
 
@@ -217,6 +223,7 @@ export async function archiveProductAction(formData: FormData) {
     throw new Error("Type ARCHIVE to confirm.");
   }
   await adminArchiveProductDurable(session, id);
+  revalidateCatalogue();
   redirect("/admin/products?archived=1");
 }
 
@@ -231,6 +238,7 @@ export async function saveCategoryAction(formData: FormData) {
     throw new Error("Valid slug and name are required.");
   }
   await adminUpsertCategoryDurable(session, { slug, name, description });
+  revalidateCatalogue();
   redirect("/admin/categories?saved=1");
 }
 
@@ -244,6 +252,7 @@ export async function saveBrandAction(formData: FormData) {
     throw new Error("Valid slug and name are required.");
   }
   await adminUpsertBrandDurable(session, { slug, name });
+  revalidateCatalogue();
   redirect("/admin/brands?saved=1");
 }
 
@@ -308,6 +317,7 @@ export async function adjustStockAction(formData: FormData) {
     reason,
     expectedQuantity,
   });
+  revalidateCatalogue();
   redirect("/admin/stock?adjusted=1");
 }
 
@@ -348,6 +358,7 @@ export async function applyBulkImportAction(formData: FormData): Promise<{
     });
   try {
     const result = await adminApplyBulkImportDurable(session, rows);
+    revalidateCatalogue();
     return { applied: result.applied, reportJson: JSON.stringify(report) };
   } catch (error) {
     return {

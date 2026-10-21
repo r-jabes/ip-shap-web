@@ -84,4 +84,4 @@ Companion backend setup (migrations / local Supabase) is documented in `../backe
 - **Phase 00–08:** foundations through hardening (see CHANGELOG)
 - **UI redesign R0–R8:** foundations → shell → home → shop → product → cart/checkout → content → motion/quality gates → admin restyle
 - **Handover P0:** platform bootstrap (env matrix, threat model, CI audit) — see `PLATFORM_BOOTSTRAP.md`
-- **Next:** `prompts/IMPLEMENTATION_PHASES.md` **P6** (catalogue cutover); apply P3–P4 migrations on staging; configure P5 Resend env
+- **Next:** `prompts/IMPLEMENTATION_PHASES.md` **P7** (search/SEO/age/contact); staging: `NEXT_PUBLIC_DEMO_MODE=false` + migrations + Resend

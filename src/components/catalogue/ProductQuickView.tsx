@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Overlay } from "@/components/ui/Overlay";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
-import { getCategories } from "@/lib/catalogue";
+import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
 import { sampleCompareAtPrice } from "@/lib/sample-pricing";
 
 export function ProductQuickView({
@@ -22,12 +22,11 @@ export function ProductQuickView({
   onClose: () => void;
 }) {
   const { addItem } = useCart();
+  const catalogue = useCatalogueOptional();
   if (!product) return null;
 
   const image = primaryCatalogueImage(product.images);
-  const categoryName = getCategories().find(
-    (category) => category.slug === product.categorySlug,
-  )?.name;
+  const categoryName = catalogue?.categoryName(product.categorySlug);
   const unavailable = product.availability === "out_of_stock";
   const onSale = !!sampleCompareAtPrice(product.price);
 

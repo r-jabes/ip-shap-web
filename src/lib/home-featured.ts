@@ -1,15 +1,17 @@
+import type { DemoProduct } from "@/domain/catalogue";
+import { getFeaturedProductsDurable } from "@/lib/catalogue";
 import type { MoneyRwf } from "@/lib/money";
+import { primaryCatalogueImage } from "@/lib/product-image";
 import {
   fromPriceForCategory,
+  fromPriceForCategoryDurable,
   RANGE_MEDIA,
   type RangePhoto,
 } from "@/lib/range-media";
 
 /**
- * Home "Featured" slides. A static fixture for now; the admin will later supply
- * the same shape (title, copy, link, price, photo) from the database, so the
- * UI reads only from this type. Photos here may repeat other home photos until
- * the admin uploads dedicated ones.
+ * Home "Featured" slides. Built from published featured products when present;
+ * otherwise category marketing slides (prices from live catalogue).
  */
 export type HomeFeaturedSlide = {
   id: string;
@@ -29,6 +31,38 @@ export type HomeFeaturedSlide = {
 
 export const FEATURED_INTERVAL_MS = 5000;
 
+function productToSlide(product: DemoProduct, index: number): HomeFeaturedSlide {
+  const image = primaryCatalogueImage(product.images);
+  const photo: RangePhoto = image
+    ? {
+        src: image.src,
+        alt: image.alt || product.name,
+        width: image.width,
+        height: image.height,
+      }
+    : RANGE_MEDIA.whisky;
+
+  return {
+    id: product.id,
+    eyebrow: index === 0 ? "Featured" : "On the shelf",
+    title: product.name,
+    intro: product.description.slice(0, 160) || `Browse ${product.name} and check out on this site.`,
+    points: [
+      product.brandName ? `From ${product.brandName}` : "From our shelf",
+      "Add to cart on this site",
+      "We confirm availability with you",
+    ],
+    ctaLabel: "View bottle",
+    href: `/product/${product.slug}`,
+    secondaryCtaLabel: "Shop all",
+    secondaryHref: "/shop",
+    fromPrice: product.price,
+    image: photo,
+    imagePosition: "50% 45%",
+  };
+}
+
+/** Sync category fallback (demo / empty featured set). */
 export function getHomeFeaturedSlides(): HomeFeaturedSlide[] {
   return [
     {
@@ -108,4 +142,29 @@ export function getHomeFeaturedSlides(): HomeFeaturedSlide[] {
       imagePosition: "50% 40%",
     },
   ];
+}
+
+export async function getHomeFeaturedSlidesDurable(): Promise<
+  HomeFeaturedSlide[]
+> {
+  const featured = await getFeaturedProductsDurable(4);
+  if (featured.length > 0) {
+    return featured.map(productToSlide);
+  }
+
+  const [gin, whisky, sparkling, wine] = await Promise.all([
+    fromPriceForCategoryDurable("gin"),
+    fromPriceForCategoryDurable("whisky"),
+    fromPriceForCategoryDurable("sparkling"),
+    fromPriceForCategoryDurable("wine"),
+  ]);
+
+  const slides = getHomeFeaturedSlides();
+  return slides.map((slide) => {
+    if (slide.id === "gin") return { ...slide, fromPrice: gin };
+    if (slide.id === "whisky") return { ...slide, fromPrice: whisky };
+    if (slide.id === "sparkling") return { ...slide, fromPrice: sparkling };
+    if (slide.id === "wine") return { ...slide, fromPrice: wine };
+    return slide;
+  });
 }

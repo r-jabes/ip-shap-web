@@ -121,6 +121,13 @@ export function resetEnvCacheForTests() {
   cachedServerEnv = undefined;
 }
 
+/**
+ * Demo fixtures are for local/UI work only.
+ * Production builds never load fixtures — even if DEMO_MODE was mis-set to true.
+ */
 export function isDemoMode(): boolean {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
   return getPublicEnv().NEXT_PUBLIC_DEMO_MODE;
 }

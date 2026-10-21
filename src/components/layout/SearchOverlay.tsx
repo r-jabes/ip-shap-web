@@ -9,7 +9,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import { Overlay } from "@/components/ui/Overlay";
 import { ArrowRightIcon, CloseIcon, SearchIcon } from "@/components/ui/icons";
 import { formatDemoPrice } from "@/domain/catalogue";
-import { getCategories } from "@/lib/catalogue";
+import { useCatalogue } from "@/components/catalogue/CatalogueProvider";
 import type { NavGroup } from "@/lib/navigation";
 import { suggestCategories, suggestProducts } from "@/lib/search-suggest";
 import { chatHref } from "@/lib/site-config";
@@ -67,10 +67,10 @@ export function SearchOverlay({
     }
   }, [open]);
 
-  const categories = useMemo(() => getCategories(), []);
+  const { categories, products: catalogue } = useCatalogue();
   const products = useMemo(
-    () => suggestProducts(query, categories),
-    [query, categories],
+    () => suggestProducts(query, categories, 6, catalogue),
+    [query, categories, catalogue],
   );
   const matchedCategories = useMemo(
     () => suggestCategories(query, categories),
