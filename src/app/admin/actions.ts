@@ -1,18 +1,26 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  GENERIC_AUTH_ERROR,
+  resolveAdminLogin,
+} from "@/lib/admin/auth-login";
 import {
   bulkImportTemplateCsv,
   validateBulkImportCsv,
 } from "@/lib/admin/bulk-import";
+import { inviteAdminByEmail } from "@/lib/admin/profiles";
 import { consumeRateLimit } from "@/lib/admin/rate-limit";
-import { roleHasPermission, type AdminPermission } from "@/lib/admin/roles";
+import {
+  isAdminRole,
+  roleHasPermission,
+  type AdminPermission,
+  type AdminRole,
+} from "@/lib/admin/roles";
 import {
   clearAdminSessionCookie,
   getAdminSession,
-  safeEqualString,
   setAdminSessionCookie,
   type AdminSession,
 } from "@/lib/admin/session";
@@ -20,12 +28,11 @@ import {
   adminAdjustStock,
   adminArchiveProduct,
   adminExistingSlugs,
+  adminGetProduct,
   adminUpsertProduct,
   type AdminProductInput,
 } from "@/lib/admin/store";
 import { getServerEnv } from "@/lib/env";
-
-const GENERIC_AUTH_ERROR = "Invalid credentials.";
 
 async function requireSession(
   permission?: AdminPermission,
@@ -43,11 +50,11 @@ async function requireSession(
 export async function adminLoginAction(formData: FormData): Promise<{
   error?: string;
 }> {
-  const env = getServerEnv();
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
-  const token = String(formData.get("token") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const bootstrapToken = String(formData.get("token") ?? "");
 
   const headerStore = await headers();
   const ip =
@@ -57,30 +64,24 @@ export async function adminLoginAction(formData: FormData): Promise<{
     return { error: GENERIC_AUTH_ERROR };
   }
 
-  if (!env.ADMIN_SESSION_SECRET || !env.ADMIN_BOOTSTRAP_TOKEN) {
+  if (!getServerEnv().ADMIN_SESSION_SECRET) {
     return {
       error:
-        "Admin login is not configured. Set ADMIN_SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN.",
+        "Admin sessions are not configured. Set ADMIN_SESSION_SECRET (≥ 32 chars).",
     };
   }
 
-  if (!email || !token) {
-    return { error: GENERIC_AUTH_ERROR };
-  }
-
-  if (env.ADMIN_BOOTSTRAP_EMAIL && email !== env.ADMIN_BOOTSTRAP_EMAIL) {
-    return { error: GENERIC_AUTH_ERROR };
-  }
-
-  if (!safeEqualString(token, env.ADMIN_BOOTSTRAP_TOKEN)) {
-    return { error: GENERIC_AUTH_ERROR };
-  }
-
-  await setAdminSessionCookie({
-    sub: randomUUID(),
+  const result = await resolveAdminLogin({
     email,
-    role: "owner",
+    password,
+    bootstrapToken,
   });
+
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  await setAdminSessionCookie(result.session);
   redirect("/admin");
 }
 
@@ -89,13 +90,72 @@ export async function adminLogoutAction() {
   redirect("/admin/login");
 }
 
+export async function inviteAdminAction(formData: FormData): Promise<{
+  error?: string;
+  ok?: boolean;
+}> {
+  const session = await requireSession("admins:manage");
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const roleRaw = String(formData.get("role") ?? "staff");
+  const displayName = String(formData.get("displayName") ?? "").trim();
+
+  if (!isAdminRole(roleRaw)) {
+    return { error: "Choose a valid role." };
+  }
+
+  // Only an existing owner may create another owner.
+  const role: AdminRole = roleRaw;
+  if (role === "owner" && session.role !== "owner") {
+    return { error: "Not authorised for this action." };
+  }
+
+  const limit = consumeRateLimit(
+    `admin-invite:${session.sub}`,
+    10,
+    60 * 60 * 1000,
+  );
+  if (!limit.ok) {
+    return { error: "Too many invites. Try again later." };
+  }
+
+  const result = await inviteAdminByEmail({
+    email,
+    role,
+    displayName: displayName || undefined,
+    invitedByUserId: session.sub.startsWith("bootstrap:")
+      ? null
+      : session.sub,
+  });
+
+  if (!result.ok) {
+    // Avoid leaking whether the email exists in Auth.
+    return { error: "Could not send invite. Check the email and try again." };
+  }
+
+  return { ok: true };
+}
+
 export async function saveProductAction(formData: FormData) {
   const session = await requireSession("products:write");
   const id = String(formData.get("id") ?? "") || undefined;
   const priceRaw = String(formData.get("priceAmount") ?? "");
-  const priceAmount = Number.parseInt(priceRaw, 10);
+  let priceAmount = Number.parseInt(priceRaw, 10);
   if (!Number.isInteger(priceAmount) || priceAmount < 0) {
     throw new Error("Price must be a non-negative integer RWF amount.");
+  }
+
+  const existing = id ? adminGetProduct(id) : undefined;
+  const canSetPrice = roleHasPermission(session.role, "products:price");
+  if (!canSetPrice) {
+    if (!existing) {
+      throw new Error("Not authorised to set product prices.");
+    }
+    if (priceAmount !== existing.price.amount) {
+      throw new Error("Not authorised to change product prices.");
+    }
+    priceAmount = existing.price.amount;
   }
 
   const stockRaw = String(formData.get("stockQuantity") ?? "").trim();

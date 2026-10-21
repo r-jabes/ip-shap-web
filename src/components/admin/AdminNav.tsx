@@ -4,13 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { adminLogoutAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/Button";
+import { roleHasPermission, type AdminRole } from "@/lib/admin/roles";
 
 const links = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/stock", label: "Stock" },
-  { href: "/admin/import", label: "Import" },
+  { href: "/admin/import", label: "Import", permission: "import:run" as const },
+  {
+    href: "/admin/team",
+    label: "Team",
+    permission: "admins:manage" as const,
+  },
 ] as const;
 
 function isActive(pathname: string, href: string, exact?: boolean) {
@@ -18,13 +24,20 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminNav() {
+export function AdminNav({ role }: { role: AdminRole }) {
   const pathname = usePathname();
 
   return (
     <nav aria-label="Admin" className="flex flex-wrap items-center gap-2">
       <ul className="flex flex-wrap items-center gap-1.5">
         {links.map((link) => {
+          if (
+            "permission" in link &&
+            link.permission &&
+            !roleHasPermission(role, link.permission)
+          ) {
+            return null;
+          }
           const active = isActive(pathname, link.href, "exact" in link);
           return (
             <li key={link.href}>

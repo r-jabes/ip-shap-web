@@ -33,9 +33,9 @@ Never commit real secrets. Paste values only into host secret managers (Vercel) 
 | Variable | Required | From phase | Purpose |
 | -------- | -------- | ---------- | ------- |
 | `SUPABASE_SERVICE_ROLE_KEY` | from P1 | P1 | Privileged DB — **server only** |
-| `ADMIN_SESSION_SECRET` | local/bootstrap | P0–P2 | HMAC admin cookies (≥ 32 chars). Retire primary use after P2 Auth |
-| `ADMIN_BOOTSTRAP_TOKEN` | local/bootstrap | P0–P2 | Bootstrap login (≥ 16 chars). Break-glass after P2 |
-| `ADMIN_BOOTSTRAP_EMAIL` | optional | P0–P2 | Allow-list for bootstrap |
+| `ADMIN_SESSION_SECRET` | yes (admin) | P0–P2 | HMAC cookie for admin session after Auth (≥ 32 chars) |
+| `ADMIN_BOOTSTRAP_TOKEN` | optional | P0–P2 | Break-glass login only (≥ 16 chars). Prefer Supabase Auth |
+| `ADMIN_BOOTSTRAP_EMAIL` | optional | P0–P2 | Allow-list for break-glass email |
 | `WHATSAPP_BUSINESS_E164` | optional | P7 | Same as public WA if needed server-side (Contact us) |
 | `ORDER_NOTIFY_EMAILS` | from P5 | P5 | Comma-separated staff emails for new orders |
 | `EMAIL_FROM` | from P5 | P5 | From address for transactional mail |

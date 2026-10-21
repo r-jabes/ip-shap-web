@@ -6,6 +6,8 @@ import {
 import { ProductForm } from "@/components/admin/ProductForm";
 import { Button } from "@/components/ui/Button";
 import { getCategories } from "@/lib/catalogue";
+import { roleHasPermission } from "@/lib/admin/roles";
+import { getAdminSession } from "@/lib/admin/session";
 import { adminGetProduct } from "@/lib/admin/store";
 
 type Params = Promise<{ id: string }>;
@@ -22,6 +24,11 @@ export default async function AdminEditProductPage({
   const product = adminGetProduct(id);
   if (!product) notFound();
 
+  const session = await getAdminSession();
+  const canEditPrice = session
+    ? roleHasPermission(session.role, "products:price")
+    : false;
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -34,7 +41,11 @@ export default async function AdminEditProductPage({
         }
       />
       {query.saved ? <AdminStatus>Saved.</AdminStatus> : null}
-      <ProductForm product={product} categories={getCategories()} />
+      <ProductForm
+        product={product}
+        categories={getCategories()}
+        canEditPrice={canEditPrice}
+      />
     </div>
   );
 }

@@ -44,6 +44,19 @@ describe("admin session tokens", () => {
     );
     expect(decodeSession(token, secret)).toBeNull();
   });
+
+  it("accepts manager role sessions", () => {
+    const token = encodeSession(
+      {
+        sub: "user-2",
+        email: "manager@example.com",
+        role: "manager",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      },
+      secret,
+    );
+    expect(decodeSession(token, secret)?.role).toBe("manager");
+  });
 });
 
 describe("safeEqualString", () => {

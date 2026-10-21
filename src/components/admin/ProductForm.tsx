@@ -11,9 +11,12 @@ import { formatRwf } from "@/lib/money";
 export function ProductForm({
   product,
   categories,
+  canEditPrice = true,
 }: {
   product?: DemoProduct;
   categories: Array<{ slug: string; name: string }>;
+  /** Staff cannot change prices (enforced again in the server action). */
+  canEditPrice?: boolean;
 }) {
   const [price, setPrice] = useState(String(product?.price.amount ?? ""));
   const [dirty, setDirty] = useState(false);
@@ -61,14 +64,26 @@ export function ProductForm({
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
-            <Field id="product-price" label="Price (integer RWF)">
+            <Field
+              id="product-price"
+              label="Price (integer RWF)"
+              hint={
+                canEditPrice
+                  ? undefined
+                  : "Only owners and managers can change prices."
+              }
+            >
               <Input
                 id="product-price"
                 name="priceAmount"
                 required
                 inputMode="numeric"
                 value={price}
-                onChange={(event) => setPrice(event.target.value)}
+                readOnly={!canEditPrice}
+                onChange={(event) => {
+                  if (!canEditPrice) return;
+                  setPrice(event.target.value);
+                }}
               />
             </Field>
             <p className="pb-3 text-sm text-ink-muted">
