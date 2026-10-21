@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { consumeRateLimit } from "@/lib/admin/rate-limit";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { getCategoriesDurable, listProductsDurable } from "@/lib/catalogue";
 import { hasSupabaseAnonConfig } from "@/lib/supabase/config";
 import { getSupabaseServerAnonClient } from "@/lib/supabase/server";

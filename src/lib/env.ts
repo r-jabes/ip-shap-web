@@ -58,6 +58,10 @@ const serverEnvSchema = z.object({
   EMAIL_FROM: z.string().min(3).optional(),
   /** Resend API key — server only (P5). */
   RESEND_API_KEY: z.string().min(1).optional(),
+  /** Cloudflare Turnstile secret — when set, public forms must pass a token (P8). */
+  TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  /** Server Sentry DSN (P8). Prefer this over the public DSN on the server. */
+  SENTRY_DSN: z.string().url().optional(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -88,6 +92,8 @@ function readServerEnv(): ServerEnv {
     ORDER_NOTIFY_EMAILS: process.env.ORDER_NOTIFY_EMAILS,
     EMAIL_FROM: process.env.EMAIL_FROM,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+    SENTRY_DSN: process.env.SENTRY_DSN,
     NODE_ENV: process.env.NODE_ENV,
   });
 }

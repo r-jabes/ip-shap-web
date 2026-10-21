@@ -4,6 +4,7 @@ import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { Container } from "@/components/ui/Container";
 import { getServerEnv } from "@/lib/env";
 import { listActiveDeliveryZones } from "@/lib/orders/delivery";
+import { turnstileSiteKey } from "@/lib/security/turnstile";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -32,6 +33,7 @@ export default function CheckoutPage() {
           zones={listActiveDeliveryZones()}
           onlinePaymentEnabled={env.ONLINE_PAYMENT_ENABLED}
           whatsappConfigured={Boolean(env.WHATSAPP_BUSINESS_E164)}
+          turnstileSiteKey={turnstileSiteKey()}
         />
       </div>
     </Container>

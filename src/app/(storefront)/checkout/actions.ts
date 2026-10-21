@@ -2,7 +2,6 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { consumeRateLimit } from "@/lib/admin/rate-limit";
 import { notifyNewOrder } from "@/lib/notifications/notify";
 import {
   createOrderDurable,
@@ -11,6 +10,8 @@ import {
 } from "@/lib/orders/durable";
 import type { CheckoutChannel } from "@/lib/orders/store";
 import { initiateOrderPayment } from "@/lib/payments/initiate";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export type CheckoutActionState = {
   error?: string;
@@ -27,6 +28,19 @@ export async function placeOrderAction(
   const limit = consumeRateLimit(`checkout:${ip}`, 20, 15 * 60 * 1000);
   if (!limit.ok) {
     return { error: "Too many attempts. Please wait and try again." };
+  }
+
+  const turnstile = await verifyTurnstileToken(
+    String(formData.get("cf-turnstile-response") ?? ""),
+    ip,
+  );
+  if (!turnstile.ok) {
+    return {
+      error:
+        turnstile.reason === "missing_token"
+          ? "Please complete the bot check and try again."
+          : "Bot check failed. Refresh the page and try again.",
+    };
   }
 
   const channel = String(formData.get("channel") ?? "") as CheckoutChannel;

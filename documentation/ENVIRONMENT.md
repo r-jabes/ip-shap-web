@@ -25,7 +25,7 @@ Never commit real secrets. Paste values only into host secret managers (Vercel) 
 | `NEXT_PUBLIC_CONTACT_EMAIL` | optional | P7 | Public contact email |
 | `NEXT_PUBLIC_ADDRESS` | optional | P7 | Public address line |
 | `NEXT_PUBLIC_OPENING_HOURS` | optional | P7 | Hours text |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | from P8 | P8 | Cloudflare Turnstile site key |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | from P8 | P8 | Cloudflare Turnstile site key (widget on checkout/contact) |
 | `NEXT_PUBLIC_SENTRY_DSN` | from P8 | P8 | Browser error reporting (public DSN) |
 
 ## Server-only — never `NEXT_PUBLIC_*`
@@ -40,8 +40,9 @@ Never commit real secrets. Paste values only into host secret managers (Vercel) 
 | `ORDER_NOTIFY_EMAILS` | from P5 | P5 | Comma-separated staff emails for new orders |
 | `EMAIL_FROM` | from P5 | P5 | From address for transactional mail (`orders@domain` or `IP SHAP Orders <orders@domain>`) |
 | `RESEND_API_KEY` | from P5 | P5 | Resend API key (or swap provider; keep name stable in docs) |
-| `TURNSTILE_SECRET_KEY` | from P8 | P8 | Turnstile secret |
+| `TURNSTILE_SECRET_KEY` | from P8 | P8 | Turnstile secret — when set, checkout/contact require a valid token |
 | `SENTRY_DSN` | from P8 | P8 | Server Sentry DSN |
+| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | optional | P8 | Source-map upload in CI only |
 | `ONLINE_PAYMENT_ENABLED` | default `false` | — | Stay `false` (MoMo out of handover scope) |
 | `PAYMENT_PROVIDER` | default `unselected` | — | `unselected` or `sandbox` (tests only) |
 | `PAYMENT_WEBHOOK_SECRET` | if sandbox | — | HMAC for sandbox webhooks |

@@ -36,8 +36,18 @@ After `npm run build && npm run start`:
 
 Motion (R7): CSS + `Reveal` / `PageEnter` only — no GSAP. See `MOTION_AND_DESIGN_SYSTEM.md` and `QUALITY_GATES.md`.
 
+## Performance budgets (P8)
+
+| Budget | Target | How |
+| ------ | ------ | --- |
+| LCP (field p75) | ≤ 2.5s | CrUX / RUM after domain live |
+| INP (field p75) | ≤ 200ms | CrUX / RUM |
+| CLS (field p75) | ≤ 0.1 | CrUX / RUM |
+| Public smoke | `/`, `/shop`, `/contact`, `/api/health` OK under concurrency 8+ | `npm run smoke:public` |
+| Bundle | No admin/sharp on storefront entry | `npm run analyze` |
+
 ## Residual risks
 
 - Demo catalogue images may be large; confirm derivatives before launch
-- CSP still allows unsafe-inline/eval for Next.js hydration
-- In-memory admin/order stores are not production scale
+- CSP still allows unsafe-inline/eval for Next.js hydration (documented waiver)
+- In-memory rate limits are per serverless isolate — add edge/provider limits at scale

@@ -15,12 +15,14 @@ import {
   SITE,
   whatsappLink,
 } from "@/lib/site-config";
+import { turnstileSiteKey } from "@/lib/security/turnstile";
 
 export const metadata: Metadata = { title: "Contact" };
 
 export default function ContactPage() {
   const whatsapp = whatsappLink("Hello, I would like to ask about an order.");
   const map = mapsLink();
+  const botSiteKey = turnstileSiteKey();
 
   const channels: Array<{
     key: string;
@@ -166,7 +168,7 @@ export default function ContactPage() {
           )}
         </div>
 
-        <ContactEnquiryForm />
+        <ContactEnquiryForm turnstileSiteKey={botSiteKey} />
       </div>
     </Container>
   );

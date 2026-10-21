@@ -11,7 +11,7 @@ import {
   validateBulkImportCsv,
 } from "@/lib/admin/bulk-import";
 import { inviteAdminByEmail } from "@/lib/admin/profiles";
-import { consumeRateLimit } from "@/lib/admin/rate-limit";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import {
   isAdminRole,
   roleHasPermission,

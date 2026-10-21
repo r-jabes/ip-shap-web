@@ -9,10 +9,12 @@ export function CheckoutFormClient({
   zones,
   onlinePaymentEnabled,
   whatsappConfigured,
+  turnstileSiteKey = null,
 }: {
   zones: DeliveryZone[];
   onlinePaymentEnabled: boolean;
   whatsappConfigured: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const { items } = useCart();
 
@@ -27,6 +29,7 @@ export function CheckoutFormClient({
       zones={zones}
       onlinePaymentEnabled={onlinePaymentEnabled}
       whatsappConfigured={whatsappConfigured}
+      turnstileSiteKey={turnstileSiteKey}
     />
   );
 }

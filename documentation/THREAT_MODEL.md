@@ -47,7 +47,7 @@ One-page baseline for handover phases P1–P9. Update when trust boundaries chan
 | ---- | ------ |
 | MoMo / card capture | Out of handover — do not enable `ONLINE_PAYMENT_ENABLED` |
 | WhatsApp Cloud API staff alerts | Deferred — email is primary |
-| Full CSP without unsafe-inline | Tracked for P8 |
+| Full CSP without unsafe-inline | P8 waiver — Next hydration; track nonces post-handover |
 
 ## Controls already in codebase (prototype)
 
@@ -68,7 +68,7 @@ One-page baseline for handover phases P1–P9. Update when trust boundaries chan
 | P4 | Atomic stock |
 | P5 | Email notify; Contact-us WhatsApp only |
 | P7 | Age gate (cookie; crawlers exempt); search suggest rate limit |
-| P8 | Turnstile, Sentry, audit criticals, restore drill |
+| P8 | Turnstile (checkout/contact), Sentry + `/api/health`, CSP hosts, smoke/analyze scripts, restore drill doc |
 
 ## Incident basics
 

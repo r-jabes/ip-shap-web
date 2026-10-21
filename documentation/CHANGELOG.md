@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R8 + handover P0–P4
+## Unreleased — UI redesign R0–R8 + handover P0–P8
 
+- Handover **P8**: CSP/HSTS harden (Turnstile/Supabase/Sentry hosts); optional Turnstile on checkout + contact; Sentry instrumentation; `/api/health`; bundle analyze + public smoke scripts; pen checklist + backup restore drill docs
 - Handover **P7**: rate-limited search suggest API + pg_trgm RPC; product/shop/home SEO (canonical + JSON-LD); crawler-safe age gate; contact/policies use confirmed client channels
 - Handover **P6**: storefront cutover to published Supabase catalogue (shop/PDP/home/nav/cart/search); production blocks demo fixtures; catalogue cache tag + revalidate on admin publish
 - Handover **P5**: durable orders (Supabase + opaque refs), secure lookup, branded staff email on place (Resend HTML + text), admin inbox + message customer, WhatsApp CTAs = Contact us only

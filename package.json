@@ -12,9 +12,12 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "audit:prod": "npm audit --omit=dev --audit-level=critical"
+    "audit:prod": "npm audit --omit=dev --audit-level=critical",
+    "analyze": "node ./scripts/analyze.mjs",
+    "smoke:public": "node ./scripts/smoke-public.mjs"
   },
   "dependencies": {
+    "@sentry/nextjs": "^11.8.0",
     "@supabase/supabase-js": "^2.118.0",
     "next": "^15.5.28",
     "react": "19.1.0",
@@ -24,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@next/bundle-analyzer": "^15.5.28",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

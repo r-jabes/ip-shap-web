@@ -1,6 +1,8 @@
 /**
  * Baseline security headers for Next.js `headers()` config.
- * CSP is intentionally strict for scripts/styles with Next.js exceptions.
+ * CSP allows Next.js inline hydration, Cloudflare Turnstile, Supabase, and Sentry
+ * when those integrations are configured. Nonces (remove unsafe-inline/eval) remain
+ * a tracked hardening step — see documentation/SECURITY.md waiver.
  */
 export function securityHeaders(
   options: { isProduction?: boolean } = {},
@@ -11,18 +13,22 @@ export function securityHeaders(
     "frame-ancestors 'none'",
     "form-action 'self'",
     "object-src 'none'",
-    "img-src 'self' data: blob:",
+    // Catalogue derivatives may be on Supabase storage; data/blob for local/optimistic UI.
+    "img-src 'self' data: blob: https://*.supabase.co",
     "font-src 'self' data:",
-    // Next.js requires inline scripts/styles in App Router; tighten when nonce support is wired.
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    // Next.js App Router still needs inline scripts/styles; Turnstile loads from Cloudflare.
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline'",
-    "connect-src 'self'",
+    "frame-src https://challenges.cloudflare.com",
+    // API + realtime + ingest (regional Sentry hosts covered by wildcard).
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
+    "worker-src 'self' blob:",
   ];
   if (options.isProduction) {
     cspParts.push("upgrade-insecure-requests");
   }
 
-  return [
+  const headers: Array<{ key: string; value: string }> = [
     { key: "Content-Security-Policy", value: cspParts.join("; ") },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "X-Frame-Options", value: "DENY" },
@@ -35,5 +41,18 @@ export function securityHeaders(
       key: "Cross-Origin-Opener-Policy",
       value: "same-origin",
     },
+    {
+      key: "Cross-Origin-Resource-Policy",
+      value: "same-site",
+    },
   ];
+
+  if (options.isProduction) {
+    headers.push({
+      key: "Strict-Transport-Security",
+      value: "max-age=63072000; includeSubDomains; preload",
+    });
+  }
+
+  return headers;
 }

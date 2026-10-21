@@ -9,6 +9,14 @@ import {
   type RangePhoto,
 } from "@/lib/range-media";
 
+/** Featured stage accepts demo range assets or durable catalogue URLs. */
+export type FeaturedPhoto = RangePhoto | {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
 /**
  * Home "Featured" slides. Built from published featured products when present;
  * otherwise category marketing slides (prices from live catalogue).
@@ -24,7 +32,7 @@ export type HomeFeaturedSlide = {
   secondaryCtaLabel: string;
   secondaryHref: string;
   fromPrice: MoneyRwf | null;
-  image: RangePhoto;
+  image: FeaturedPhoto;
   /** CSS object-position for the arch crop. */
   imagePosition: string;
 };
@@ -33,7 +41,7 @@ export const FEATURED_INTERVAL_MS = 5000;
 
 function productToSlide(product: DemoProduct, index: number): HomeFeaturedSlide {
   const image = primaryCatalogueImage(product.images);
-  const photo: RangePhoto = image
+  const photo: FeaturedPhoto = image
     ? {
         src: image.src,
         alt: image.alt || product.name,

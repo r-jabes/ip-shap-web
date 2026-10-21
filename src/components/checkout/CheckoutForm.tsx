@@ -10,6 +10,7 @@ import type { DemoProduct } from "@/domain/catalogue";
 import { formatDemoPrice } from "@/domain/catalogue";
 import type { DeliveryZone } from "@/lib/orders/delivery";
 import { formatRwf } from "@/lib/money";
+import { TurnstileField } from "@/components/security/TurnstileField";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -23,11 +24,13 @@ export function CheckoutForm({
   zones,
   onlinePaymentEnabled,
   whatsappConfigured,
+  turnstileSiteKey = null,
 }: {
   lines: Line[];
   zones: DeliveryZone[];
   onlinePaymentEnabled: boolean;
   whatsappConfigured: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(
     placeOrderAction,
@@ -313,10 +316,13 @@ export function CheckoutForm({
               </dd>
             </div>
           </dl>
+          <div className="mt-6">
+            <TurnstileField siteKey={turnstileSiteKey} />
+          </div>
           <Button
             type="submit"
             size="lg"
-            className="mt-6 w-full"
+            className="mt-4 w-full"
             disabled={pending}
             loading={pending}
           >
