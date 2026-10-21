@@ -72,5 +72,17 @@ describe("sendNewOrderStaffEmail", () => {
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://api.resend.com/emails");
     expect(init.headers.Authorization).toBe("Bearer re_test_key");
+    const body = JSON.parse(init.body as string) as {
+      from: string;
+      subject: string;
+      html: string;
+      text: string;
+    };
+    expect(body.from).toBe("IP SHAP Orders <orders@example.com>");
+    expect(body.subject).toContain("IP SHAP · New order");
+    expect(body.html).toContain("THE IP SHAP BUSINESS LTD");
+    expect(body.html).toContain("/branding/main-logo-reversed.png");
+    expect(body.text).toContain("Open in admin");
   });
 });
+

@@ -14,7 +14,7 @@
 4. Channel: place-order (default, DB enum `whatsapp_assisted`) or online payment (disabled until `ONLINE_PAYMENT_ENABLED=true`). WhatsApp is **Contact us**, not the checkout path.
 5. Client sends `idempotencyKey` (UUID) to prevent duplicate orders on double submit.
 6. When Supabase service role is configured, orders persist to Postgres and stock is reserved via `reserve_order_stock`. Otherwise the in-memory store is used (local/demo).
-7. Staff receive a Resend email when `EMAIL_FROM`, `RESEND_API_KEY`, and `ORDER_NOTIFY_EMAILS` are set. Email failure does not roll back the order.
+7. Staff receive a branded Resend email (HTML + plain text, IP SHAP lockup, legal name footer) when `EMAIL_FROM`, `RESEND_API_KEY`, and `ORDER_NOTIFY_EMAILS` are set. Bare `EMAIL_FROM` addresses are sent as `IP SHAP Orders <…>`. Email failure does not roll back the order.
 
 ## Confirmation (`/order/[reference]?token=…`)
 

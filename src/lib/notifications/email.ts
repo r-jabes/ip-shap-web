@@ -1,4 +1,8 @@
 import { getPublicEnv, getServerEnv } from "@/lib/env";
+import {
+  brandedFromAddress,
+  buildNewOrderStaffEmail,
+} from "@/lib/notifications/templates/new-order";
 import type { StoredOrder } from "@/lib/orders/store";
 
 export type StaffEmailResult =
@@ -14,7 +18,7 @@ function parseRecipients(raw: string | undefined): string[] {
 }
 
 /**
- * Email staff about a new order via Resend.
+ * Email staff about a new order via Resend (branded HTML + plain text).
  * Failures must not roll back the order — callers log and continue.
  */
 export async function sendNewOrderStaffEmail(
@@ -34,23 +38,13 @@ export async function sendNewOrderStaffEmail(
 
   const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const adminUrl = `${appUrl}/admin/orders/${order.id}`;
-  const lines = order.items
-    .map(
-      (item) =>
-        `• ${item.quantity} × ${item.productName} — ${item.lineTotal.amount} RWF`,
-    )
-    .join("\n");
-
-  const text = [
-    `New order ${order.reference}`,
-    `Customer: ${order.customerName} · ${order.customerPhone}`,
-    `Channel: ${order.channel}`,
-    `Total: ${order.total.amount} RWF`,
-    "",
-    lines,
-    "",
-    `Admin: ${adminUrl}`,
-  ].join("\n");
+  const logoUrl = `${appUrl}/branding/main-logo-reversed.png`;
+  const content = buildNewOrderStaffEmail({
+    order,
+    adminUrl,
+    logoUrl,
+    appUrl,
+  });
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -60,10 +54,14 @@ export async function sendNewOrderStaffEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from,
+        from: brandedFromAddress(from),
         to: recipients,
-        subject: `New order ${order.reference}`,
-        text,
+        subject: content.subject,
+        text: content.text,
+        html: content.html,
+        headers: {
+          "X-Entity-Ref-ID": order.id,
+        },
       }),
     });
     if (!response.ok) {

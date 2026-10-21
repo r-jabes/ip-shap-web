@@ -38,7 +38,7 @@ Never commit real secrets. Paste values only into host secret managers (Vercel) 
 | `ADMIN_BOOTSTRAP_EMAIL` | optional | P0–P2 | Allow-list for break-glass email |
 | `WHATSAPP_BUSINESS_E164` | optional | P7 | Same as public WA if needed server-side (Contact us) |
 | `ORDER_NOTIFY_EMAILS` | from P5 | P5 | Comma-separated staff emails for new orders |
-| `EMAIL_FROM` | from P5 | P5 | From address for transactional mail |
+| `EMAIL_FROM` | from P5 | P5 | From address for transactional mail (`orders@domain` or `IP SHAP Orders <orders@domain>`) |
 | `RESEND_API_KEY` | from P5 | P5 | Resend API key (or swap provider; keep name stable in docs) |
 | `TURNSTILE_SECRET_KEY` | from P8 | P8 | Turnstile secret |
 | `SENTRY_DSN` | from P8 | P8 | Server Sentry DSN |

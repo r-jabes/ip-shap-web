@@ -25,18 +25,23 @@ Do **not** put API keys in chat — only confirm “created” and set values in
 
 ## Email (P5)
 
-- Verify sending domain in Resend.  
-- Set `EMAIL_FROM` (e.g. `orders@yourdomain`).  
+- Verify sending domain in Resend (Gmail addresses cannot be used as `EMAIL_FROM` without a verified domain).  
+- Set `EMAIL_FROM` (e.g. `IP SHAP Orders <orders@yourdomain>`).  
 - Set `ORDER_NOTIFY_EMAILS` to both owners’ addresses (comma-separated).  
 
-## Contact numbers (P7 — collect now)
+## Contact details (confirmed by client)
 
-| Role | Channel | Env |
-| ---- | ------- | --- |
-| Her | WhatsApp | `NEXT_PUBLIC_WHATSAPP_E164` |
-| Him | Voice calls | `NEXT_PUBLIC_PHONE_E164` |
-| Both | Admin logins | Supabase Auth invites (P2) |
-| Both | Order emails | `ORDER_NOTIFY_EMAILS` |
+Local Rwanda `07…` numbers stored as E.164 `+2507…`. Set the same values in Vercel staging/production.
+
+| Role | Channel | Value | Env |
+| ---- | ------- | ----- | --- |
+| Her (Rosine) | WhatsApp — Contact us | `+250790801271` | `NEXT_PUBLIC_WHATSAPP_E164`, `WHATSAPP_BUSINESS_E164` |
+| Him (Patrick) | Voice calls | `+250788937270` | `NEXT_PUBLIC_PHONE_E164` |
+| Business | Public email | `patrickiradukunda505@gmail.com` | `NEXT_PUBLIC_CONTACT_EMAIL` |
+| Hours | Opening | 08:00–20:00 | `NEXT_PUBLIC_OPENING_HOURS` |
+| Both | New-order email alerts | `yadufashijerosine@gmail.com`, `patrickiradukunda505@gmail.com` | `ORDER_NOTIFY_EMAILS` |
+| Her | New-order human follow-up | Same WhatsApp as Contact us | (no Cloud API yet — email is primary) |
+| Both | Admin logins | Supabase Auth invites (P2) | — |
 
 ## Done when (P0)
 
