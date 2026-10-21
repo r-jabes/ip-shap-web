@@ -1,4 +1,4 @@
-# Performance report (Phase 08)
+# Performance report
 
 ## Conditions
 
@@ -36,7 +36,7 @@ After `npm run build && npm run start`:
 
 Motion (R7): CSS + `Reveal` / `PageEnter` only — no GSAP. See `MOTION_AND_DESIGN_SYSTEM.md` and `QUALITY_GATES.md`.
 
-## Performance budgets (P8)
+## Performance budgets
 
 | Budget | Target | How |
 | ------ | ------ | --- |

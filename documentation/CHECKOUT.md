@@ -23,12 +23,12 @@
 - Optional WhatsApp deep link when `WHATSAPP_BUSINESS_E164` is set.
 - Lookup requires reference + high-entropy token; rate limited.
 
-## Payments (Phase 07)
+## Payments
 
 - Live provider unselected — see backend `PAYMENT_PROVIDER_DECISION.md`.
 - Sandbox initiation + `/api/payments/webhook` (HMAC) for tests only.
 - Admin `/admin/orders`: confirm fulfilment; mark paid only with reference + reason.
-- Notifications are log-only until a channel provider is configured.
+- Staff alerts: Resend email when configured (see above).
 
 ## Delivery policy
 

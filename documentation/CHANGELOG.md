@@ -1,13 +1,13 @@
 # Changelog
 
-## Unreleased — UI redesign R0–R8 + handover P0–P8
+## Unreleased
 
-- Handover **P8**: CSP/HSTS harden (Turnstile/Supabase/Sentry hosts); optional Turnstile on checkout + contact; Sentry instrumentation; `/api/health`; bundle analyze + public smoke scripts; pen checklist + backup restore drill docs
-- Handover **P7**: rate-limited search suggest API + pg_trgm RPC; product/shop/home SEO (canonical + JSON-LD); crawler-safe age gate; contact/policies use confirmed client channels
-- Handover **P6**: storefront cutover to published Supabase catalogue (shop/PDP/home/nav/cart/search); production blocks demo fixtures; catalogue cache tag + revalidate on admin publish
-- Handover **P5**: durable orders (Supabase + opaque refs), secure lookup, branded staff email on place (Resend HTML + text), admin inbox + message customer, WhatsApp CTAs = Contact us only
-- Handover **P4**: stock engine — reserve (decrement counted on-hand) at order place, restore on cancel; confirm/payment do not touch stock; low-stock dashboard; adjust audit
-- Handover **P0**: env matrix (staging vs prod), `PLATFORM_BOOTSTRAP.md`, `THREAT_MODEL.md`, CI critical dependency audit, expanded `.env.example`
+- Hardening: CSP/HSTS (Turnstile/Supabase/Sentry hosts); optional Turnstile; Sentry; `/api/health`; analyze + smoke scripts; security checklist + restore drill docs
+- Search suggest API + SEO (canonical/JSON-LD); crawler-safe age gate; confirmed contact/policies
+- Storefront on published Supabase catalogue; production blocks demo fixtures; catalogue revalidate on publish
+- Durable orders, secure lookup, branded staff email, admin inbox; stock reserve at place
+- Env matrix, platform bootstrap, threat model, CI critical audit
+- Docs: READMEs and guides rewritten for how the system works (not build phases)
 - Admin restyle (R8): `/admin` shell, login, dashboard, products, stock, orders and import use storefront tokens, sticker buttons, Field kit and panel frames — look only, no new behaviour
 - Motion / quality (R7): cart fly-in + visible toast; `PageEnter` route settle (View Transitions deferred); shop `.content-settle`; story/FAQ reveals; `QUALITY_GATES.md`; motion + performance docs updated
 - Shop polish: sticky filter panel (opacity-only page enter so sticky works); facet-driven range/brand checklists with brand search; quick-view image fills modal height

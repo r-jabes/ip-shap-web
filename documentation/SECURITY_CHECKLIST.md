@@ -1,4 +1,4 @@
-# Penetration-oriented checklist (P8)
+# Penetration-oriented checklist
 
 Sign each row before production cutover. Use staging first. Do not paste secrets into tickets.
 
@@ -26,4 +26,4 @@ Sign each row before production cutover. Use staging first. Do not paste secrets
 | Staging URL | |
 | Critical/high vulns open | none / see `SECURITY.md` waiver |
 
-Related: `SECURITY.md`, `THREAT_MODEL.md`, `P8_HARDENING.md`.
+Related: `SECURITY.md`, `THREAT_MODEL.md`, `HARDENING.md`.

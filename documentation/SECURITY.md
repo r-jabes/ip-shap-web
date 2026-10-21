@@ -31,13 +31,13 @@ Documented in `ENVIRONMENT.md` / `OPERATIONS.md`. Production should migrate to S
 - [x] Payment webhook signature + payload size cap
 - [x] Upload endpoints validate type, size and re-encode images (P3 admin path)
 - [ ] Age / alcohol sale restrictions reviewed by qualified local counsel before launch
-- [ ] CSP nonces (remove `'unsafe-inline'` / `'unsafe-eval'`) — **P8 waiver:** Next App Router still needs inline hydration; see `P8_HARDENING.md`
-- [x] Turnstile on checkout + contact when `TURNSTILE_SECRET_KEY` is set (P8)
-- [x] Sentry client/server/edge when DSN set; `/api/health` uptime probe (P8)
+- [ ] CSP nonces (remove `'unsafe-inline'` / `'unsafe-eval'`) — **waiver:** Next App Router still needs inline hydration; see `HARDENING.md`
+- [x] Turnstile on checkout + contact when `TURNSTILE_SECRET_KEY` is set
+- [x] Sentry client/server/edge when DSN set; `/api/health` uptime probe
 - [ ] Re-run `npm audit` before each release; avoid `audit fix --force` that jumps Next majors without a planned upgrade
-- [ ] Sign [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md) before P9 cutover
+- [ ] Sign [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md) before production cutover
 
-## Dependency notes (2026-10-21, P8)
+## Dependency notes (2026-10-21)
 
 `npm audit --omit=dev` may still report Next-bundled PostCSS advisories and related highs. Prefer a planned Next.js **patch** upgrade over `--force` to Next 16. Track until cleared; CI `audit:prod` still fails only on **critical**.
 

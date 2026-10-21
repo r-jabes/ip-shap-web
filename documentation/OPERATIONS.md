@@ -1,28 +1,30 @@
 # Frontend operations
 
-## Admin bootstrap (local)
+## Admin access
 
-1. Copy `.env.example` → `.env.local`
-2. Generate secrets, e.g. `openssl rand -base64 48`
-3. Set `ADMIN_SESSION_SECRET` and `ADMIN_BOOTSTRAP_TOKEN`
-4. Optionally set `ADMIN_BOOTSTRAP_EMAIL` to your operator email
-5. Visit `/admin/login`, sign in, confirm dashboard counts load
-6. Log out clears the httpOnly cookie
+**Preferred:** Supabase Auth email/password for users with an active `admin_profiles` row (seeded from the backend — see backend `OPERATIONS.md`).
 
-Production: prefer Supabase Auth users listed in `admin_profiles` (see backend `OPERATIONS.md` / `SECURITY.md`). Disable bootstrap token in production once Auth is live.
+**Break-glass (local / emergency):**
 
-## Deploy notes
+1. Set `ADMIN_SESSION_SECRET` (≥ 32 chars) and `ADMIN_BOOTSTRAP_TOKEN` (≥ 16 chars) in `.env.local` / Vercel.
+2. Visit `/admin/login` → break-glass mode.
+3. Disable bootstrap in production once Auth owners work.
 
-- Admin UI ships with the Next.js app under `/admin`
-- Ensure hosting env includes admin secrets when bootstrap is enabled
-- Never commit `.env.local`
-- Keep `ONLINE_PAYMENT_ENABLED=false` until payment provider gate is done
-- Review `RELEASE_CHECKLIST.md` and `PERFORMANCE_REPORT.md` before promote
+## Deploy
+
+- Admin ships with the Next.js app under `/admin` (`noindex`).
+- Set all required env vars before promote (`ENVIRONMENT.md`).
+- Keep `ONLINE_PAYMENT_ENABLED=false` until a Rwanda payment provider is chosen.
+- Review `RELEASE_CHECKLIST.md` and `HARDENING.md` before production.
+
+## Health
+
+`GET /api/health` — use for uptime monitors. No database dependency.
 
 ## Bug triage
 
-Use severity table in backend `RELEASE_CHECKLIST.md`. No unresolved Critical/High security or money-flow defects at launch.
+Use severity guidance in backend `RELEASE_CHECKLIST.md`. No open Critical/High money-flow or authz defects at launch.
 
 ## Rollback
 
-Redeploy previous frontend artifact; admin in-memory demo store resets on process restart (Supabase data is durable once connected).
+Redeploy the previous frontend artifact. Durable data stays in Supabase.

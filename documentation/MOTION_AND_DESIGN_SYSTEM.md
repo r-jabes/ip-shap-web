@@ -53,7 +53,7 @@ Cart: one derived list (`items`) feeds the badge, drawer, cart page and checkout
 - Orange is a fill on ivory (CTAs, badges) and text only on charcoal; never orange text on ivory
 - Product photography system: roles, processing status and zoom-on-demand (see `CONTENT_AND_IMAGES.md`)
 
-## Motion stack (Phase 03 + R7)
+## Motion stack
 
 **Choice:** CSS custom properties + keyframes + small client helpers (`Reveal`, `PageEnter`).  
 **Not used:** GSAP / ScrollTrigger. **View Transitions API** deferred until a Next.js upgrade that supports stable App Router VT — fallback is `PageEnter`.

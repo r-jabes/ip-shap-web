@@ -1,53 +1,42 @@
-# Platform bootstrap checklist (P0)
+# Accounts and platform ownership
 
-Create these **before or during P1**. Prefer **client-owned** orgs; invite developers.
-
-Do **not** put API keys in chat — only confirm “created” and set values in Vercel / `.env.local`.
+Prefer **client-owned** orgs; invite developers. Do not paste API keys into chat — only into Vercel / `.env.local`.
 
 ## Accounts
 
 | Service | Purpose | Staging | Production | Owner |
 | ------- | ------- | ------- | ---------- | ----- |
-| GitHub | Source + CI | same repos | same | Dev team / client |
-| Supabase | Postgres, Auth, Storage | **Project A** | **Project B** (separate) | Client |
-| Vercel | Next.js host | Preview / staging env | Production env | Client |
-| Resend (or Postmark) | Staff order emails | Test domain / API key | Live domain / API key | Client |
-| Cloudflare | DNS (+ Turnstile later) | Optional | Required for custom domain | Client |
-| Domain registrar | `.rw` / `.com` | — | Live hostname | Client |
-| Sentry | Errors | Later | Recommended at launch | Client / dev |
+| Git | Source + CI | same repos | same | Dev / client |
+| Supabase | Postgres, Auth, Storage | Project A | Project B (separate) | Client |
+| Vercel | Next.js host | Preview / staging | Production | Client |
+| Resend | Staff order emails | Test domain / key | Live domain / key | Client |
+| Cloudflare | DNS (+ Turnstile later) | Optional | Custom domain | Client |
+| Domain | Live hostname | — | `.rw` / `.com` | Client |
+| Sentry | Errors | Optional | Recommended | Client / dev |
 
-## Vercel environment mapping
+## Vercel ↔ Supabase
 
-| Vercel env | Supabase | `NEXT_PUBLIC_DEMO_MODE` |
-| ---------- | -------- | ----------------------- |
-| Preview / Staging | Staging project | `false` after catalogue cutover (P6); `true` only if intentionally demoing |
-| Production | Production project | **`false` always** |
+| Vercel env | Supabase project | `NEXT_PUBLIC_DEMO_MODE` |
+| ---------- | ---------------- | ----------------------- |
+| Preview / Staging | Staging | `false` for real catalogue |
+| Production | Production | **`false` always** |
 
-## Email (P5)
+## Email
 
-- Verify sending domain in Resend (Gmail addresses cannot be used as `EMAIL_FROM` without a verified domain).  
-- Set `EMAIL_FROM` (e.g. `IP SHAP Orders <orders@yourdomain>`).  
-- Set `ORDER_NOTIFY_EMAILS` to both owners’ addresses (comma-separated).  
+- Verify a sending domain in Resend (`EMAIL_FROM` cannot be raw Gmail as From).
+- Example: `EMAIL_FROM=IP SHAP Orders <orders@rurango.com>`
+- Recipients: `ORDER_NOTIFY_EMAILS` (staff Gmail addresses)
 
-## Contact details (confirmed by client)
-
-Local Rwanda `07…` numbers stored as E.164 `+2507…`. Set the same values in Vercel staging/production.
+## Confirmed contact details
 
 | Role | Channel | Value | Env |
 | ---- | ------- | ----- | --- |
-| Her (Rosine) | WhatsApp — Contact us | `+250790801271` | `NEXT_PUBLIC_WHATSAPP_E164`, `WHATSAPP_BUSINESS_E164` |
-| Him (Patrick) | Voice calls | `+250788937270` | `NEXT_PUBLIC_PHONE_E164` |
-| Business | Public email | `patrickiradukunda505@gmail.com` | `NEXT_PUBLIC_CONTACT_EMAIL` |
+| Rosine | WhatsApp | `+250790801271` | `NEXT_PUBLIC_WHATSAPP_E164`, `WHATSAPP_BUSINESS_E164` |
+| Patrick | Voice | `+250788937270` | `NEXT_PUBLIC_PHONE_E164` |
+| Business | Email | `patrickiradukunda505@gmail.com` | `NEXT_PUBLIC_CONTACT_EMAIL` |
 | Business | Address | `29 KK 218 St, Kigali, Rwanda` | `NEXT_PUBLIC_ADDRESS` |
-| Hours | Opening | 08:00–20:00 | `NEXT_PUBLIC_OPENING_HOURS` |
-| Both | New-order email alerts | `yadufashijerosine@gmail.com`, `patrickiradukunda505@gmail.com` | `ORDER_NOTIFY_EMAILS` |
-| Her | New-order human follow-up | Same WhatsApp as Contact us | (no Cloud API yet — email is primary) |
-| Both | Admin logins | Supabase Auth invites (P2) | — |
+| Hours | Opening | `08:00–20:00` | `NEXT_PUBLIC_OPENING_HOURS` |
+| Both | Order alerts | both Gmails | `ORDER_NOTIFY_EMAILS` |
+| Both | Admin | Supabase Auth + `admin_profiles` | — |
 
-## Done when (P0)
-
-- [ ] This checklist reviewed with client  
-- [ ] Env matrix published in `ENVIRONMENT.md`  
-- [ ] Threat model in `THREAT_MODEL.md`  
-- [ ] CI runs lint, typecheck, test, build, critical audit on PR  
-- [ ] Staging Supabase + Vercel projects created (or scheduled) — keys never in Git  
+Full variable list: [ENVIRONMENT.md](./ENVIRONMENT.md).

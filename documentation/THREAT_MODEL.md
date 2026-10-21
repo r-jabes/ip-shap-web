@@ -1,6 +1,6 @@
-# Threat model — IP SHAP storefront (P0)
+# Threat model — IP SHAP storefront
 
-One-page baseline for handover phases P1–P9. Update when trust boundaries change.
+One-page baseline. Update when trust boundaries change.
 
 ## Trust boundaries
 
@@ -18,7 +18,7 @@ One-page baseline for handover phases P1–P9. Update when trust boundaries chan
                    New-order notify to staff inboxes
 ```
 
-**Not in scope this handover:** payment PSPs, WhatsApp Cloud API outbound.
+**Out of scope for current launch:** payment PSPs, WhatsApp Cloud API outbound.
 
 ## Assets
 
@@ -26,54 +26,42 @@ One-page baseline for handover phases P1–P9. Update when trust boundaries chan
 | ----- | ------------ |
 | Customer name, phone, address notes | PII — orders table; lookup only with reference + confirmation code |
 | Catalogue prices / stock | Business — admin write; public read published only |
-| Admin credentials / sessions | Critical — invite-only Auth (P2) |
+| Admin credentials / sessions | Critical — invite-only Auth |
 | Service role key | Critical — host secrets only |
 | Order references | Public opaque ids — must not be sequential |
 
-## STRIDE-style surfaces
+## Surfaces
 
-| Surface | Spoofing | Tampering | Repudiation | Info disclosure | DoS | Elevation |
-| ------- | -------- | --------- | ----------- | --------------- | --- | --------- |
-| Checkout | — | Client price → **server recompute** | Audit + order history | — | **Rate limit** | — |
-| Order lookup | Stolen link | — | — | Enumeration → **ref + token + rate limit** | Rate limit | — |
-| Admin | Phishing | — | **Audit events** | — | Login rate limit | **Permission on every action** |
-| Image upload (P3) | — | Malicious file → **MIME + re-encode** | Audit | — | Size limits | — |
-| Email notify (P5) | — | — | Provider logs | BCC mistake → **fixed recipient list** | — | — |
-| Supabase anon | Stolen anon key | — | — | RLS must deny private rows | — | No service role in browser |
+| Surface | Spoofing | Tampering | Info disclosure | DoS | Elevation |
+| ------- | -------- | --------- | --------------- | --- | --------- |
+| Checkout | — | Client price → **server recompute** | — | **Rate limit** (+ Turnstile when set) | — |
+| Order lookup | Stolen link | — | Enumeration → **ref + token + rate limit** | Rate limit | — |
+| Admin | Phishing | — | — | Login rate limit | **Permission on every action** |
+| Image upload | — | Malicious file → **MIME + re-encode** | — | Size limits | — |
+| Email notify | — | — | BCC mistake → **fixed recipient list** | — | — |
+| Supabase anon | Stolen anon key | — | RLS must deny private rows | — | No service role in browser |
 
-## Explicit non-goals / deferred
+## Explicit deferred items
 
 | Item | Status |
 | ---- | ------ |
-| MoMo / card capture | Out of handover — do not enable `ONLINE_PAYMENT_ENABLED` |
+| MoMo / card capture | Keep `ONLINE_PAYMENT_ENABLED` false |
 | WhatsApp Cloud API staff alerts | Deferred — email is primary |
-| Full CSP without unsafe-inline | P8 waiver — Next hydration; track nonces post-handover |
+| CSP without unsafe-inline | Waiver until Next nonces — see `HARDENING.md` |
 
-## Controls already in codebase (prototype)
+## Controls in place
 
-- Security headers / CSP baseline (`src/lib/security/headers.ts`)
-- Admin HMAC session + bootstrap rate limit
-- Checkout price recompute + idempotency
+- Security headers / CSP (`src/lib/security/headers.ts`)
+- Admin HMAC session + Auth/`admin_profiles`
+- Checkout price recompute + idempotency + stock reserve at place
 - Order lookup token + rate limit
-- Redacting logger
-- Opaque `createDocumentId()` for public order refs
-
-## Controls added by later phases
-
-| Phase | Control |
-| ----- | ------- |
-| P1 | RLS + no demo leak in prod path |
-| P2 | Supabase Auth roles |
-| P3 | Secure uploads |
-| P4 | Atomic stock |
-| P5 | Email notify; Contact-us WhatsApp only |
-| P7 | Age gate (cookie; crawlers exempt); search suggest rate limit |
-| P8 | Turnstile (checkout/contact), Sentry + `/api/health`, CSP hosts, smoke/analyze scripts, restore drill doc |
+- Redacting logger; opaque order refs
+- Optional Turnstile; optional Sentry; `/api/health`
 
 ## Incident basics
 
-1. Rotate compromised secrets in Vercel + Supabase immediately.  
-2. Revoke admin sessions / invite fresh owners if Auth compromised.  
-3. Do not paste secrets into chat, tickets, or Git.  
+1. Rotate compromised secrets in Vercel + Supabase immediately.
+2. Revoke admin sessions / invite fresh owners if Auth is compromised.
+3. Do not paste secrets into chat, tickets, or Git.
 
-See also: `SECURITY.md`, `prompts/IMPLEMENTATION_PHASES.md`.
+See also: `SECURITY.md`, `HARDENING.md`.
