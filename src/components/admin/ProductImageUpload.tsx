@@ -27,10 +27,10 @@ export function ProductImageUpload({
 
   return (
     <AdminPanel className="max-w-3xl">
-      <h2 className="font-display text-xl">Catalogue image</h2>
+      <h2 className="font-display text-xl">Product image</h2>
       <p className="mt-1 text-sm text-ink-muted">
-        Add a product photo when ready. Products without an image show a
-        placeholder until one is uploaded.
+        Optional for drafts. Products without a photo show a placeholder until
+        you add one.
       </p>
 
       <div className="mt-4 w-36 overflow-hidden rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15">

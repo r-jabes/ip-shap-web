@@ -18,10 +18,10 @@ export default async function AdminNewProductPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="New product"
-        description="New products start as drafts until you publish them."
+        description="Starts as a draft. Publish when details and images are ready."
         actions={
-          <Button href="/admin/products" variant="link" size="sm">
-            Back to list
+          <Button href="/admin/products" variant="ghost" size="sm">
+            Back to products
           </Button>
         }
       />

@@ -52,12 +52,12 @@ export default async function AdminEditProductPage({
         title="Edit product"
         description={product.name}
         actions={
-          <Button href="/admin/products" variant="link" size="sm">
-            Back to list
+          <Button href="/admin/products" variant="ghost" size="sm">
+            Back to products
           </Button>
         }
       />
-      {query.saved ? <AdminStatus>Saved.</AdminStatus> : null}
+      {query.saved ? <AdminStatus>Changes saved.</AdminStatus> : null}
       <ProductForm
         product={product}
         categories={categories}
