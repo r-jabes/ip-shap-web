@@ -6,20 +6,26 @@ import {
   AdminTd,
   AdminTh,
 } from "@/components/admin/admin-ui";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { adjustStockAction } from "@/app/admin/actions";
 import { adminListProductsDurable } from "@/lib/admin/catalogue-durable";
+import { paginateItems, parseAdminPage } from "@/lib/admin/pagination";
 import { listAdjustmentsDurable } from "@/lib/stock/durable";
 
 export default async function AdminStockPage({
   searchParams,
 }: {
-  searchParams: Promise<{ adjusted?: string }>;
+  searchParams: Promise<{ adjusted?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const products = await adminListProductsDurable();
-  const adjustments = await listAdjustmentsDurable(25);
+  const adjustments = await listAdjustmentsDurable(500);
+  const pageResult = paginateItems(adjustments, parseAdminPage(params.page));
+  const query = {
+    adjusted: params.adjusted,
+  };
 
   return (
     <div className="space-y-8">
@@ -98,7 +104,7 @@ export default async function AdminStockPage({
             </tr>
           </thead>
           <tbody>
-            {adjustments.map((row) => (
+            {pageResult.items.map((row) => (
               <tr key={row.id}>
                 <AdminTd className="whitespace-nowrap tabular">
                   {row.createdAt}
@@ -115,9 +121,16 @@ export default async function AdminStockPage({
             ))}
           </tbody>
         </AdminTable>
-        {adjustments.length === 0 ? (
+        {pageResult.total === 0 ? (
           <p className="text-sm text-ink-muted">No adjustments yet.</p>
-        ) : null}
+        ) : (
+          <AdminPagination
+            pathname="/admin/stock"
+            searchParams={query}
+            result={pageResult}
+            label="adjustments"
+          />
+        )}
       </section>
     </div>
   );

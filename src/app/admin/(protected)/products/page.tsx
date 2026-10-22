@@ -6,16 +6,23 @@ import {
   AdminTd,
   AdminTh,
 } from "@/components/admin/admin-ui";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminProductThumb } from "@/components/admin/AdminProductThumb";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { formatDemoPrice } from "@/domain/catalogue";
 import { adminListProductsDurable } from "@/lib/admin/catalogue-durable";
+import { paginateItems, parseAdminPage } from "@/lib/admin/pagination";
 
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; archived?: string; saved?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    archived?: string;
+    saved?: string;
+    page?: string;
+  }>;
 }) {
   const params = await searchParams;
   const q = (params.q ?? "").trim().toLowerCase();
@@ -27,6 +34,12 @@ export default async function AdminProductsPage({
         .includes(q),
     );
   }
+  const pageResult = paginateItems(products, parseAdminPage(params.page));
+  const query = {
+    q: params.q,
+    archived: params.archived,
+    saved: params.saved,
+  };
 
   return (
     <div className="space-y-6">
@@ -75,7 +88,7 @@ export default async function AdminProductsPage({
           </tr>
         </thead>
         <tbody>
-          {products.map((product) => (
+          {pageResult.items.map((product) => (
             <tr key={product.id}>
               <AdminTd>
                 <AdminProductThumb product={product} />
@@ -112,9 +125,16 @@ export default async function AdminProductsPage({
           ))}
         </tbody>
       </AdminTable>
-      {products.length === 0 ? (
+      {pageResult.total === 0 ? (
         <p className="text-sm text-ink-muted">No products found.</p>
-      ) : null}
+      ) : (
+        <AdminPagination
+          pathname="/admin/products"
+          searchParams={query}
+          result={pageResult}
+          label="products"
+        />
+      )}
     </div>
   );
 }
