@@ -40,7 +40,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import { adminGetProduct } from "@/lib/admin/store";
 import { getProductById } from "@/lib/catalogue";
 
-function useDurable(): boolean {
+function isDurableOrdersEnabled(): boolean {
   return hasSupabaseServiceConfig();
 }
 
@@ -356,7 +356,7 @@ async function createOrderInDatabase(
 export async function createOrderDurable(
   input: CreateOrderInput,
 ): Promise<StoredOrder> {
-  if (!useDurable()) return createOrder(input);
+  if (!isDurableOrdersEnabled()) return createOrder(input);
   return createOrderInDatabase(input);
 }
 
@@ -364,7 +364,7 @@ export async function lookupOrderDurable(
   reference: string,
   token: string,
 ): Promise<StoredOrder | undefined> {
-  if (!useDurable()) {
+  if (!isDurableOrdersEnabled()) {
     const order = lookupOrder(reference, token);
     return order;
   }
@@ -389,14 +389,14 @@ export async function lookupOrderDurable(
 export async function getOrderByIdDurable(
   id: string,
 ): Promise<StoredOrder | undefined> {
-  if (!useDurable()) return getOrderById(id);
+  if (!isDurableOrdersEnabled()) return getOrderById(id);
   return (await fetchOrderBundle(id)) ?? undefined;
 }
 
 export async function getOrderByReferenceDurable(
   reference: string,
 ): Promise<StoredOrder | undefined> {
-  if (!useDurable()) return getOrderByReference(reference);
+  if (!isDurableOrdersEnabled()) return getOrderByReference(reference);
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
     .from("orders")
@@ -409,7 +409,7 @@ export async function getOrderByReferenceDurable(
 }
 
 export async function listOrdersDurable(): Promise<StoredOrder[]> {
-  if (!useDurable()) return listOrders();
+  if (!isDurableOrdersEnabled()) return listOrders();
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
     .from("orders")
@@ -431,7 +431,7 @@ export async function transitionFulfilmentDurable(
   reason: string,
   actorLabel: string,
 ): Promise<StoredOrder> {
-  if (!useDurable()) {
+  if (!isDurableOrdersEnabled()) {
     return transitionFulfilment(orderId, to, reason, actorLabel);
   }
 
@@ -470,7 +470,7 @@ export async function cancelOrderDurable(
   reason: string,
   actorLabel = "system",
 ): Promise<StoredOrder> {
-  if (!useDurable()) return cancelOrder(orderId, reason);
+  if (!isDurableOrdersEnabled()) return cancelOrder(orderId, reason);
 
   const order = await fetchOrderBundle(orderId);
   if (!order) throw new Error("Order not found");
@@ -504,7 +504,7 @@ export async function markManualPaymentDurable(
   orderId: string,
   input: { reference: string; reason: string; actorLabel: string },
 ): Promise<StoredOrder> {
-  if (!useDurable()) return markManualPayment(orderId, input);
+  if (!isDurableOrdersEnabled()) return markManualPayment(orderId, input);
 
   const order = await fetchOrderBundle(orderId);
   if (!order) throw new Error("Order not found");

@@ -30,12 +30,12 @@ const ADMIN_PRODUCT_SELECT = `
   inventory_levels ( quantity, availability )
 `;
 
-function useDurable(): boolean {
+function isDurableCatalogueEnabled(): boolean {
   return hasSupabaseServiceConfig();
 }
 
 export async function adminListProductsDurable(): Promise<DemoProduct[]> {
-  if (!useDurable()) return adminListProducts();
+  if (!isDurableCatalogueEnabled()) return adminListProducts();
 
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
@@ -56,7 +56,7 @@ export async function adminListProductsDurable(): Promise<DemoProduct[]> {
 export async function adminGetProductDurable(
   id: string,
 ): Promise<DemoProduct | undefined> {
-  if (!useDurable()) return adminGetProduct(id);
+  if (!isDurableCatalogueEnabled()) return adminGetProduct(id);
 
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
@@ -76,7 +76,7 @@ export async function adminGetProductDurable(
 }
 
 export async function adminListCategoriesDurable(): Promise<Category[]> {
-  if (!useDurable()) return adminListCategoriesMemory();
+  if (!isDurableCatalogueEnabled()) return adminListCategoriesMemory();
 
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
@@ -92,7 +92,7 @@ export async function adminListCategoriesDurable(): Promise<Category[]> {
 }
 
 export async function adminListBrandsDurable(): Promise<Brand[]> {
-  if (!useDurable()) return adminListBrandsMemory();
+  if (!isDurableCatalogueEnabled()) return adminListBrandsMemory();
 
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
@@ -107,7 +107,7 @@ export async function adminUpsertCategoryDurable(
   actor: AdminSession,
   input: { slug: string; name: string; description: string },
 ): Promise<Category> {
-  if (!useDurable()) return adminUpsertCategoryMemory(actor, input);
+  if (!isDurableCatalogueEnabled()) return adminUpsertCategoryMemory(actor, input);
 
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
@@ -142,7 +142,7 @@ export async function adminUpsertBrandDurable(
   actor: AdminSession,
   input: { slug: string; name: string },
 ): Promise<Brand> {
-  if (!useDurable()) return adminUpsertBrandMemory(actor, input);
+  if (!isDurableCatalogueEnabled()) return adminUpsertBrandMemory(actor, input);
 
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
@@ -172,7 +172,7 @@ export async function adminUpsertProductDurable(
   actor: AdminSession,
   input: AdminProductInput,
 ): Promise<DemoProduct> {
-  if (!useDurable()) return adminUpsertProduct(actor, input);
+  if (!isDurableCatalogueEnabled()) return adminUpsertProduct(actor, input);
 
   const client = getSupabaseServiceClient()!;
 
@@ -303,7 +303,7 @@ export async function adminArchiveProductDurable(
   actor: AdminSession,
   id: string,
 ): Promise<DemoProduct> {
-  if (!useDurable()) return adminArchiveProduct(actor, id);
+  if (!isDurableCatalogueEnabled()) return adminArchiveProduct(actor, id);
 
   const client = getSupabaseServiceClient()!;
   const { error } = await client
@@ -327,7 +327,7 @@ export async function adminArchiveProductDurable(
 }
 
 export async function adminExistingSlugsDurable(): Promise<Set<string>> {
-  if (!useDurable()) return adminExistingSlugs();
+  if (!isDurableCatalogueEnabled()) return adminExistingSlugs();
   const products = await adminListProductsDurable();
   return new Set(products.map((p) => p.slug));
 }
@@ -336,7 +336,7 @@ export async function adminApplyBulkImportDurable(
   actor: AdminSession,
   rows: BulkImportRow[],
 ): Promise<{ applied: number }> {
-  if (!useDurable()) {
+  if (!isDurableCatalogueEnabled()) {
     for (const row of rows) {
       adminUpsertProduct(actor, {
         slug: row.slug,

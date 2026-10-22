@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 /**
  * Next.js instrumentation hook — loads Sentry server/edge configs when a DSN is set.
  * @see https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
@@ -15,3 +17,5 @@ export async function register() {
     await import("../sentry.edge.config");
   }
 }
+
+export const onRequestError = Sentry.captureRequestError;
