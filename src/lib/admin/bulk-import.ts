@@ -243,6 +243,141 @@ export function validateBulkImportCsv(
   };
 }
 
+export type BulkImportFieldGuide = {
+  key: (typeof BULK_IMPORT_HEADERS)[number];
+  label: string;
+  required: boolean;
+  allowed: string;
+};
+
+/** Operator-facing field meanings for the import UI (not written into the CSV). */
+export const BULK_IMPORT_FIELD_GUIDE: readonly BulkImportFieldGuide[] = [
+  {
+    key: "slug",
+    label: "Slug",
+    required: true,
+    allowed: "URL-safe id, lowercase letters/numbers/hyphens (e.g. house-red)",
+  },
+  {
+    key: "name",
+    label: "Name",
+    required: true,
+    allowed: "Display name shown in the shop",
+  },
+  {
+    key: "description",
+    label: "Description",
+    required: false,
+    allowed: "Product description text; wrap in quotes if it contains commas",
+  },
+  {
+    key: "price_rwf",
+    label: "Price (RWF)",
+    required: true,
+    allowed: "Whole francs only — integer, no decimals (e.g. 15000)",
+  },
+  {
+    key: "status",
+    label: "Status",
+    required: false,
+    allowed: "draft | demo | published | archived — blank defaults to draft",
+  },
+  {
+    key: "availability",
+    label: "Availability",
+    required: false,
+    allowed:
+      "unknown | in_stock | low_stock | out_of_stock — blank defaults to unknown",
+  },
+  {
+    key: "category_slug",
+    label: "Category slug",
+    required: false,
+    allowed: "Must match an existing category slug",
+  },
+  {
+    key: "brand_slug",
+    label: "Brand slug",
+    required: false,
+    allowed: "URL-safe brand id (created/updated with brand_name on import)",
+  },
+  {
+    key: "brand_name",
+    label: "Brand name",
+    required: false,
+    allowed: "Brand display name",
+  },
+  {
+    key: "sku",
+    label: "SKU",
+    required: false,
+    allowed: "Internal stock-keeping code",
+  },
+  {
+    key: "barcode",
+    label: "Barcode",
+    required: false,
+    allowed: "Barcode / EAN if known",
+  },
+  {
+    key: "stock_quantity",
+    label: "Stock quantity",
+    required: false,
+    allowed: "Non-negative integer, or null when unknown",
+  },
+  {
+    key: "is_provisional",
+    label: "Provisional",
+    required: false,
+    allowed: "true | false — blank defaults to false",
+  },
+] as const;
+
+function csvEscape(value: string): string {
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/**
+ * Downloadable sample template: header + example rows.
+ * Omitted status in real files still defaults to draft — samples use draft explicitly.
+ */
 export function bulkImportTemplateCsv(): string {
-  return `${BULK_IMPORT_HEADERS.join(",")}\n`;
+  const header = BULK_IMPORT_HEADERS.join(",");
+  const samples: string[][] = [
+    [
+      "house-red",
+      "House Red",
+      "Smooth everyday red — replace with your copy.",
+      "15000",
+      "draft",
+      "in_stock",
+      "wine",
+      "ip-shap-house",
+      "IP SHAP",
+      "SKU-RED-001",
+      "",
+      "24",
+      "false",
+    ],
+    [
+      "house-white",
+      "House White",
+      "Crisp white for the table.",
+      "14000",
+      "draft",
+      "unknown",
+      "wine",
+      "ip-shap-house",
+      "IP SHAP",
+      "",
+      "",
+      "null",
+      "false",
+    ],
+  ];
+  const lines = samples.map((row) => row.map(csvEscape).join(","));
+  return `${header}\n${lines.join("\n")}\n`;
 }
