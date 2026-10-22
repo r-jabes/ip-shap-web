@@ -28,6 +28,8 @@ export type DemoProduct = Product & {
   /** Conspicuous demo label for UI. */
   demoLabel: string;
   previousSlugs?: string[];
+  /** Regular price while a discount is active; `price` is what customers pay. */
+  compareAtPrice?: MoneyRwf;
   sku?: string;
   barcode?: string;
   /** Null means unknown quantity. */

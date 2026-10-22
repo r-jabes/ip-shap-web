@@ -10,8 +10,6 @@ import { Overlay } from "@/components/ui/Overlay";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
 import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
-import { sampleCompareAtPrice } from "@/lib/sample-pricing";
-
 export function ProductQuickView({
   product,
   open,
@@ -28,7 +26,7 @@ export function ProductQuickView({
   const image = primaryCatalogueImage(product.images);
   const categoryName = catalogue?.categoryName(product.categorySlug);
   const unavailable = product.availability === "out_of_stock";
-  const onSale = !!sampleCompareAtPrice(product.price);
+  const onSale = !!product.compareAtPrice;
 
   return (
     <Overlay
@@ -65,7 +63,11 @@ export function ProductQuickView({
               {product.name}
             </h2>
           </div>
-          <PriceTag price={product.price} size="lg" showSampleSale />
+          <PriceTag
+            price={product.price}
+            compareAt={product.compareAtPrice}
+            size="lg"
+          />
           <p className="line-clamp-4 text-sm text-ink-muted">
             {product.description}
           </p>

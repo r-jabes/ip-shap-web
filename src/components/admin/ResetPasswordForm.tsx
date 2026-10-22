@@ -8,7 +8,34 @@ import { Field, Input } from "@/components/ui/Field";
 import { EyeIcon, EyeOffIcon } from "@/components/ui/icons";
 import { createBrowserAuthClient } from "@/lib/supabase/browser-auth";
 
-export function ResetPasswordForm() {
+const COPY = {
+  reset: {
+    unavailable: "Password reset is temporarily unavailable.",
+    expired: "This reset link is invalid or has expired. Request a new one.",
+    retryHref: "/admin/forgot-password",
+    retryLabel: "Request a new link",
+    verifying: "Verifying reset link…",
+    submit: "Save new password",
+    passwordLabel: "New password",
+  },
+  invite: {
+    unavailable: "Sign-in setup is temporarily unavailable.",
+    expired:
+      "This invite link is invalid or has expired. Ask the person who invited you to send a new one.",
+    retryHref: "/admin/login",
+    retryLabel: "Go to sign in",
+    verifying: "Checking your invite…",
+    submit: "Set password and continue",
+    passwordLabel: "Choose a password",
+  },
+} as const;
+
+export function ResetPasswordForm({
+  mode = "reset",
+}: {
+  mode?: "reset" | "invite";
+}) {
+  const copy = COPY[mode];
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -19,7 +46,7 @@ export function ResetPasswordForm() {
   useEffect(() => {
     const client = createBrowserAuthClient();
     if (!client) {
-      setSessionError("Password reset is temporarily unavailable.");
+      setSessionError(copy.unavailable);
       return;
     }
 
@@ -53,18 +80,16 @@ export function ResetPasswordForm() {
           return;
         }
         settled = true;
-        setSessionError(
-          "This reset link is invalid or has expired. Request a new one.",
-        );
+        setSessionError(copy.expired);
       });
-    }, 2000);
+    }, 3000);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [copy]);
 
   if (sessionError) {
     return (
@@ -76,10 +101,10 @@ export function ResetPasswordForm() {
           {sessionError}
         </p>
         <Link
-          href="/admin/forgot-password"
+          href={copy.retryHref}
           className="block text-center text-sm font-semibold underline-offset-4 hover:underline"
         >
-          Request a new link
+          {copy.retryLabel}
         </Link>
       </div>
     );
@@ -88,7 +113,7 @@ export function ResetPasswordForm() {
   if (!ready) {
     return (
       <p className="mt-8 text-sm text-ink-muted" role="status">
-        Verifying reset link…
+        {copy.verifying}
       </p>
     );
   }
@@ -115,7 +140,7 @@ export function ResetPasswordForm() {
         startTransition(async () => {
           const client = createBrowserAuthClient();
           if (!client) {
-            setError("Password reset is temporarily unavailable.");
+            setError(copy.unavailable);
             return;
           }
           const { error: updateError } = await client.auth.updateUser({
@@ -131,7 +156,7 @@ export function ResetPasswordForm() {
         });
       }}
     >
-      <Field id="new-password" label="New password">
+      <Field id="new-password" label={copy.passwordLabel}>
         <div className="relative">
           <Input
             id="new-password"
@@ -178,7 +203,7 @@ export function ResetPasswordForm() {
         className="w-full"
         loading={pending}
       >
-        {pending ? "Saving…" : "Save new password"}
+        {pending ? "Saving…" : copy.submit}
       </Button>
     </form>
   );

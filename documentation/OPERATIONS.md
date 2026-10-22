@@ -13,6 +13,16 @@ Operators sign in at **`/admin/login`** with Supabase Auth email/password (must 
 
 **Password reset:** `/admin/forgot-password` uses Supabase Auth email. In Supabase → Authentication → URL configuration, allow redirect `https://your-domain/admin/reset-password` (and staging URL).
 
+**Team invites:** invite emails send people to `${NEXT_PUBLIC_APP_URL}/admin/accept-invite`. In Supabase → Authentication → URL configuration:
+
+- set **Site URL** to the deployed site (for example `https://staging.the-ipshap.com`), never `http://localhost:3000`;
+- add `https://your-domain/admin/accept-invite` and `https://your-domain/admin/reset-password` to **Redirect URLs**;
+- make sure `NEXT_PUBLIC_APP_URL` is set in Vercel (it defaults to localhost when missing).
+
+If Supabase ever falls back to the Site URL, the app forwards `#access_token=…&type=invite` links to `/admin/accept-invite` automatically.
+
+**Discounts:** `products.price_rwf` is what customers pay; `compare_at_price_rwf` is the regular price shown crossed out. Apply migration `20261022190000_product_discounts.sql` (`npm run db:push` in `backend`) **before** deploying the frontend, then run `npm run db:seed:categories` for the common drinks categories.
+
 **Break-glass (ops only, no UI):** `ADMIN_BOOTSTRAP_TOKEN` still works via server action if needed; prefer Auth + reset password for day-to-day.
 
 ## Deploy

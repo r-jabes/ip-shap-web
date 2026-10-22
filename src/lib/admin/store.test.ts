@@ -5,6 +5,7 @@ import {
   adminDashboardCounts,
   adminGetProduct,
   adminListProducts,
+  adminSetDiscount,
   adminUpsertProduct,
 } from "./store";
 
@@ -22,7 +23,31 @@ describe("admin store", () => {
 
   it("exposes dashboard counts from real store data", () => {
     const counts = adminDashboardCounts();
-    expect(counts.totalProducts).toBe(adminListProducts().length);
+    expect(counts.totalProducts + counts.archived).toBe(
+      adminListProducts().length,
+    );
+  });
+
+  it("applies and clears discounts without losing the regular price", () => {
+    const created = adminUpsertProduct(actor, {
+      slug: "discount-test",
+      name: "Discount Test",
+      description: "",
+      priceAmount: 20000,
+      discountPercent: 15,
+      brandSlug: "b",
+      brandName: "B",
+      status: "draft",
+      availability: "unknown",
+      isProvisional: false,
+      stockQuantity: null,
+    });
+    expect(created.price.amount).toBe(17000);
+    expect(created.compareAtPrice?.amount).toBe(20000);
+
+    const cleared = adminSetDiscount(actor, created.id, 0);
+    expect(cleared.price.amount).toBe(20000);
+    expect(cleared.compareAtPrice).toBeUndefined();
   });
 
   it("creates a draft product with integer RWF", () => {

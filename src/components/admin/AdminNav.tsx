@@ -12,6 +12,7 @@ const links = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/featured", label: "Featured" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/brands", label: "Brands" },
   { href: "/admin/stock", label: "Stock" },
@@ -118,19 +119,16 @@ export function AdminNav({ role }: { role: AdminRole }) {
 
       {/* Mobile */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            className="inline-flex h-11 items-center gap-2 rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-4 text-sm font-semibold shadow-[3px_3px_0_0_var(--brand-charcoal)]"
-            aria-expanded={open}
-            aria-controls={menuId}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {open ? <CloseIcon size={18} /> : <MenuIcon size={18} />}
-            {open ? "Close" : "Menu"}
-          </button>
-          <UtilityActions className="flex items-center gap-1" />
-        </div>
+        <button
+          type="button"
+          className="inline-flex h-11 items-center gap-2 rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-4 text-sm font-semibold shadow-[3px_3px_0_0_var(--brand-charcoal)]"
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? <CloseIcon size={18} /> : <MenuIcon size={18} />}
+          {open ? "Close" : "Menu"}
+        </button>
 
         {open ? (
           <div
@@ -143,6 +141,7 @@ export function AdminNav({ role }: { role: AdminRole }) {
               onNavigate={() => setOpen(false)}
               className="flex flex-col gap-1"
             />
+            <UtilityActions className="mt-3 flex flex-wrap items-center gap-2 border-t border-brand-charcoal/10 pt-3" />
           </div>
         ) : null}
       </div>

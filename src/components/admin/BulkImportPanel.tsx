@@ -186,7 +186,8 @@ export function BulkImportPanel() {
           </p>
           {report.duplicateSlugs.length > 0 ? (
             <p className="break-words">
-              Duplicate slugs in file: {report.duplicateSlugs.join(", ")}
+              Already in your catalogue or repeated in this file (these will be
+              updated): {report.duplicateSlugs.join(", ")}
             </p>
           ) : null}
           <ul className="shop-filters-scroll max-h-80 space-y-2 overflow-y-auto">
@@ -199,7 +200,7 @@ export function BulkImportPanel() {
                 {row.ok ? (
                   <span>
                     OK {row.data.slug}
-                    {row.duplicateOf ? " (duplicate in file)" : ""}
+                    {row.duplicateOf ? " (will update an existing product)" : ""}
                   </span>
                 ) : (
                   <span className="text-red-800">{row.errors.join("; ")}</span>

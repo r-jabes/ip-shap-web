@@ -11,8 +11,6 @@ import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
-import { sampleCompareAtPrice } from "@/lib/sample-pricing";
-
 export function ProductCard({ product }: { product: DemoProduct }) {
   const { addItem } = useCart();
   const catalogue = useCatalogueOptional();
@@ -20,7 +18,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
   const image = primaryCatalogueImage(product.images);
   const categoryName = catalogue?.categoryName(product.categorySlug);
   const unavailable = product.availability === "out_of_stock";
-  const onSale = !!sampleCompareAtPrice(product.price);
+  const onSale = !!product.compareAtPrice;
 
   return (
     <article className="group flex h-full flex-col">
@@ -99,7 +97,11 @@ export function ProductCard({ product }: { product: DemoProduct }) {
           </Link>
         </h3>
         <div className="mt-auto pt-2">
-          <PriceTag price={product.price} size="sm" showSampleSale />
+          <PriceTag
+            price={product.price}
+            compareAt={product.compareAtPrice}
+            size="sm"
+          />
         </div>
       </div>
 

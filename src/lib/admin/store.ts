@@ -10,9 +10,10 @@ import {
   DEMO_CATEGORIES,
   DEMO_PRODUCTS,
 } from "@/fixtures/demo/catalogue";
+import { applyDiscount } from "@/lib/admin/discount";
 import type { AdminSession } from "@/lib/admin/session";
 import { moneyRwf } from "@/lib/money";
-import { isLowStockItem } from "@/lib/stock/engine";
+import { computeProductCounts, isLowStockProduct } from "@/lib/admin/product-counts";
 
 export type StockAdjustmentRecord = {
   id: string;
@@ -98,33 +99,14 @@ export function adminGetProduct(id: string): DemoProduct | undefined {
 }
 
 export function adminDashboardCounts() {
-  const products = getStore().products;
   return {
-    totalProducts: products.length,
-    published: products.filter((p) => p.status === "published").length,
-    draft: products.filter((p) => p.status === "draft" || p.status === "demo")
-      .length,
-    archived: products.filter((p) => p.status === "archived").length,
-    unknownStock: products.filter((p) => p.availability === "unknown").length,
-    outOfStock: products.filter((p) => p.availability === "out_of_stock")
-      .length,
-    lowStock: products.filter((p) =>
-      isLowStockItem({
-        availability: p.availability,
-        quantity: p.stockQuantity,
-      }),
-    ).length,
+    ...computeProductCounts(getStore().products),
     recentAdjustments: getStore().adjustments.length,
   };
 }
 
 export function adminListLowStockProducts() {
-  return adminListProducts().filter((p) =>
-    isLowStockItem({
-      availability: p.availability,
-      quantity: p.stockQuantity,
-    }),
-  );
+  return adminListProducts().filter(isLowStockProduct);
 }
 
 export type AdminProductInput = {
@@ -132,7 +114,10 @@ export type AdminProductInput = {
   slug: string;
   name: string;
   description: string;
+  /** Regular price. The price customers pay is derived from this and `discountPercent`. */
   priceAmount: number;
+  /** 0 = no discount. */
+  discountPercent?: number;
   categorySlug?: string;
   brandSlug: string;
   brandName: string;
@@ -195,7 +180,11 @@ export function adminUpsertProduct(
   input: AdminProductInput,
 ): DemoProduct {
   const store = getStore();
-  const price = moneyRwf(input.priceAmount);
+  const discounted = applyDiscount(input.priceAmount, input.discountPercent ?? 0);
+  const price = moneyRwf(discounted.price);
+  const compareAtPrice = discounted.compareAt
+    ? moneyRwf(discounted.compareAt)
+    : undefined;
   const slugTaken = store.products.some(
     (product) => product.slug === input.slug && product.id !== input.id,
   );
@@ -215,6 +204,7 @@ export function adminUpsertProduct(
       name: input.name,
       description: input.description,
       price,
+      compareAtPrice,
       categorySlug: input.categorySlug,
       brandSlug: input.brandSlug,
       brandName: input.brandName,
@@ -245,6 +235,7 @@ export function adminUpsertProduct(
     name: input.name,
     description: input.description,
     price,
+    compareAtPrice,
     categorySlug: input.categorySlug,
     brandSlug: input.brandSlug,
     brandName: input.brandName,
@@ -265,6 +256,38 @@ export function adminUpsertProduct(
     slug: created.slug,
   });
   return created;
+}
+
+export function adminSetDiscount(
+  actor: AdminSession,
+  id: string,
+  percent: number,
+): DemoProduct {
+  const product = adminGetProduct(id);
+  if (!product) throw new Error("Product not found");
+  const regular = product.compareAtPrice?.amount ?? product.price.amount;
+  const next = applyDiscount(regular, percent);
+  product.price = moneyRwf(next.price);
+  product.compareAtPrice = next.compareAt ? moneyRwf(next.compareAt) : undefined;
+  writeAudit(actor, "product.discount", "product", id, { percent });
+  return product;
+}
+
+export function adminSetFeatured(
+  actor: AdminSession,
+  id: string,
+  isFeatured: boolean,
+  featuredSort: number,
+): DemoProduct {
+  const product = adminGetProduct(id);
+  if (!product) throw new Error("Product not found");
+  product.isFeatured = isFeatured;
+  product.featuredSort = featuredSort;
+  writeAudit(actor, "product.featured", "product", id, {
+    isFeatured,
+    featuredSort,
+  });
+  return product;
 }
 
 export function adminArchiveProduct(actor: AdminSession, id: string) {

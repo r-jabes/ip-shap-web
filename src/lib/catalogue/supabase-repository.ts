@@ -4,6 +4,7 @@ import type {
   Category,
   DemoProduct,
 } from "@/domain/catalogue";
+import { categoryGroupForSlug } from "@/lib/catalogue/category-groups";
 import { filterAndSortProducts } from "@/lib/catalogue/filter";
 import {
   mapProductRow,
@@ -18,6 +19,7 @@ const PRODUCT_SELECT = `
   name,
   description,
   price_rwf,
+  compare_at_price_rwf,
   status,
   availability,
   is_provisional,
@@ -74,6 +76,7 @@ export function createSupabaseCatalogueRepository(
         (row): Category => ({
           slug: row.slug,
           name: row.name,
+          group: categoryGroupForSlug(row.slug),
           description: row.description ?? "",
         }),
       );

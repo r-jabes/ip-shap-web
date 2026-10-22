@@ -4,6 +4,12 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  actionError,
+  actionOk,
+  toActionError,
+  type AdminActionResult,
+} from "@/lib/admin/action-result";
+import {
   GENERIC_AUTH_ERROR,
   resolveAdminLogin,
 } from "@/lib/admin/auth-login";
@@ -11,7 +17,15 @@ import {
   bulkImportTemplateCsv,
   validateBulkImportCsv,
 } from "@/lib/admin/bulk-import";
-import { inviteAdminByEmail } from "@/lib/admin/profiles";
+import {
+  impliedDiscountPercent,
+  parseDiscountPercent,
+} from "@/lib/admin/discount";
+import {
+  inviteAdminByEmail,
+  resendInvite,
+  updateAdminMember,
+} from "@/lib/admin/profiles";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import {
   isAdminRole,
@@ -30,6 +44,10 @@ import {
   adminArchiveProductDurable,
   adminExistingSlugsDurable,
   adminGetProductDurable,
+  adminListBrandsDurable,
+  adminListCategoriesDurable,
+  adminSetDiscountDurable,
+  adminSetFeaturedDurable,
   adminUpsertBrandDurable,
   adminUpsertCategoryDurable,
   adminUpsertProductDurable,
@@ -38,7 +56,11 @@ import { uploadProductImage } from "@/lib/admin/media/upload";
 import type { AdminProductInput } from "@/lib/admin/store";
 import { revalidateCatalogue } from "@/lib/catalogue/cache";
 import { getServerEnv } from "@/lib/env";
+import { isValidSlug, uniqueSlug } from "@/lib/slug";
 import { adjustStockDurable } from "@/lib/stock/durable";
+
+const SLUG_RULE =
+  "Web address names can only use lowercase letters, numbers and hyphens.";
 
 async function requireSession(
   permission?: AdminPermission,
@@ -51,6 +73,20 @@ async function requireSession(
     throw new Error("Not authorised for this action.");
   }
   return session;
+}
+
+/** Refresh every admin page plus the public catalogue after a change. */
+function refreshAdmin() {
+  revalidatePath("/admin", "layout");
+  revalidateCatalogue();
+}
+
+function text(formData: FormData, key: string): string {
+  return String(formData.get(key) ?? "").trim();
+}
+
+function actorUserId(session: AdminSession): string | null {
+  return session.sub.startsWith("bootstrap:") ? null : session.sub;
 }
 
 export async function adminLoginAction(formData: FormData): Promise<{
@@ -101,167 +137,382 @@ export async function adminLogoutAction() {
   redirect("/admin/login");
 }
 
-export async function inviteAdminAction(formData: FormData): Promise<{
-  error?: string;
-  ok?: boolean;
-}> {
-  const session = await requireSession("admins:manage");
-  const email = String(formData.get("email") ?? "")
-    .trim()
-    .toLowerCase();
-  const roleRaw = String(formData.get("role") ?? "staff");
-  const displayName = String(formData.get("displayName") ?? "").trim();
+// ───────────────────────────── Team ─────────────────────────────
 
-  if (!isAdminRole(roleRaw)) {
-    return { error: "Choose a valid role." };
+export async function inviteAdminAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("admins:manage");
+    const email = text(formData, "email").toLowerCase();
+    const roleRaw = text(formData, "role") || "staff";
+    const displayName = text(formData, "displayName");
+
+    if (!email.includes("@")) return actionError("Enter a valid email address.");
+    if (!isAdminRole(roleRaw)) return actionError("Choose a valid role.");
+
+    // Only an existing owner may create another owner.
+    const role: AdminRole = roleRaw;
+    if (role === "owner" && session.role !== "owner") {
+      return actionError("You do not have permission to do that.");
+    }
+
+    const limit = consumeRateLimit(
+      `admin-invite:${session.sub}`,
+      10,
+      60 * 60 * 1000,
+    );
+    if (!limit.ok) return actionError("Too many invites. Try again later.");
+
+    const result = await inviteAdminByEmail({
+      email,
+      role,
+      displayName: displayName || undefined,
+      invitedByUserId: actorUserId(session),
+    });
+
+    if (!result.ok) {
+      if (result.error.includes("already on the team")) {
+        return actionError(result.error);
+      }
+      console.error(
+        JSON.stringify({ type: "admin_invite_error", message: result.error }),
+      );
+      return actionError(
+        "Could not send the invite. Check the email address and try again.",
+      );
+    }
+
+    refreshAdmin();
+    return actionOk(`Invite sent to ${email}.`);
+  } catch (error) {
+    return toActionError(error);
   }
+}
 
-  // Only an existing owner may create another owner.
-  const role: AdminRole = roleRaw;
-  if (role === "owner" && session.role !== "owner") {
-    return { error: "Not authorised for this action." };
+export async function updateMemberAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("admins:manage");
+    const userId = text(formData, "userId");
+    const roleRaw = text(formData, "role");
+    if (!userId) return actionError("Member not found.");
+    if (roleRaw && !isAdminRole(roleRaw)) return actionError("Choose a valid role.");
+
+    const result = await updateAdminMember({
+      userId,
+      actorUserId: actorUserId(session),
+      displayName: text(formData, "displayName") || null,
+      role: roleRaw && isAdminRole(roleRaw) ? roleRaw : undefined,
+    });
+    if (!result.ok) return actionError(result.error);
+
+    refreshAdmin();
+    return actionOk("Team member updated.");
+  } catch (error) {
+    return toActionError(error);
   }
+}
 
-  const limit = consumeRateLimit(
-    `admin-invite:${session.sub}`,
-    10,
-    60 * 60 * 1000,
+export async function setMemberActiveAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("admins:manage");
+    const userId = text(formData, "userId");
+    const isActive = text(formData, "active") === "true";
+    if (!userId) return actionError("Member not found.");
+
+    const result = await updateAdminMember({
+      userId,
+      actorUserId: actorUserId(session),
+      isActive,
+    });
+    if (!result.ok) return actionError(result.error);
+
+    refreshAdmin();
+    return actionOk(isActive ? "Access restored." : "Access removed.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function resendInviteAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("admins:manage");
+    const userId = text(formData, "userId");
+    if (!userId) return actionError("Member not found.");
+
+    const limit = consumeRateLimit(
+      `admin-invite:${session.sub}`,
+      10,
+      60 * 60 * 1000,
+    );
+    if (!limit.ok) return actionError("Too many invites. Try again later.");
+
+    const result = await resendInvite({
+      userId,
+      actorUserId: actorUserId(session),
+    });
+    if (!result.ok) return actionError(result.error);
+
+    refreshAdmin();
+    return actionOk("Invite sent again.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+// ──────────────────────────── Products ───────────────────────────
+
+const EDITABLE_STATUSES = ["draft", "published", "archived"] as const;
+
+async function resolveBrand(
+  brandName: string,
+): Promise<{ brandSlug: string; brandName: string }> {
+  const brands = await adminListBrandsDurable();
+  const match = brands.find(
+    (brand) => brand.name.toLowerCase() === brandName.toLowerCase(),
   );
-  if (!limit.ok) {
-    return { error: "Too many invites. Try again later." };
-  }
-
-  const result = await inviteAdminByEmail({
-    email,
-    role,
-    displayName: displayName || undefined,
-    invitedByUserId: session.sub.startsWith("bootstrap:")
-      ? null
-      : session.sub,
-  });
-
-  if (!result.ok) {
-    // Avoid leaking whether the email exists in Auth.
-    return { error: "Could not send invite. Check the email and try again." };
-  }
-
-  revalidatePath("/admin/team");
-  return { ok: true };
+  if (match) return { brandSlug: match.slug, brandName: match.name };
+  const slug = uniqueSlug(
+    brandName,
+    new Set(brands.map((brand) => brand.slug)),
+    "brand",
+  );
+  return { brandSlug: slug, brandName };
 }
 
-export async function saveProductAction(formData: FormData) {
-  const session = await requireSession("products:write");
-  const id = String(formData.get("id") ?? "") || undefined;
-  const priceRaw = String(formData.get("priceAmount") ?? "");
-  let priceAmount = Number.parseInt(priceRaw, 10);
-  if (!Number.isInteger(priceAmount) || priceAmount < 0) {
-    throw new Error("Price must be a non-negative integer RWF amount.");
-  }
+export async function saveProductAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:write");
+    const id = text(formData, "id") || undefined;
 
-  const existing = id ? await adminGetProductDurable(id) : undefined;
-  const canSetPrice = roleHasPermission(session.role, "products:price");
-  if (!canSetPrice) {
-    if (!existing) {
-      throw new Error("Not authorised to set product prices.");
+    const name = text(formData, "name");
+    if (!name) return actionError("Product name is required.");
+    const brandNameRaw = text(formData, "brandName");
+    if (!brandNameRaw) return actionError("Brand is required.");
+
+    const existing = id ? await adminGetProductDurable(id) : undefined;
+    if (id && !existing) return actionError("That product no longer exists.");
+
+    let priceAmount = Number.parseInt(text(formData, "priceAmount"), 10);
+    if (!Number.isInteger(priceAmount) || priceAmount < 0) {
+      return actionError("Price must be a whole number of RWF, like 15000.");
     }
-    if (priceAmount !== existing.price.amount) {
-      throw new Error("Not authorised to change product prices.");
+    let discountPercent = parseDiscountPercent(text(formData, "discountPercent"));
+
+    if (!roleHasPermission(session.role, "products:price")) {
+      if (!existing) {
+        return actionError("You do not have permission to set prices.");
+      }
+      const regular = existing.compareAtPrice?.amount ?? existing.price.amount;
+      if (priceAmount !== regular) {
+        return actionError("You do not have permission to change prices.");
+      }
+      priceAmount = regular;
+      discountPercent = impliedDiscountPercent(
+        existing.price.amount,
+        existing.compareAtPrice?.amount,
+      );
     }
-    priceAmount = existing.price.amount;
-  }
 
-  const stockRaw = String(formData.get("stockQuantity") ?? "").trim();
-  const availability = String(
-    formData.get("availability") ?? "unknown",
-  ) as AdminProductInput["availability"];
-  let stockQuantity: number | null = null;
-  if (availability === "unknown") {
-    stockQuantity = null;
-  } else if (stockRaw === "") {
-    stockQuantity = availability === "out_of_stock" ? 0 : null;
-  } else {
-    stockQuantity = Number.parseInt(stockRaw, 10);
-    if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
-      throw new Error("Stock quantity must be a non-negative integer.");
+    const availability = text(
+      formData,
+      "availability",
+    ) as AdminProductInput["availability"];
+    const stockRaw = text(formData, "stockQuantity");
+    let stockQuantity: number | null = null;
+    if (availability === "unknown") {
+      stockQuantity = null;
+    } else if (stockRaw === "") {
+      stockQuantity = availability === "out_of_stock" ? 0 : null;
+    } else {
+      stockQuantity = Number.parseInt(stockRaw, 10);
+      if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+        return actionError("Stock quantity must be a whole number, 0 or more.");
+      }
     }
-  }
 
-  const featuredSortRaw = String(formData.get("featuredSort") ?? "0").trim();
-  const featuredSort = Number.parseInt(featuredSortRaw, 10);
+    const statusRaw = text(formData, "status") || "draft";
+    if (!(EDITABLE_STATUSES as readonly string[]).includes(statusRaw)) {
+      return actionError("Choose a valid status.");
+    }
 
-  const input: AdminProductInput = {
-    id,
-    slug: String(formData.get("slug") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
-    description: String(formData.get("description") ?? "").trim(),
-    priceAmount,
-    categorySlug:
-      String(formData.get("categorySlug") ?? "").trim() || undefined,
-    brandSlug: String(formData.get("brandSlug") ?? "").trim(),
-    brandName: String(formData.get("brandName") ?? "").trim(),
-    status: String(
-      formData.get("status") ?? "draft",
-    ) as AdminProductInput["status"],
-    availability,
-    isProvisional: formData.get("isProvisional") === "on",
-    sku: String(formData.get("sku") ?? "").trim() || undefined,
-    barcode: String(formData.get("barcode") ?? "").trim() || undefined,
-    stockQuantity,
-    isFeatured: formData.get("isFeatured") === "on",
-    featuredSort: Number.isInteger(featuredSort) && featuredSort >= 0
-      ? featuredSort
-      : 0,
-  };
+    // Web address name: generated from the name unless someone chose their own.
+    let slug = text(formData, "slug").toLowerCase();
+    if (slug) {
+      if (!isValidSlug(slug)) return actionError(SLUG_RULE);
+    } else if (existing) {
+      slug = existing.slug;
+    } else {
+      slug = uniqueSlug(name, await adminExistingSlugsDurable(), "product");
+    }
 
-  const product = await adminUpsertProductDurable(session, input);
-  revalidateCatalogue();
-  if (product.slug) {
-    const { revalidatePath } = await import("next/cache");
+    const brand = await resolveBrand(brandNameRaw);
+
+    const input: AdminProductInput = {
+      id,
+      slug,
+      name,
+      description: text(formData, "description"),
+      priceAmount,
+      discountPercent,
+      categorySlug: text(formData, "categorySlug") || undefined,
+      brandSlug: brand.brandSlug,
+      brandName: brand.brandName,
+      status: statusRaw as AdminProductInput["status"],
+      availability,
+      isProvisional: formData.get("isProvisional") === "on",
+      sku: text(formData, "sku") || undefined,
+      barcode: text(formData, "barcode") || undefined,
+      stockQuantity,
+    };
+
+    const product = await adminUpsertProductDurable(session, input);
+    refreshAdmin();
     revalidatePath(`/product/${product.slug}`);
+    return actionOk(id ? "Product saved." : "Product added.");
+  } catch (error) {
+    return toActionError(error);
   }
-  redirect(`/admin/products/${product.id}?saved=1`);
 }
 
-export async function archiveProductAction(formData: FormData) {
-  const session = await requireSession("products:write");
-  const id = String(formData.get("id") ?? "");
-  const confirm = String(formData.get("confirm") ?? "");
-  if (confirm !== "ARCHIVE") {
-    throw new Error("Type ARCHIVE to confirm.");
+export async function setDiscountAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:price");
+    const id = text(formData, "id");
+    const percent = parseDiscountPercent(text(formData, "discountPercent"));
+    const product = await adminSetDiscountDurable(session, id, percent);
+    refreshAdmin();
+    revalidatePath(`/product/${product.slug}`);
+    return actionOk(percent > 0 ? `${percent}% discount applied.` : "Discount removed.");
+  } catch (error) {
+    return toActionError(error);
   }
-  await adminArchiveProductDurable(session, id);
-  revalidateCatalogue();
-  redirect("/admin/products?archived=1");
 }
 
-export async function saveCategoryAction(formData: FormData) {
-  const session = await requireSession("products:write");
-  const slug = String(formData.get("slug") ?? "")
-    .trim()
-    .toLowerCase();
-  const name = String(formData.get("name") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !name) {
-    throw new Error("Valid slug and name are required.");
+export async function setFeaturedAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:write");
+    const id = text(formData, "id");
+    const isFeatured = text(formData, "featured") !== "false";
+    const sortRaw = text(formData, "featuredSort") || "0";
+    const featuredSort = Number.parseInt(sortRaw, 10);
+    if (!Number.isInteger(featuredSort) || featuredSort < 0) {
+      return actionError("Position must be a whole number, 0 or more.");
+    }
+    const product = await adminSetFeaturedDurable(
+      session,
+      id,
+      isFeatured,
+      featuredSort,
+    );
+    refreshAdmin();
+    revalidatePath("/");
+    revalidatePath(`/product/${product.slug}`);
+    return actionOk(
+      isFeatured ? "Featured products updated." : "Removed from featured.",
+    );
+  } catch (error) {
+    return toActionError(error);
   }
-  await adminUpsertCategoryDurable(session, { slug, name, description });
-  revalidateCatalogue();
-  redirect("/admin/categories?saved=1");
 }
 
-export async function saveBrandAction(formData: FormData) {
-  const session = await requireSession("products:write");
-  const slug = String(formData.get("slug") ?? "")
-    .trim()
-    .toLowerCase();
-  const name = String(formData.get("name") ?? "").trim();
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !name) {
-    throw new Error("Valid slug and name are required.");
+export async function archiveProductAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:write");
+    const id = text(formData, "id");
+    const product = await adminArchiveProductDurable(session, id);
+    refreshAdmin();
+    revalidatePath(`/product/${product.slug}`);
+    return actionOk("Product archived. It is hidden from the shop.");
+  } catch (error) {
+    return toActionError(error);
   }
-  await adminUpsertBrandDurable(session, { slug, name });
-  revalidateCatalogue();
-  redirect("/admin/brands?saved=1");
 }
+
+// ─────────────────────── Categories and brands ───────────────────
+
+export async function saveCategoryAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:write");
+    const name = text(formData, "name");
+    const description = text(formData, "description");
+    if (!name) return actionError("Category name is required.");
+
+    // Existing category (edit): the web address name never changes.
+    const existingSlug = text(formData, "existingSlug").toLowerCase();
+    let slug = existingSlug || text(formData, "slug").toLowerCase();
+    if (slug) {
+      if (!isValidSlug(slug)) return actionError(SLUG_RULE);
+      if (!existingSlug) {
+        const taken = new Set(
+          (await adminListCategoriesDurable()).map((row) => row.slug),
+        );
+        if (taken.has(slug)) {
+          return actionError("A category with that web address name already exists.");
+        }
+      }
+    } else {
+      const taken = new Set(
+        (await adminListCategoriesDurable()).map((row) => row.slug),
+      );
+      slug = uniqueSlug(name, taken, "category");
+    }
+
+    await adminUpsertCategoryDurable(session, { slug, name, description });
+    refreshAdmin();
+    return actionOk(existingSlug ? "Category saved." : "Category added.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function saveBrandAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:write");
+    const name = text(formData, "name");
+    if (!name) return actionError("Brand name is required.");
+
+    const existingSlug = text(formData, "existingSlug").toLowerCase();
+    let slug = existingSlug || text(formData, "slug").toLowerCase();
+    const taken = new Set(
+      (await adminListBrandsDurable()).map((row) => row.slug),
+    );
+    if (slug) {
+      if (!isValidSlug(slug)) return actionError(SLUG_RULE);
+      if (!existingSlug && taken.has(slug)) {
+        return actionError("A brand with that web address name already exists.");
+      }
+    } else {
+      slug = uniqueSlug(name, taken, "brand");
+    }
+
+    await adminUpsertBrandDurable(session, { slug, name });
+    refreshAdmin();
+    return actionOk(existingSlug ? "Brand saved." : "Brand added.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+// ───────────────────────────── Images ────────────────────────────
 
 export async function uploadProductImageAction(formData: FormData): Promise<{
   error?: string;
@@ -288,8 +539,8 @@ export async function uploadProductImageAction(formData: FormData): Promise<{
   } catch (error) {
     return { error: humanizeUploadError(error) };
   }
+  refreshAdmin();
   revalidatePath(`/admin/products/${productId}`);
-  revalidateCatalogue();
   return { ok: true };
 }
 
@@ -329,40 +580,58 @@ function humanizeUploadError(error: unknown): string {
   return "Could not upload the image. Please try again.";
 }
 
-export async function adjustStockAction(formData: FormData) {
-  const session = await requireSession("inventory:adjust");
-  const productId = String(formData.get("productId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  const newAvailability = String(
-    formData.get("newAvailability") ?? "unknown",
-  ) as AdminProductInput["availability"];
-  const qtyRaw = String(formData.get("newQuantity") ?? "").trim();
-  const expectedRaw = String(formData.get("expectedQuantity") ?? "").trim();
+// ───────────────────────────── Stock ─────────────────────────────
 
-  const newQuantity =
-    newAvailability === "unknown"
-      ? null
-      : qtyRaw === ""
-        ? newAvailability === "out_of_stock"
-          ? 0
-          : null
-        : Number.parseInt(qtyRaw, 10);
+export async function adjustStockAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("inventory:adjust");
+    const productId = text(formData, "productId");
+    const reason = text(formData, "reason");
+    const newAvailability = (text(formData, "newAvailability") ||
+      "unknown") as AdminProductInput["availability"];
+    const qtyRaw = text(formData, "newQuantity");
+    const expectedRaw = text(formData, "expectedQuantity");
 
-  const expectedQuantity =
-    expectedRaw === "" || expectedRaw === "null"
-      ? null
-      : Number.parseInt(expectedRaw, 10);
+    if (!productId) return actionError("Choose a product.");
+    if (!reason) return actionError("Add a short reason for this change.");
 
-  await adjustStockDurable(session, {
-    productId,
-    newQuantity,
-    newAvailability,
-    reason,
-    expectedQuantity,
-  });
-  revalidateCatalogue();
-  redirect("/admin/stock?adjusted=1");
+    const newQuantity =
+      newAvailability === "unknown"
+        ? null
+        : qtyRaw === ""
+          ? newAvailability === "out_of_stock"
+            ? 0
+            : null
+          : Number.parseInt(qtyRaw, 10);
+    if (
+      newQuantity !== null &&
+      (!Number.isInteger(newQuantity) || newQuantity < 0)
+    ) {
+      return actionError("Stock quantity must be a whole number, 0 or more.");
+    }
+
+    const expectedQuantity =
+      expectedRaw === "" || expectedRaw === "null"
+        ? null
+        : Number.parseInt(expectedRaw, 10);
+
+    await adjustStockDurable(session, {
+      productId,
+      newQuantity,
+      newAvailability,
+      reason,
+      expectedQuantity,
+    });
+    refreshAdmin();
+    return actionOk("Stock updated.");
+  } catch (error) {
+    return toActionError(error);
+  }
 }
+
+// ───────────────────────────── Import ────────────────────────────
 
 export async function previewBulkImportAction(formData: FormData): Promise<{
   reportJson: string;
@@ -401,7 +670,7 @@ export async function applyBulkImportAction(formData: FormData): Promise<{
     });
   try {
     const result = await adminApplyBulkImportDurable(session, rows);
-    revalidateCatalogue();
+    refreshAdmin();
     return { applied: result.applied, reportJson: JSON.stringify(report) };
   } catch (error) {
     return {

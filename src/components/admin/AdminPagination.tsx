@@ -2,6 +2,11 @@ import Link from "next/link";
 import type { AdminPageResult } from "@/lib/admin/pagination";
 import { buildAdminPageHref } from "@/lib/admin/pagination";
 
+const buttonBase =
+  "inline-flex h-10 items-center justify-center rounded-full border-2 px-5 text-sm font-semibold";
+const disabledButton = `${buttonBase} border-brand-charcoal/20 text-ink-muted`;
+
+/** Showing X–Y of Z with Previous / Next. Both buttons always render; unavailable ones are disabled. */
 export function AdminPagination({
   pathname,
   searchParams,
@@ -42,57 +47,43 @@ export function AdminPagination({
         <span className="font-semibold tabular text-brand-charcoal">
           {result.total}
         </span>{" "}
-        {label}
-        {result.totalPages > 1 ? (
-          <>
-            {" "}
-            · page{" "}
-            <span className="font-semibold tabular text-brand-charcoal">
-              {result.page}
-            </span>{" "}
-            of{" "}
-            <span className="font-semibold tabular text-brand-charcoal">
-              {result.totalPages}
-            </span>
-          </>
-        ) : null}
+        {label} · page{" "}
+        <span className="font-semibold tabular text-brand-charcoal">
+          {result.page}
+        </span>{" "}
+        of{" "}
+        <span className="font-semibold tabular text-brand-charcoal">
+          {result.totalPages}
+        </span>
       </p>
-      {result.totalPages > 1 ? (
-        <div className="flex flex-wrap gap-2">
-          {prevHref ? (
-            <Link
-              href={prevHref}
-              className="inline-flex h-10 items-center rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-4 text-sm font-semibold shadow-[3px_3px_0_0_var(--brand-charcoal)]"
-              rel="prev"
-            >
-              Previous
-            </Link>
-          ) : (
-            <span
-              className="inline-flex h-10 items-center rounded-full border-2 border-brand-charcoal/20 px-4 text-sm font-semibold text-ink-muted"
-              aria-disabled="true"
-            >
-              Previous
-            </span>
-          )}
-          {nextHref ? (
-            <Link
-              href={nextHref}
-              className="inline-flex h-10 items-center rounded-full border-2 border-brand-charcoal bg-brand-charcoal px-4 text-sm font-semibold text-brand-warm-white shadow-[3px_3px_0_0_var(--brand-burnt-orange)]"
-              rel="next"
-            >
-              Next
-            </Link>
-          ) : (
-            <span
-              className="inline-flex h-10 items-center rounded-full border-2 border-brand-charcoal/20 px-4 text-sm font-semibold text-ink-muted"
-              aria-disabled="true"
-            >
-              Next
-            </span>
-          )}
-        </div>
-      ) : null}
+      <div className="grid grid-cols-2 gap-2 sm:flex">
+        {prevHref ? (
+          <Link
+            href={prevHref}
+            rel="prev"
+            className={`${buttonBase} border-brand-charcoal bg-brand-warm-white shadow-[3px_3px_0_0_var(--brand-charcoal)]`}
+          >
+            Previous
+          </Link>
+        ) : (
+          <span className={disabledButton} aria-disabled="true">
+            Previous
+          </span>
+        )}
+        {nextHref ? (
+          <Link
+            href={nextHref}
+            rel="next"
+            className={`${buttonBase} border-brand-charcoal bg-brand-charcoal text-brand-warm-white shadow-[3px_3px_0_0_var(--brand-burnt-orange)]`}
+          >
+            Next
+          </Link>
+        ) : (
+          <span className={disabledButton} aria-disabled="true">
+            Next
+          </span>
+        )}
+      </div>
     </nav>
   );
 }

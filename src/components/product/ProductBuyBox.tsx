@@ -9,8 +9,6 @@ import { Chip } from "@/components/ui/Chip";
 import { PriceTag } from "@/components/ui/PriceTag";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { chatHref } from "@/lib/site-config";
-import { sampleCompareAtPrice } from "@/lib/sample-pricing";
-
 export function ProductBuyBox({
   product,
   categoryName,
@@ -22,7 +20,7 @@ export function ProductBuyBox({
 }) {
   const unavailable = product.availability === "out_of_stock";
   const whatsappMessage = `Hello — I have a question about ${product.name}.`;
-  const onSale = !!sampleCompareAtPrice(product.price);
+  const onSale = !!product.compareAtPrice;
 
   return (
     <div className="relative z-0 min-w-0 bg-brand-warm-white">
@@ -42,7 +40,11 @@ export function ProductBuyBox({
       </h1>
 
       <div className="mt-4">
-        <PriceTag price={product.price} size="lg" showSampleSale />
+        <PriceTag
+          price={product.price}
+          compareAt={product.compareAtPrice}
+          size="lg"
+        />
       </div>
 
       <p className="mt-5 max-w-2xl text-sm text-ink-muted sm:text-base">

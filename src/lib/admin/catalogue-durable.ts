@@ -10,7 +10,10 @@ import {
   adminUpsertProduct,
   adminListBrandsMemory,
   adminListCategoriesMemory,
+  adminSetDiscount,
+  adminSetFeatured,
 } from "@/lib/admin/store";
+import { applyDiscount } from "@/lib/admin/discount";
 import type { AdminSession } from "@/lib/admin/session";
 import { mapProductRow, type ProductRow } from "@/lib/catalogue/map-row";
 import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
@@ -18,7 +21,8 @@ import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import type { BulkImportRow } from "@/lib/admin/bulk-import";
 
 const ADMIN_PRODUCT_SELECT = `
-  id, slug, name, description, price_rwf, status, availability, is_provisional,
+  id, slug, name, description, price_rwf, compare_at_price_rwf, sku, barcode,
+  status, availability, is_provisional,
   is_featured, featured_sort,
   categories ( slug, name ),
   brands ( slug, name ),
@@ -199,6 +203,10 @@ export async function adminUpsertProductDurable(
   if (!isDurableCatalogueEnabled()) return adminUpsertProduct(actor, input);
 
   const client = getSupabaseServiceClient()!;
+  const discounted = applyDiscount(
+    input.priceAmount,
+    input.discountPercent ?? 0,
+  );
 
   let categoryId: string | null = null;
   if (input.categorySlug) {
@@ -262,14 +270,21 @@ export async function adminUpsertProductDurable(
         slug: input.slug,
         name: input.name,
         description: input.description,
-        price_rwf: input.priceAmount,
+        price_rwf: discounted.price,
+        compare_at_price_rwf: discounted.compareAt,
+        sku: input.sku ?? null,
+        barcode: input.barcode ?? null,
         status: input.status,
         availability: input.availability,
         category_id: categoryId,
         brand_id: brandId,
         is_provisional: input.isProvisional,
-        is_featured: input.isFeatured ?? false,
-        featured_sort: input.featuredSort ?? 0,
+        ...(input.isFeatured !== undefined
+          ? { is_featured: input.isFeatured }
+          : {}),
+        ...(input.featuredSort !== undefined
+          ? { featured_sort: input.featuredSort }
+          : {}),
         ...(publishedAt !== undefined ? { published_at: publishedAt } : {}),
         updated_at: new Date().toISOString(),
       })
@@ -282,7 +297,10 @@ export async function adminUpsertProductDurable(
         slug: input.slug,
         name: input.name,
         description: input.description,
-        price_rwf: input.priceAmount,
+        price_rwf: discounted.price,
+        compare_at_price_rwf: discounted.compareAt,
+        sku: input.sku ?? null,
+        barcode: input.barcode ?? null,
         status: input.status,
         availability: input.availability,
         category_id: categoryId,
@@ -320,6 +338,72 @@ export async function adminUpsertProductDurable(
 
   const product = await adminGetProductDurable(productId!);
   if (!product) throw new Error("Product save failed");
+  return product;
+}
+
+export async function adminSetDiscountDurable(
+  actor: AdminSession,
+  id: string,
+  percent: number,
+): Promise<DemoProduct> {
+  if (!isDurableCatalogueEnabled()) return adminSetDiscount(actor, id, percent);
+
+  const existing = await adminGetProductDurable(id);
+  if (!existing) throw new Error("Product not found");
+  const regular = existing.compareAtPrice?.amount ?? existing.price.amount;
+  const next = applyDiscount(regular, percent);
+
+  const client = getSupabaseServiceClient()!;
+  const { error } = await client
+    .from("products")
+    .update({
+      price_rwf: next.price,
+      compare_at_price_rwf: next.compareAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  await client.from("audit_events").insert({
+    actor_user_id: actor.sub.startsWith("bootstrap:") ? null : actor.sub,
+    action: "product.discount",
+    entity_type: "products",
+    entity_id: id,
+    metadata: { percent },
+  });
+  const product = await adminGetProductDurable(id);
+  if (!product) throw new Error("Product not found");
+  return product;
+}
+
+export async function adminSetFeaturedDurable(
+  actor: AdminSession,
+  id: string,
+  isFeatured: boolean,
+  featuredSort: number,
+): Promise<DemoProduct> {
+  if (!isDurableCatalogueEnabled()) {
+    return adminSetFeatured(actor, id, isFeatured, featuredSort);
+  }
+
+  const client = getSupabaseServiceClient()!;
+  const { error } = await client
+    .from("products")
+    .update({
+      is_featured: isFeatured,
+      featured_sort: featuredSort,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  await client.from("audit_events").insert({
+    actor_user_id: actor.sub.startsWith("bootstrap:") ? null : actor.sub,
+    action: "product.featured",
+    entity_type: "products",
+    entity_id: id,
+    metadata: { isFeatured, featuredSort },
+  });
+  const product = await adminGetProductDurable(id);
+  if (!product) throw new Error("Product not found");
   return product;
 }
 

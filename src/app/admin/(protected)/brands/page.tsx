@@ -1,103 +1,83 @@
 import {
+  AdminCard,
   AdminPageHeader,
-  AdminPanel,
-  AdminStatus,
   AdminTable,
   AdminTd,
   AdminTh,
 } from "@/components/admin/admin-ui";
 import { AdminPagination } from "@/components/admin/AdminPagination";
-import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Field";
-import { saveBrandAction } from "@/app/admin/actions";
+import { BrandModal } from "@/components/admin/CatalogueModals";
 import { adminListBrandsDurable } from "@/lib/admin/catalogue-durable";
 import { paginateItems, parseAdminPage } from "@/lib/admin/pagination";
 
 export default async function AdminBrandsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; page?: string }>;
+  searchParams: Promise<{ add?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const brands = await adminListBrandsDurable();
   const pageResult = paginateItems(brands, parseAdminPage(params.page));
-  const query = {
-    saved: params.saved,
-  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <AdminPageHeader
         title="Brands"
-        description="Brands shown on product cards and filters."
+        description="Brands shown on product cards and in the brand filter."
+        actions={<BrandModal defaultOpen={params.add === "1"} />}
       />
-      {params.saved ? <AdminStatus>Brand saved.</AdminStatus> : null}
 
-      <AdminPanel className="max-w-xl">
-        <h2 className="font-display text-xl">Add / update</h2>
-        <form action={saveBrandAction} className="mt-4 grid gap-4">
-          <Field
-            id="brand-slug"
-            label="Slug"
-            hint="URL-safe id used in filters and product records. Lowercase letters, numbers, and hyphens only — for example johnnie-walker."
-          >
-            <Input
-              id="brand-slug"
-              name="slug"
-              required
-              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-              className="font-mono text-sm"
-              placeholder="johnnie-walker"
-              autoComplete="off"
-            />
-          </Field>
-          <Field
-            id="brand-name"
-            label="Name"
-            hint="Display name shown on product cards."
-          >
-            <Input
-              id="brand-name"
-              name="name"
-              required
-              placeholder="Johnnie Walker"
-              autoComplete="off"
-            />
-          </Field>
-          <Button type="submit" variant="primary" className="w-fit">
-            Save brand
-          </Button>
-        </form>
-      </AdminPanel>
-
-      <section className="space-y-3">
-        <AdminTable>
-          <thead>
-            <tr>
-              <AdminTh>Name</AdminTh>
-              <AdminTh>Slug</AdminTh>
-            </tr>
-          </thead>
-          <tbody>
-            {pageResult.items.map((brand) => (
-              <tr key={brand.slug}>
-                <AdminTd className="font-medium">{brand.name}</AdminTd>
-                <AdminTd className="font-mono text-xs">{brand.slug}</AdminTd>
-              </tr>
+      {pageResult.total === 0 ? (
+        <div className="rounded-[var(--radius-frame)] border-2 border-dashed border-brand-charcoal/20 px-6 py-10 text-center">
+          <p className="text-sm text-ink-muted">
+            No brands yet. Brands are also created automatically when you add a
+            product.
+          </p>
+        </div>
+      ) : (
+        <>
+          <AdminTable
+            mobile={pageResult.items.map((brand) => (
+              <AdminCard key={brand.slug}>
+                <p className="font-semibold">{brand.name}</p>
+                <p className="mt-0.5 font-mono text-xs text-ink-muted">
+                  {brand.slug}
+                </p>
+                <div className="mt-3">
+                  <BrandModal brand={brand} />
+                </div>
+              </AdminCard>
             ))}
-          </tbody>
-        </AdminTable>
-        {pageResult.total === 0 ? (
-          <p className="text-sm text-ink-muted">No brands yet.</p>
-        ) : (
+          >
+            <thead>
+              <tr>
+                <AdminTh>Name</AdminTh>
+                <AdminTh>Web address name</AdminTh>
+                <AdminTh>
+                  <span className="sr-only">Actions</span>
+                </AdminTh>
+              </tr>
+            </thead>
+            <tbody>
+              {pageResult.items.map((brand) => (
+                <tr key={brand.slug}>
+                  <AdminTd className="font-medium">{brand.name}</AdminTd>
+                  <AdminTd className="font-mono text-xs">{brand.slug}</AdminTd>
+                  <AdminTd className="text-right">
+                    <BrandModal brand={brand} />
+                  </AdminTd>
+                </tr>
+              ))}
+            </tbody>
+          </AdminTable>
           <AdminPagination
             pathname="/admin/brands"
-            searchParams={query}
+            searchParams={{}}
             result={pageResult}
             label="brands"
           />
-        )}
-      </section>
+        </>
+      )}
     </div>
   );
 }

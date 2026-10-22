@@ -2,16 +2,20 @@ import { notFound } from "next/navigation";
 import {
   AdminPageHeader,
   AdminPanel,
-  AdminStatus,
 } from "@/components/admin/admin-ui";
-import { Button } from "@/components/ui/Button";
-import { Field, Input, Select } from "@/components/ui/Field";
-import { WhatsAppIcon } from "@/components/ui/icons";
 import {
-  adminMarkPaymentAction,
-  adminTransitionFulfilmentAction,
-} from "@/app/admin/order-actions";
+  FulfilmentModal,
+  PaymentModal,
+} from "@/components/admin/OrderModals";
+import { Button } from "@/components/ui/Button";
+import { WhatsAppIcon } from "@/components/ui/icons";
 import { formatDemoPrice } from "@/domain/catalogue";
+import { formatAdminDateTime } from "@/lib/admin/format";
+import {
+  formatFulfilmentLabel,
+  formatPaymentLabel,
+} from "@/lib/admin/orders-query";
+import { nextFulfilmentStatuses } from "@/lib/orders/transitions";
 import {
   customerTelHref,
   customerWhatsAppHref,
@@ -22,13 +26,10 @@ type Params = Promise<{ id: string }>;
 
 export default async function AdminOrderDetailPage({
   params,
-  searchParams,
 }: {
   params: Params;
-  searchParams: Promise<{ updated?: string; paid?: string }>;
 }) {
   const { id } = await params;
-  const query = await searchParams;
   const order = await getOrderByIdDurable(id);
   if (!order) notFound();
 
@@ -50,16 +51,10 @@ export default async function AdminOrderDetailPage({
         }
       />
 
-      {query.updated || query.paid ? (
-        <AdminStatus>
-          {query.paid ? "Payment recorded." : "Order updated."}
-        </AdminStatus>
-      ) : null}
-
       <AdminPanel>
         <h2 className="font-display text-xl">Message customer</h2>
         <p className="mt-1 text-sm text-ink-muted">
-          Opens a link to the customer&apos;s phone — not the shop Contact us
+          Opens the customer&apos;s own phone number, not the shop contact
           number.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -87,14 +82,14 @@ export default async function AdminOrderDetailPage({
       <ul className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
         {(
           [
-            ["Fulfilment", order.fulfilmentStatus],
-            ["Payment", order.paymentStatus],
+            ["Order status", formatFulfilmentLabel(order.fulfilmentStatus)],
+            ["Payment", formatPaymentLabel(order.paymentStatus)],
             ["Total", formatDemoPrice(order.total)],
             [
               "Delivery fee",
               order.deliveryFee
                 ? formatDemoPrice(order.deliveryFee)
-                : "Unavailable / manual",
+                : "To be confirmed",
             ],
           ] as const
         ).map(([label, value]) => (
@@ -111,7 +106,7 @@ export default async function AdminOrderDetailPage({
       </ul>
 
       <AdminPanel>
-        <h2 className="font-display text-xl">Lines</h2>
+        <h2 className="font-display text-xl">Items</h2>
         <ul className="mt-4 space-y-2 text-sm">
           {order.items.map((item) => (
             <li
@@ -129,67 +124,29 @@ export default async function AdminOrderDetailPage({
         </ul>
       </AdminPanel>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <AdminPanel>
-          <form action={adminTransitionFulfilmentAction} className="space-y-4">
-            <h2 className="font-display text-xl">Fulfilment</h2>
-            <input type="hidden" name="orderId" value={order.id} />
-            <Field id="fulfilment-to" label="Next status">
-              <Select
-                id="fulfilment-to"
-                name="to"
-                defaultValue="confirmed"
-              >
-                <option value="confirmed">confirmed</option>
-                <option value="processing">processing</option>
-                <option value="ready_for_dispatch">ready_for_dispatch</option>
-                <option value="out_for_delivery">out_for_delivery</option>
-                <option value="delivered">delivered</option>
-                <option value="cancelled">cancelled</option>
-              </Select>
-            </Field>
-            <Field id="fulfilment-reason" label="Reason">
-              <Input id="fulfilment-reason" name="reason" required />
-            </Field>
-            <Button type="submit" variant="secondary" size="md">
-              Apply fulfilment change
-            </Button>
-          </form>
-        </AdminPanel>
-
-        <AdminPanel>
-          <form action={adminMarkPaymentAction} className="space-y-4">
-            <h2 className="font-display text-xl">Record verified payment</h2>
-            <p className="text-xs text-ink-muted">
-              Use only after offline verification (bank/MoMo slip, etc.).
-              Reference and reason are required.
-            </p>
-            <input type="hidden" name="orderId" value={order.id} />
-            <Field id="payment-ref" label="Payment reference">
-              <Input id="payment-ref" name="paymentReference" required />
-            </Field>
-            <Field id="payment-reason" label="Reason / method note">
-              <Input id="payment-reason" name="reason" required />
-            </Field>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="md"
-              disabled={order.paymentStatus === "paid"}
-            >
-              Mark paid
-            </Button>
-          </form>
-        </AdminPanel>
-      </section>
+      <div className="flex flex-wrap gap-2">
+        <FulfilmentModal
+          orderId={order.id}
+          options={nextFulfilmentStatuses(order.fulfilmentStatus).map(
+            (status) => ({ value: status, label: formatFulfilmentLabel(status) }),
+          )}
+        />
+        <PaymentModal
+          orderId={order.id}
+          alreadyPaid={order.paymentStatus === "paid"}
+        />
+      </div>
 
       <AdminPanel>
-        <h2 className="font-display text-xl">Timeline</h2>
+        <h2 className="font-display text-xl">History</h2>
         <ul className="mt-4 space-y-2 text-sm text-ink-muted">
           {order.statusHistory.map((entry, index) => (
             <li key={`${entry.at}-${index}`}>
-              <span className="tabular text-brand-charcoal">{entry.at}</span>
-              : {entry.from ?? "—"} → {entry.to} — {entry.reason}
+              <span className="tabular text-brand-charcoal">
+                {formatAdminDateTime(entry.at)}
+              </span>
+              : {entry.from ? formatFulfilmentLabel(entry.from) : "Placed"} →{" "}
+              {formatFulfilmentLabel(entry.to)} — {entry.reason}
             </li>
           ))}
         </ul>

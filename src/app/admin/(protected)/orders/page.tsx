@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  AdminCard,
   AdminPageHeader,
   AdminTable,
   AdminTd,
@@ -145,7 +146,37 @@ export default async function AdminOrdersPage({
         </div>
       </form>
 
-      <AdminTable>
+      <AdminTable
+        mobile={pageResult.items.map((order) => (
+          <AdminCard key={order.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-mono text-xs">{order.reference}</p>
+                <p className="mt-1 font-semibold">{order.customerName}</p>
+                <p className="text-xs text-ink-muted">{order.customerPhone}</p>
+              </div>
+              <p className="tabular font-semibold">
+                {formatDemoPrice(order.total)}
+              </p>
+            </div>
+            <p className="mt-2 text-sm">
+              {formatFulfilmentLabel(order.fulfilmentStatus)} ·{" "}
+              {formatPaymentLabel(order.paymentStatus)}
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              {formatOrderPlacedAt(order.createdAt)}
+            </p>
+            <div className="mt-3">
+              <Link
+                href={`/admin/orders/${order.id}`}
+                className="inline-flex h-9 items-center rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-3.5 text-sm font-semibold shadow-[2px_2px_0_0_var(--brand-charcoal)]"
+              >
+                Open
+              </Link>
+            </div>
+          </AdminCard>
+        ))}
+      >
         <thead>
           <tr>
             <AdminTh>Placed</AdminTh>

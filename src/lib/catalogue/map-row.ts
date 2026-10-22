@@ -38,6 +38,7 @@ export type ProductRow = {
   name: string;
   description: string | null;
   price_rwf: number | string | null;
+  compare_at_price_rwf?: number | string | null;
   status: string;
   availability: string;
   is_provisional: boolean | null;
@@ -106,13 +107,20 @@ export function mapProductRow(row: ProductRow): DemoProduct {
   const category = firstEmbed(row.categories);
   const brandSlug = brand?.slug ?? "unknown";
   const brandName = brand?.name ?? "Unknown";
+  const priceAmount = coercePriceRwf(row.price_rwf);
+  const compareRaw =
+    row.compare_at_price_rwf === null || row.compare_at_price_rwf === undefined
+      ? 0
+      : coercePriceRwf(row.compare_at_price_rwf);
 
   return {
     id: row.id,
     slug: row.slug,
     name: row.name ?? "Untitled product",
     description: row.description ?? "",
-    price: moneyRwf(coercePriceRwf(row.price_rwf)),
+    price: moneyRwf(priceAmount),
+    compareAtPrice:
+      compareRaw > priceAmount ? moneyRwf(compareRaw) : undefined,
     categorySlug: category?.slug,
     status: (row.status || "draft") as ProductStatus,
     images,

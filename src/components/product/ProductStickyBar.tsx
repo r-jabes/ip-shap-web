@@ -17,7 +17,11 @@ export function ProductStickyBar({ product }: { product: DemoProduct }) {
           <p className="truncate text-sm font-semibold text-brand-charcoal">
             {product.name}
           </p>
-          <PriceTag price={product.price} size="sm" showSampleSale />
+          <PriceTag
+            price={product.price}
+            compareAt={product.compareAtPrice}
+            size="sm"
+          />
         </div>
         <Button
           type="button"

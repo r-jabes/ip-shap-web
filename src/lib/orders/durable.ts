@@ -413,16 +413,56 @@ export async function listOrdersDurable(): Promise<StoredOrder[]> {
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client
     .from("orders")
-    .select("id")
+    .select("*")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) throw new Error(error.message);
-  const orders: StoredOrder[] = [];
-  for (const row of data ?? []) {
-    const order = await fetchOrderBundle(row.id as string);
-    if (order) orders.push(order);
+
+  const rows = (data ?? []) as OrderRow[];
+  if (rows.length === 0) return [];
+  const ids = rows.map((row) => row.id);
+
+  // Three queries in total (not three per order) so the list opens quickly.
+  const [itemsResult, historyResult] = await Promise.all([
+    client
+      .from("order_items")
+      .select(
+        "order_id, product_id, product_name_snapshot, product_slug_snapshot, sku_snapshot, quantity, unit_price_rwf, line_total_rwf",
+      )
+      .in("order_id", ids),
+    client
+      .from("order_status_history")
+      .select("order_id, from_fulfilment, to_fulfilment, reason, created_at")
+      .in("order_id", ids)
+      .order("created_at", { ascending: true }),
+  ]);
+  if (itemsResult.error) throw new Error(itemsResult.error.message);
+  if (historyResult.error) throw new Error(historyResult.error.message);
+
+  const itemsByOrder = new Map<string, OrderItemRow[]>();
+  for (const item of (itemsResult.data ?? []) as Array<
+    OrderItemRow & { order_id: string }
+  >) {
+    const list = itemsByOrder.get(item.order_id) ?? [];
+    list.push(item);
+    itemsByOrder.set(item.order_id, list);
   }
-  return orders;
+  const historyByOrder = new Map<string, OrderHistoryRow[]>();
+  for (const entry of (historyResult.data ?? []) as Array<
+    OrderHistoryRow & { order_id: string }
+  >) {
+    const list = historyByOrder.get(entry.order_id) ?? [];
+    list.push(entry);
+    historyByOrder.set(entry.order_id, list);
+  }
+
+  return rows.map((row) =>
+    mapOrderRow(
+      row,
+      itemsByOrder.get(row.id) ?? [],
+      historyByOrder.get(row.id) ?? [],
+    ),
+  );
 }
 
 export async function transitionFulfilmentDurable(

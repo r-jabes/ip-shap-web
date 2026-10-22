@@ -13,8 +13,8 @@ export default async function AdminImportPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title="Bulk import"
-        description="Validate a CSV, then import products into the catalogue."
+        title="Import products"
+        description="Add or update many products at once from a spreadsheet (CSV file). Download the template to see what to fill in."
       />
       <BulkImportPanel />
     </div>

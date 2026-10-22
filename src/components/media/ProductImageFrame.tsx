@@ -42,7 +42,7 @@ export function ProductImageFrame({
   objectFit = "contain",
   position = "center",
   aspect = "catalogue",
-  emptyLabel = "No image",
+  emptyLabel = "Image unavailable",
 }: ProductImageFrameProps) {
   const [failed, setFailed] = useState(false);
   const effectiveRole = image?.role ?? role;

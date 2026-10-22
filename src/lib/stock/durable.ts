@@ -1,4 +1,5 @@
 import type { ProductAvailability } from "@/domain/catalogue";
+import { resolveActorEmails } from "@/lib/admin/audit-durable";
 import type { AdminSession } from "@/lib/admin/session";
 import {
   adminAdjustStock,
@@ -65,10 +66,16 @@ export async function listAdjustmentsDurable(
     .limit(limit);
   if (error) throw new Error(error.message);
 
+  const emails = await resolveActorEmails(
+    (data ?? []).map((row) => row.actor_user_id),
+  );
+
   return (data ?? []).map((row) => ({
     id: row.id,
     productId: row.product_id,
-    actorEmail: row.actor_user_id ?? "system",
+    actorEmail: row.actor_user_id
+      ? (emails.get(row.actor_user_id) ?? "A team member")
+      : "System",
     previousQuantity: row.previous_quantity,
     newQuantity: row.new_quantity,
     previousAvailability: row.previous_availability,

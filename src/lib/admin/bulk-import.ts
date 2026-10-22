@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { slugify, uniqueSlug } from "@/lib/slug";
 
 export const BULK_IMPORT_HEADERS = [
   "slug",
@@ -200,15 +201,20 @@ export function validateBulkImportCsv(
         throw new Error("price_rwf must be an integer");
       }
       const stock = parseOptionalInt(raw.stock_quantity);
+      // Blank web address names are generated from the name, unique within this file only
+      // (so preview and apply always agree; matching an existing product still updates it).
+      const slug =
+        raw.slug || (raw.name ? uniqueSlug(raw.name, seen, "product") : "");
       data = bulkImportRowSchema.parse({
-        slug: raw.slug,
+        slug,
         name: raw.name,
         description: raw.description || "",
         price_rwf: price,
         status: raw.status || "draft",
         availability: raw.availability || "unknown",
         category_slug: raw.category_slug || undefined,
-        brand_slug: raw.brand_slug || undefined,
+        brand_slug:
+          raw.brand_slug || (raw.brand_name ? slugify(raw.brand_name) : "") || undefined,
         brand_name: raw.brand_name || undefined,
         sku: raw.sku || undefined,
         barcode: raw.barcode || undefined,
@@ -254,82 +260,88 @@ export type BulkImportFieldGuide = {
 export const BULK_IMPORT_FIELD_GUIDE: readonly BulkImportFieldGuide[] = [
   {
     key: "slug",
-    label: "Slug",
-    required: true,
-    allowed: "URL-safe id, lowercase letters/numbers/hyphens (e.g. house-red)",
+    label: "Web address name",
+    required: false,
+    allowed:
+      "Leave blank and it is created from the name. To set your own: lowercase letters, numbers and hyphens, like house-red.",
   },
   {
     key: "name",
     label: "Name",
     required: true,
-    allowed: "Display name shown in the shop",
+    allowed: "The product name shoppers see.",
   },
   {
     key: "description",
     label: "Description",
     required: false,
-    allowed: "Product description text; wrap in quotes if it contains commas",
+    allowed: "A short description. Wrap it in quotes if it contains commas.",
   },
   {
     key: "price_rwf",
     label: "Price (RWF)",
     required: true,
-    allowed: "Whole francs only — integer, no decimals (e.g. 15000)",
+    allowed:
+      "Whole francs only, no decimals or commas, like 15000. Importing a price replaces the regular price and removes any discount.",
   },
   {
     key: "status",
     label: "Status",
     required: false,
-    allowed: "draft | demo | published | archived — blank defaults to draft",
+    allowed:
+      "draft (hidden), published (live) or archived. Blank means draft.",
   },
   {
     key: "availability",
     label: "Availability",
     required: false,
     allowed:
-      "unknown | in_stock | low_stock | out_of_stock — blank defaults to unknown",
+      "unknown (not tracked), in_stock, low_stock or out_of_stock. Blank means unknown.",
   },
   {
     key: "category_slug",
-    label: "Category slug",
+    label: "Category",
     required: false,
-    allowed: "Must match an existing category slug",
+    allowed:
+      "The web address name of an existing category, like red-wine. See the Categories page.",
   },
   {
     key: "brand_slug",
-    label: "Brand slug",
+    label: "Brand web address name",
     required: false,
-    allowed: "URL-safe brand id (created/updated with brand_name on import)",
+    allowed:
+      "Leave blank and it is created from the brand name.",
   },
   {
     key: "brand_name",
     label: "Brand name",
     required: false,
-    allowed: "Brand display name",
+    allowed: "The brand as shoppers see it, like Johnnie Walker.",
   },
   {
     key: "sku",
     label: "SKU",
     required: false,
-    allowed: "Internal stock-keeping code",
+    allowed: "Your own product code, if you use one.",
   },
   {
     key: "barcode",
     label: "Barcode",
     required: false,
-    allowed: "Barcode / EAN if known",
+    allowed: "The barcode number, if you scan products.",
   },
   {
     key: "stock_quantity",
-    label: "Stock quantity",
+    label: "Quantity on hand",
     required: false,
-    allowed: "Non-negative integer, or null when unknown",
+    allowed: "A whole number, or leave blank if you do not count stock.",
   },
   {
     key: "is_provisional",
-    label: "Provisional",
+    label: "Needs review",
     required: false,
-    allowed: "true | false — blank defaults to false",
+    allowed:
+      "true or false. Tick true as a reminder to check the price or details later. Shoppers do not see it. Blank means false.",
   },
 ] as const;
 
@@ -363,7 +375,7 @@ export function bulkImportTemplateCsv(): string {
       "false",
     ],
     [
-      "house-white",
+      "",
       "House White",
       "Crisp white for the table.",
       "14000",

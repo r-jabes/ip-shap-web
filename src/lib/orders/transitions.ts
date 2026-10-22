@@ -26,6 +26,13 @@ const FULFILMENT_TRANSITIONS: Record<FulfilmentStatus, FulfilmentStatus[]> = {
   cancelled: [],
 };
 
+/** Statuses an order can move to from `from` (empty when it is finished). */
+export function nextFulfilmentStatuses(
+  from: FulfilmentStatus,
+): FulfilmentStatus[] {
+  return [...FULFILMENT_TRANSITIONS[from]];
+}
+
 export function canTransitionFulfilment(
   from: FulfilmentStatus,
   to: FulfilmentStatus,

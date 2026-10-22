@@ -3,38 +3,35 @@ import {
   AdminPanel,
   AdminStat,
 } from "@/components/admin/admin-ui";
-import { Button } from "@/components/ui/Button";
 import {
-  adminDashboardCounts,
-  adminListAdjustments,
-  adminListAudits,
-  adminListLowStockProducts,
-} from "@/lib/admin/store";
+  formatAvailabilityLabel,
+  formatStockSummary,
+} from "@/components/admin/AdminStatusBadge";
+import { Button } from "@/components/ui/Button";
+import { loadAdminDashboard } from "@/lib/admin/dashboard";
+import { describeAuditAction, formatAdminDateTime } from "@/lib/admin/format";
 
-export default function AdminDashboardPage() {
-  const counts = adminDashboardCounts();
-  const adjustments = adminListAdjustments(5);
-  const audits = adminListAudits(8);
-  const lowStock = adminListLowStockProducts().slice(0, 8);
+export default async function AdminDashboardPage() {
+  const { counts, adjustments, audits, lowStock } = await loadAdminDashboard();
 
   return (
     <div className="space-y-10">
       <AdminPageHeader
         title="Dashboard"
-        description="Overview of catalogue and stock."
+        description="A quick look at your catalogue and stock."
         actions={
           <>
-            <Button href="/admin/orders" variant="secondary" size="sm">
+            <Button href="/admin/products?add=1" variant="primary" size="sm">
+              Add product
+            </Button>
+            <Button href="/admin/orders" variant="ghost" size="sm">
               Orders
             </Button>
-            <Button href="/admin/products/new" variant="primary" size="sm">
-              New product
-            </Button>
-            <Button href="/admin/stock" variant="ghost" size="sm">
-              Adjust stock
+            <Button href="/admin/stock?add=1" variant="ghost" size="sm">
+              Update stock
             </Button>
             <Button href="/admin/import" variant="ghost" size="sm">
-              Bulk import
+              Import
             </Button>
           </>
         }
@@ -43,13 +40,13 @@ export default function AdminDashboardPage() {
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(
           [
-            ["Total products", counts.totalProducts],
+            ["Products", counts.totalProducts],
             ["Published", counts.published],
-            ["Draft / demo", counts.draft],
+            ["Drafts", counts.draft],
             ["Archived", counts.archived],
-            ["Unknown stock", counts.unknownStock],
-            ["Low stock", counts.lowStock],
-            ["Out of stock", counts.outOfStock],
+            ["Stock not tracked", counts.unknownStock],
+            ["Running low", counts.lowStock],
+            ["Sold out", counts.outOfStock],
           ] as const
         ).map(([label, value]) => (
           <AdminStat key={label} label={label} value={value} />
@@ -57,9 +54,11 @@ export default function AdminDashboardPage() {
       </ul>
 
       <AdminPanel>
-        <h2 className="font-display text-xl">Low stock</h2>
+        <h2 className="font-display text-xl">Running low</h2>
         {lowStock.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-muted">None right now.</p>
+          <p className="mt-3 text-sm text-ink-muted">
+            No products are running low right now.
+          </p>
         ) : (
           <ul className="mt-4 space-y-2 text-sm">
             {lowStock.map((product) => (
@@ -69,9 +68,9 @@ export default function AdminDashboardPage() {
               >
                 <span className="font-medium">{product.name}</span>
                 <span className="tabular text-ink-muted">
-                  {product.availability}
+                  {formatAvailabilityLabel(product.availability)}
                   {typeof product.stockQuantity === "number"
-                    ? ` · qty ${product.stockQuantity}`
+                    ? ` · ${formatStockSummary(product.availability, product.stockQuantity)} left`
                     : ""}
                 </span>
               </li>
@@ -82,7 +81,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminPanel>
-          <h2 className="font-display text-xl">Recent stock adjustments</h2>
+          <h2 className="font-display text-xl">Recent stock changes</h2>
           {adjustments.length === 0 ? (
             <p className="mt-3 text-sm text-ink-muted">None yet.</p>
           ) : (
@@ -92,15 +91,16 @@ export default function AdminDashboardPage() {
                   key={row.id}
                   className="border-t border-brand-charcoal/10 pt-3 first:border-t-0 first:pt-0"
                 >
-                  <span className="text-ink-muted tabular">{row.createdAt}</span>
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {row.actorEmail}
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  <span className="tabular">
-                    {row.previousQuantity} → {row.newQuantity}
-                  </span>
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {row.reason}
+                  <p className="font-medium">
+                    {row.productName}
+                    <span className="ml-2 font-normal text-ink-muted tabular">
+                      {row.previousQuantity ?? "—"} → {row.newQuantity ?? "—"}
+                    </span>
+                  </p>
+                  <p className="text-ink-muted">
+                    {row.reason} · {row.actorEmail} ·{" "}
+                    {formatAdminDateTime(row.createdAt)}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -108,9 +108,9 @@ export default function AdminDashboardPage() {
         </AdminPanel>
 
         <AdminPanel>
-          <h2 className="font-display text-xl">Audit trail</h2>
+          <h2 className="font-display text-xl">Recent activity</h2>
           {audits.length === 0 ? (
-            <p className="mt-3 text-sm text-ink-muted">No events yet.</p>
+            <p className="mt-3 text-sm text-ink-muted">Nothing yet.</p>
           ) : (
             <ul className="mt-4 space-y-3 text-sm">
               {audits.map((event) => (
@@ -118,16 +118,13 @@ export default function AdminDashboardPage() {
                   key={event.id}
                   className="border-t border-brand-charcoal/10 pt-3 first:border-t-0 first:pt-0"
                 >
-                  <span className="text-ink-muted tabular">
-                    {event.createdAt}
-                  </span>
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {event.actorEmail ?? "system"}
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {event.action}
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {event.entityType}
-                  {event.entityId ? `:${event.entityId.slice(0, 8)}` : ""}
+                  <p className="font-medium">
+                    {describeAuditAction(event.action)}
+                  </p>
+                  <p className="text-ink-muted">
+                    {event.actorEmail ?? "System"} ·{" "}
+                    {formatAdminDateTime(event.createdAt)}
+                  </p>
                 </li>
               ))}
             </ul>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo, DM_Sans } from "next/font/google";
+import { AuthLinkRedirect } from "@/components/admin/AuthLinkRedirect";
 import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
 import { getPublicEnv } from "@/lib/env";
 import { defaultRobots } from "@/lib/seo";
@@ -58,6 +59,7 @@ export default function RootLayout({
       <body
         className={`${bodyFont.variable} ${displayFont.variable} font-sans antialiased`}
       >
+        <AuthLinkRedirect />
         {children}
       </body>
     </html>
