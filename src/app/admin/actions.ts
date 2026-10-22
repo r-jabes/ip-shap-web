@@ -70,9 +70,14 @@ export async function adminLoginAction(formData: FormData): Promise<{
   }
 
   if (!getServerEnv().ADMIN_SESSION_SECRET) {
+    console.error(
+      JSON.stringify({
+        type: "admin_login_misconfigured",
+        reason: "ADMIN_SESSION_SECRET_missing",
+      }),
+    );
     return {
-      error:
-        "Admin sessions are not configured. Set ADMIN_SESSION_SECRET (≥ 32 chars).",
+      error: "Sign-in is temporarily unavailable. Please try again later.",
     };
   }
 

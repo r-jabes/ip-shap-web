@@ -23,20 +23,29 @@ Local UI-only: `NEXT_PUBLIC_DEMO_MODE=true` is fine. Hosted staging: use **`fals
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Staging anon key |
 | `NEXT_PUBLIC_WHATSAPP_E164` | Public | `+250790801271` |
 | `NEXT_PUBLIC_PHONE_E164` | Public | `+250788937270` |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | Public | `patrickiradukunda505@gmail.com` |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Public | Shown in footer/contact. Staging may use your QA inbox; production = business email |
 | `NEXT_PUBLIC_ADDRESS` | Public | `29 KK 218 St, Kigali, Rwanda` |
 | `NEXT_PUBLIC_OPENING_HOURS` | Public | `08:00–20:00` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Staging service_role — never `NEXT_PUBLIC_*` |
 | `ADMIN_SESSION_SECRET` | Server | Random ≥ 32 chars |
 | `ADMIN_BOOTSTRAP_TOKEN` | Server | Random ≥ 16 chars (break-glass login) |
 | `WHATSAPP_BUSINESS_E164` | Server | `+250790801271` |
-| `ORDER_NOTIFY_EMAILS` | Server | `yadufashijerosine@gmail.com,patrickiradukunda505@gmail.com` |
+| `ORDER_NOTIFY_EMAILS` | Server | **Who gets new-order Resend alerts** (comma-separated). Staging: your email; production: owners |
 | `EMAIL_FROM` | Server | `IP SHAP Orders <orders@verified-domain>` after Resend domain verify |
 | `RESEND_API_KEY` | Server | Resend API key (orders still place without email if unset) |
 | `ONLINE_PAYMENT_ENABLED` | Server | `false` |
 | `PAYMENT_PROVIDER` | Server | `unselected` |
 
 Template: `.env.example` → `cp .env.example .env.local`.
+
+### Contact email vs order notify
+
+| Goal | Variable |
+| ---- | -------- |
+| Footer / Contact page “email us” | `NEXT_PUBLIC_CONTACT_EMAIL` |
+| Inbox for “new order” staff emails | `ORDER_NOTIFY_EMAILS` |
+
+Staging tip: set both to your address so the site shows your contact and order tests land with you. On **Production** Vercel, switch contact + notify back to the business owners.
 
 ## Not needed yet (omit until you enable them)
 

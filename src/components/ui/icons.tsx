@@ -136,3 +136,19 @@ export const PinIcon = (p: IconProps) => (
     <circle cx="12" cy="10" r="2.3" />
   </Icon>
 );
+
+export const EyeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z" />
+    <circle cx="12" cy="12" r="2.5" />
+  </Icon>
+);
+
+export const EyeOffIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 3l18 18" />
+    <path d="M10.5 10.6a2.5 2.5 0 0 0 3 3" />
+    <path d="M7 7.2C4.7 8.6 2.5 12 2.5 12s3.5 6.5 9.5 6.5c1.6 0 3-.3 4.3-.8" />
+    <path d="M14.1 6.3A10 10 0 0 1 12 5.5C6 5.5 2.5 12 2.5 12" />
+  </Icon>
+);

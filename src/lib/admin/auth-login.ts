@@ -48,10 +48,15 @@ async function signInWithSupabase(
   password: string,
 ): Promise<LoginSuccess | LoginFailure> {
   if (!hasSupabaseAnonConfig()) {
+    console.error(
+      JSON.stringify({
+        type: "admin_login_misconfigured",
+        reason: "supabase_anon_missing",
+      }),
+    );
     return {
       ok: false,
-      error:
-        "Supabase Auth is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      error: "Sign-in is temporarily unavailable. Please try again later.",
     };
   }
 
@@ -94,10 +99,15 @@ function signInWithBootstrap(
   const env = getServerEnv();
 
   if (!env.ADMIN_SESSION_SECRET || !env.ADMIN_BOOTSTRAP_TOKEN) {
+    console.error(
+      JSON.stringify({
+        type: "admin_login_misconfigured",
+        reason: "bootstrap_env_missing",
+      }),
+    );
     return {
       ok: false,
-      error:
-        "Break-glass login is not configured. Use Supabase Auth, or set ADMIN_SESSION_SECRET and ADMIN_BOOTSTRAP_TOKEN.",
+      error: "Sign-in is temporarily unavailable. Please try again later.",
     };
   }
 

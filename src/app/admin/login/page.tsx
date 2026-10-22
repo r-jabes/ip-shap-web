@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { getAdminSession } from "@/lib/admin/session";
+import { SHORT_BRAND } from "@/lib/brand";
 
 export default async function AdminLoginPage() {
   const session = await getAdminSession();
@@ -19,12 +21,17 @@ export default async function AdminLoginPage() {
       />
       <div className="relative w-full max-w-md rounded-[var(--radius-panel)] border-2 border-brand-warm-white/25 bg-brand-warm-white p-8 text-brand-charcoal shadow-[6px_6px_0_0_var(--brand-burnt-orange)]">
         <BrandLogo tone="on-paper" height={40} href="/" />
-        <h1 className="font-display mt-6 text-3xl">Admin sign-in</h1>
+        <h1 className="font-display mt-6 text-3xl">Sign in</h1>
         <p className="mt-2 text-sm text-ink-muted">
-          No public registration. Use the bootstrap token from your server
-          environment. Errors do not reveal whether an account exists.
+          Operator access for {SHORT_BRAND}. Use the email and password for your
+          account.
         </p>
         <LoginForm />
+        <p className="mt-8 text-center text-sm text-ink-muted">
+          <Link href="/" className="font-semibold underline-offset-4 hover:underline">
+            Back to storefront
+          </Link>
+        </p>
       </div>
     </div>
   );

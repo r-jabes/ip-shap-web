@@ -2,13 +2,18 @@
 
 ## Admin access
 
-**Preferred:** Supabase Auth email/password for users with an active `admin_profiles` row (seeded from the backend — see backend `OPERATIONS.md`).
+Operators sign in at **`/admin/login`** with Supabase Auth email/password (must have an active `admin_profiles` row). Seed owners from the backend (`npm run db:seed:admins`).
 
-**Break-glass (local / emergency):**
+**How operators find admin (normal practice):**
+- Bookmark `https://your-domain/admin` (or `…/admin/login`)
+- Optional later: `admin.your-domain.com` → same app `/admin` (DNS + Vercel domain)
+- Do **not** put a public “Admin” link in the storefront footer
 
-1. Set `ADMIN_SESSION_SECRET` (≥ 32 chars) and `ADMIN_BOOTSTRAP_TOKEN` (≥ 16 chars) in `.env.local` / Vercel.
-2. Visit `/admin/login` → break-glass mode.
-3. Disable bootstrap in production once Auth owners work.
+**Required for sessions:** `ADMIN_SESSION_SECRET` (≥ 32 chars) in Vercel. After adding env vars, **Redeploy** — “Needs Attention” means the live deployment has not picked them up yet.
+
+**Password reset:** `/admin/forgot-password` uses Supabase Auth email. In Supabase → Authentication → URL configuration, allow redirect `https://your-domain/admin/reset-password` (and staging URL).
+
+**Break-glass (ops only, no UI):** `ADMIN_BOOTSTRAP_TOKEN` still works via server action if needed; prefer Auth + reset password for day-to-day.
 
 ## Deploy
 
