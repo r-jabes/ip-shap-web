@@ -19,6 +19,13 @@ const nextConfig: NextConfig = {
     // SVG disabled at the optimizer boundary — catalogue uses raster derivatives.
     dangerouslyAllowSVG: false,
     contentDispositionType: "attachment",
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
   },
   async headers() {
     return [

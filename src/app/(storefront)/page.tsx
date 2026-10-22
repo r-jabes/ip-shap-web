@@ -7,13 +7,22 @@ import { HomeRangeTicker } from "@/components/home/HomeRangeTicker";
 import { HomeTrustFaq } from "@/components/home/HomeTrustFaq";
 import { HomeWhatsAppBand } from "@/components/home/HomeWhatsAppBand";
 import { JsonLd } from "@/components/seo/JsonLd";
+import type { Category, DemoProduct } from "@/domain/catalogue";
 import { SHORT_BRAND } from "@/lib/brand";
 import {
   getCachedCategories,
   getCachedPublishedProducts,
 } from "@/lib/catalogue/cache";
-import { getHomeFeaturedSlidesDurable } from "@/lib/home-featured";
-import { getHomeCollectionsDurable } from "@/lib/range-media";
+import {
+  getHomeFeaturedSlides,
+  getHomeFeaturedSlidesDurable,
+  type HomeFeaturedSlide,
+} from "@/lib/home-featured";
+import {
+  getHomeCollections,
+  getHomeCollectionsDurable,
+  type HomeCollectionTile,
+} from "@/lib/range-media";
 import { organizationJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/site-config";
 
@@ -27,13 +36,40 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
+async function loadHomeCatalogue(): Promise<{
+  featured: HomeFeaturedSlide[];
+  collections: HomeCollectionTile[];
+  categories: Category[];
+  products: DemoProduct[];
+}> {
+  try {
+    const [featured, collections, categories, products] = await Promise.all([
+      getHomeFeaturedSlidesDurable(),
+      getHomeCollectionsDurable(),
+      getCachedCategories(),
+      getCachedPublishedProducts(),
+    ]);
+    return { featured, collections, categories, products };
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "home_catalogue_error",
+        error: error instanceof Error ? error.message : "unknown",
+      }),
+    );
+    // Always render marketing sections even if Supabase/catalogue fails.
+    return {
+      featured: getHomeFeaturedSlides(),
+      collections: getHomeCollections(),
+      categories: [] as Category[],
+      products: [] as DemoProduct[],
+    };
+  }
+}
+
 export default async function HomePage() {
-  const [featured, collections, categories, products] = await Promise.all([
-    getHomeFeaturedSlidesDurable(),
-    getHomeCollectionsDurable(),
-    getCachedCategories(),
-    getCachedPublishedProducts(),
-  ]);
+  const { featured, collections, categories, products } =
+    await loadHomeCatalogue();
 
   const tickerItems = categories.map((category, i) => ({
     index: String(i + 1).padStart(2, "0"),

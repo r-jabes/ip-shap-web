@@ -17,10 +17,11 @@ export default async function StorefrontLayout({
       ? path.replace(/^https?:\/\/[^/]+/, "") || "/"
       : "/";
 
-  // Humans without cookie: gate only (no catalogue HTML). Crawlers: full page, no gate.
-  return (
-    <SiteShell>
-      {showGate ? <AgeGate returnTo={returnTo} /> : children}
-    </SiteShell>
-  );
+  // Humans without cookie: age gate only (no header/footer — those looked like an empty site).
+  // Crawlers: full page, no gate.
+  if (showGate) {
+    return <AgeGate returnTo={returnTo} />;
+  }
+
+  return <SiteShell>{children}</SiteShell>;
 }
