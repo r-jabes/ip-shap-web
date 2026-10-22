@@ -20,8 +20,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-10">
       <AdminPageHeader
-        title="Operations dashboard"
-        description="Counts are backed by the live admin store. No invented analytics."
+        title="Dashboard"
+        description="Overview of catalogue and stock."
         actions={
           <>
             <Button href="/admin/orders" variant="secondary" size="sm">
@@ -58,9 +58,6 @@ export default function AdminDashboardPage() {
 
       <AdminPanel>
         <h2 className="font-display text-xl">Low stock</h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          Counted stock at or below the low-stock threshold (unknown excluded).
-        </p>
         {lowStock.length === 0 ? (
           <p className="mt-3 text-sm text-ink-muted">None right now.</p>
         ) : (

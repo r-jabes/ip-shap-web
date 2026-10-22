@@ -18,7 +18,7 @@ export default async function AdminNewProductPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="New product"
-        description="Drafts stay off the storefront until published. Upload images after the first save."
+        description="New products start as drafts until you publish them."
         actions={
           <Button href="/admin/products" variant="link" size="sm">
             Back to list

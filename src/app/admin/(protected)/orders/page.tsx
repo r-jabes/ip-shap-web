@@ -15,7 +15,7 @@ export default async function AdminOrdersPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Orders"
-        description="Confirm new orders, record verified payments, and advance fulfilment. Payment is never assumed from a browser redirect."
+        description="Review, confirm, and fulfil customer orders."
       />
 
       <AdminTable>
@@ -56,7 +56,7 @@ export default async function AdminOrdersPage() {
       </AdminTable>
       {orders.length === 0 ? (
         <p className="text-sm text-ink-muted">
-          No orders yet. Place a checkout order from the storefront to test.
+          No orders yet.
         </p>
       ) : null}
     </div>

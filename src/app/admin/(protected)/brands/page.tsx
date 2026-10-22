@@ -23,7 +23,7 @@ export default async function AdminBrandsPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Brands"
-        description="Brand labels shown on product cards and filters."
+        description="Brands shown on product cards and filters."
       />
       {params.saved ? <AdminStatus>Brand saved.</AdminStatus> : null}
 

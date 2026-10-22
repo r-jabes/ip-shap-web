@@ -14,7 +14,7 @@ export default async function AdminImportPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Bulk import"
-        description="CSV dry-run with row-level validation, duplicate detection and an explicit report. Invalid rows are never silently skipped."
+        description="Validate a CSV, then import products into the catalogue."
       />
       <BulkImportPanel />
     </div>

@@ -66,7 +66,7 @@ export function ProductForm({
           <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
             <Field
               id="product-price"
-              label="Price (integer RWF)"
+              label="Price (RWF)"
               hint={
                 canEditPrice
                   ? undefined

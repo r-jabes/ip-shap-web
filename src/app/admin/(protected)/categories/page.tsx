@@ -23,7 +23,7 @@ export default async function AdminCategoriesPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Categories"
-        description="Taxonomy for shop filters and navigation."
+        description="Groups used for shop filters and menus."
       />
       {params.saved ? <AdminStatus>Category saved.</AdminStatus> : null}
 

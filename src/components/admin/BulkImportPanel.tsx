@@ -21,18 +21,8 @@ export function BulkImportPanel() {
   return (
     <div className="space-y-6">
       <AdminPanel>
-        <p className="text-sm text-ink-muted">
-          Template headers (exact):{" "}
-          <code className="rounded-md bg-paper-2 px-1.5 py-0.5 text-xs text-brand-charcoal">
-            {BULK_IMPORT_HEADERS.join(",")}
-          </code>
-        </p>
-        <div className="mt-4 space-y-4">
-          <Field
-            id="bulk-csv"
-            label="CSV content"
-            hint="Dry-run first. Apply runs in one database transaction when Supabase is configured."
-          >
+        <div className="space-y-4">
+          <Field id="bulk-csv" label="CSV content">
             <Textarea
               id="bulk-csv"
               name="csv"
@@ -44,7 +34,7 @@ export function BulkImportPanel() {
               placeholder={`${BULK_IMPORT_HEADERS.join(",")}\n...`}
             />
           </Field>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button
               type="button"
               variant="primary"
@@ -70,7 +60,7 @@ export function BulkImportPanel() {
                 });
               }}
             >
-              {pending ? "Working…" : "Dry-run validate"}
+              {pending ? "Working…" : "Validate"}
             </Button>
             <Button
               type="button"
@@ -102,7 +92,7 @@ export function BulkImportPanel() {
                 });
               }}
             >
-              Apply import
+              Import
             </Button>
           </div>
         </div>
@@ -123,9 +113,8 @@ export function BulkImportPanel() {
       {report ? (
         <AdminPanel className="space-y-3 text-sm">
           <p>
-            Dry-run: <strong>{String(report.dryRun)}</strong> · rows{" "}
-            {report.totalRows} · valid {report.validRows} · invalid{" "}
-            {report.invalidRows}
+            {report.dryRun ? "Validation" : "Import"} · {report.totalRows} rows
+            · {report.validRows} valid · {report.invalidRows} invalid
           </p>
           {report.duplicateSlugs.length > 0 ? (
             <p>Duplicate slugs in file: {report.duplicateSlugs.join(", ")}</p>

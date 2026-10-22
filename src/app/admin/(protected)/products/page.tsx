@@ -32,7 +32,7 @@ export default async function AdminProductsPage({
     <div className="space-y-6">
       <AdminPageHeader
         title="Products"
-        description="Create, edit, publish and archive. Writes go to Supabase when configured."
+        description="Create, edit, and publish catalogue products."
         actions={
           <Button href="/admin/products/new" variant="primary" size="sm">
             New product

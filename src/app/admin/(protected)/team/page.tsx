@@ -21,7 +21,7 @@ export default async function AdminTeamPage() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Team"
-        description="Invite colleagues and manage who can access operations."
+        description="Invite colleagues and manage access."
       />
 
       <section className="space-y-3">

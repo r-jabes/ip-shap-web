@@ -24,8 +24,8 @@ export default async function AdminStockPage({
   return (
     <div className="space-y-8">
       <AdminPageHeader
-        title="Stock control"
-        description="Every adjustment records actor, previous/new values and reason. Negative stock is rejected. Unknown stock must not be treated as in stock. Order confirm decrements atomically; cancel restores."
+        title="Stock"
+        description="Update quantities and review recent adjustments."
       />
 
       {params.adjusted ? <AdminStatus>Stock adjusted.</AdminStatus> : null}
@@ -48,13 +48,13 @@ export default async function AdminStockPage({
           </Field>
           <Field
             id="stock-expected"
-            label="Expected quantity"
-            hint="Stale-write guard — leave blank to skip."
+            label="Expected quantity (optional)"
+            hint="Leave blank unless you want to confirm the current quantity first."
           >
             <Input
               id="stock-expected"
               name="expectedQuantity"
-              placeholder="Leave blank to skip check"
+              placeholder="Current quantity"
             />
           </Field>
           <Field id="stock-availability" label="New availability">
@@ -72,7 +72,7 @@ export default async function AdminStockPage({
           <Field
             id="stock-qty"
             label="New quantity"
-            hint="Empty when stock is unknown."
+            hint="Leave empty if quantity is unknown."
           >
             <Input id="stock-qty" name="newQuantity" inputMode="numeric" />
           </Field>
