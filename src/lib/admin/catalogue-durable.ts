@@ -43,14 +43,23 @@ export async function adminListProductsDurable(): Promise<DemoProduct[]> {
     .select(ADMIN_PRODUCT_SELECT)
     .order("name");
   if (error) throw new Error(error.message);
-  return ((data ?? []) as unknown as ProductRow[]).map((row) => {
-    const product = mapProductRow(row);
-    return {
-      ...product,
-      isFeatured: Boolean(row.is_featured),
-      featuredSort: row.featured_sort ?? 0,
-    };
-  });
+  return ((data ?? []) as unknown as ProductRow[])
+    .map((row) => {
+      try {
+        return mapProductRow(row);
+      } catch (mapError) {
+        console.error(
+          JSON.stringify({
+            type: "admin_map_product_error",
+            id: row.id,
+            message:
+              mapError instanceof Error ? mapError.message : String(mapError),
+          }),
+        );
+        return null;
+      }
+    })
+    .filter((product): product is DemoProduct => product !== null);
 }
 
 export async function adminGetProductDurable(
@@ -64,15 +73,30 @@ export async function adminGetProductDurable(
     .select(ADMIN_PRODUCT_SELECT)
     .eq("id", id)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error(
+      JSON.stringify({
+        type: "admin_get_product_error",
+        id,
+        message: error.message,
+      }),
+    );
+    return undefined;
+  }
   if (!data) return undefined;
-  const row = data as unknown as ProductRow;
-  const product = mapProductRow(row);
-  return {
-    ...product,
-    isFeatured: Boolean(row.is_featured),
-    featuredSort: row.featured_sort ?? 0,
-  };
+  try {
+    const row = data as unknown as ProductRow;
+    return mapProductRow(row);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "admin_map_product_error",
+        id,
+        message: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    return undefined;
+  }
 }
 
 export async function adminListCategoriesDurable(): Promise<Category[]> {

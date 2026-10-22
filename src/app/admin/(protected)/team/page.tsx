@@ -21,21 +21,18 @@ export default async function AdminTeamPage() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Team"
-        description="Invite-only admins. Staff cannot invite or change prices."
+        description="Invite colleagues and manage who can access operations."
       />
 
       <section className="space-y-3">
-        <h2 className="font-display text-xl">Invite</h2>
+        <h2 className="font-display text-xl">Invite a teammate</h2>
         <InviteAdminForm />
       </section>
 
       <section className="space-y-3">
         <h2 className="font-display text-xl">Members</h2>
         {profiles.length === 0 ? (
-          <AdminStatus>
-            No profiles loaded. Confirm SUPABASE_SERVICE_ROLE_KEY and that
-            owner rows exist in admin_profiles.
-          </AdminStatus>
+          <AdminStatus>No team members yet.</AdminStatus>
         ) : (
           <AdminPanel>
             <ul className="divide-y divide-brand-charcoal/10">

@@ -27,6 +27,8 @@ type ProductImageFrameProps = {
    * (e.g. quick-view column that must fill full height).
    */
   aspect?: "catalogue" | "none";
+  /** Label shown when there is no image or load failed. */
+  emptyLabel?: string;
 };
 
 export function ProductImageFrame({
@@ -40,6 +42,7 @@ export function ProductImageFrame({
   objectFit = "contain",
   position = "center",
   aspect = "catalogue",
+  emptyLabel = "No image",
 }: ProductImageFrameProps) {
   const [failed, setFailed] = useState(false);
   const effectiveRole = image?.role ?? role;
@@ -49,12 +52,12 @@ export function ProductImageFrame({
   if (!image || failed) {
     return (
       <div
-        className={`${aspectClass} flex items-center justify-center text-sm text-brand-dark-neutral ${className}`}
+        className={`${aspectClass} flex items-center justify-center px-2 text-center text-xs font-medium tracking-wide text-brand-dark-neutral/70 uppercase ${className}`}
         style={{ backgroundColor: CATALOGUE_SURFACE }}
         role="img"
-        aria-label={alt ?? "Product image unavailable"}
+        aria-label={alt ?? emptyLabel}
       >
-        Image unavailable
+        {emptyLabel}
       </div>
     );
   }

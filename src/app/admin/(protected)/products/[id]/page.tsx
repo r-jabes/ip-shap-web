@@ -24,7 +24,20 @@ export default async function AdminEditProductPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const product = await adminGetProductDurable(id);
+
+  let product;
+  try {
+    product = await adminGetProductDurable(id);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "admin_edit_product_load_error",
+        id,
+        message: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    notFound();
+  }
   if (!product) notFound();
 
   const session = await getAdminSession();
@@ -50,7 +63,11 @@ export default async function AdminEditProductPage({
         categories={categories}
         canEditPrice={canEditPrice}
       />
-      <ProductImageUpload productId={product.id} productName={product.name} />
+      <ProductImageUpload
+        productId={product.id}
+        productName={product.name}
+        images={product.images}
+      />
     </div>
   );
 }

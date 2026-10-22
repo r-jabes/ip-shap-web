@@ -6,6 +6,7 @@ import {
   AdminTd,
   AdminTh,
 } from "@/components/admin/admin-ui";
+import { AdminProductThumb } from "@/components/admin/AdminProductThumb";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { formatDemoPrice } from "@/domain/catalogue";
@@ -61,6 +62,9 @@ export default async function AdminProductsPage({
       <AdminTable>
         <thead>
           <tr>
+            <AdminTh className="w-14">
+              <span className="sr-only">Image</span>
+            </AdminTh>
             <AdminTh>Name</AdminTh>
             <AdminTh>Status</AdminTh>
             <AdminTh>Featured</AdminTh>
@@ -73,6 +77,9 @@ export default async function AdminProductsPage({
         <tbody>
           {products.map((product) => (
             <tr key={product.id}>
+              <AdminTd>
+                <AdminProductThumb product={product} />
+              </AdminTd>
               <AdminTd>
                 <p className="font-medium">{product.name}</p>
                 <p className="text-xs text-ink-muted">{product.slug}</p>

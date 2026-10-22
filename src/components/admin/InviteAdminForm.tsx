@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { inviteAdminAction } from "@/app/admin/actions";
 import { AdminPanel } from "@/components/admin/admin-ui";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select } from "@/components/ui/Field";
 
 export function InviteAdminForm() {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -17,15 +19,20 @@ export function InviteAdminForm() {
         className="grid gap-4"
         onSubmit={(event) => {
           event.preventDefault();
-          const formData = new FormData(event.currentTarget);
+          const form = event.currentTarget;
+          const formData = new FormData(form);
           setError(null);
           setOk(false);
           startTransition(async () => {
             const result = await inviteAdminAction(formData);
-            if (result?.error) setError(result.error);
-            else if (result?.ok) {
+            if (result?.error) {
+              setError(result.error);
+              return;
+            }
+            if (result?.ok) {
               setOk(true);
-              event.currentTarget.reset();
+              form.reset();
+              router.refresh();
             }
           });
         }}
@@ -56,7 +63,7 @@ export function InviteAdminForm() {
         ) : null}
         {ok ? (
           <p className="text-sm text-brand-charcoal" role="status">
-            Invite sent. They set a password from the email link.
+            Invite sent. They can set a password from the email link.
           </p>
         ) : null}
         <Button type="submit" variant="primary" loading={pending}>

@@ -1,42 +1,64 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { uploadProductImageAction } from "@/app/admin/actions";
 import { AdminPanel } from "@/components/admin/admin-ui";
+import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import type { ProductImage } from "@/domain/product";
+import { primaryCatalogueImage } from "@/lib/product-image";
 
 export function ProductImageUpload({
   productId,
   productName,
+  images = [],
 }: {
   productId: string;
   productName: string;
+  images?: ProductImage[];
 }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [pending, startTransition] = useTransition();
+  const current = primaryCatalogueImage(images);
 
   return (
     <AdminPanel className="max-w-3xl">
       <h2 className="font-display text-xl">Catalogue image</h2>
       <p className="mt-1 text-sm text-ink-muted">
-        Originals stay private. A JPEG derivative is published after magic-byte
-        checks and re-encode (max 10&nbsp;MiB source).
+        Add a product photo when ready. Products without an image show a
+        placeholder until one is uploaded.
       </p>
+
+      <div className="mt-4 w-36 overflow-hidden rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15">
+        <ProductImageFrame
+          image={current}
+          alt={current?.alt ?? productName}
+          emptyLabel="No image yet"
+        />
+      </div>
+
       <form
         className="mt-4 grid gap-4"
         onSubmit={(event) => {
           event.preventDefault();
-          const formData = new FormData(event.currentTarget);
+          const form = event.currentTarget;
+          const formData = new FormData(form);
           setError(null);
           setOk(false);
           startTransition(async () => {
             const result = await uploadProductImageAction(formData);
-            if (result?.error) setError(result.error);
-            else if (result?.ok) {
+            if (result?.error) {
+              setError(result.error);
+              return;
+            }
+            if (result?.ok) {
               setOk(true);
-              event.currentTarget.reset();
+              form.reset();
+              router.refresh();
             }
           });
         }}
@@ -66,11 +88,11 @@ export function ProductImageUpload({
         ) : null}
         {ok ? (
           <p className="text-sm text-brand-charcoal" role="status">
-            Image uploaded and derivative published.
+            Image saved.
           </p>
         ) : null}
         <Button type="submit" variant="primary" loading={pending}>
-          {pending ? "Uploading…" : "Upload image"}
+          {pending ? "Uploading…" : current ? "Replace image" : "Upload image"}
         </Button>
       </form>
     </AdminPanel>

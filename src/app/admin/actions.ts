@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   GENERIC_AUTH_ERROR,
@@ -144,6 +145,7 @@ export async function inviteAdminAction(formData: FormData): Promise<{
     return { error: "Could not send invite. Check the email and try again." };
   }
 
+  revalidatePath("/admin/team");
   return { ok: true };
 }
 
@@ -284,11 +286,47 @@ export async function uploadProductImageAction(formData: FormData): Promise<{
       role: "catalogue_primary",
     });
   } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Upload failed.",
-    };
+    return { error: humanizeUploadError(error) };
   }
+  revalidatePath(`/admin/products/${productId}`);
+  revalidateCatalogue();
   return { ok: true };
+}
+
+function humanizeUploadError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("service role") ||
+    lower.includes("not configured")
+  ) {
+    return "Image upload is temporarily unavailable. Please try again later.";
+  }
+  if (
+    lower.includes("bucket") ||
+    lower.includes("not found") ||
+    lower.includes("row-level security") ||
+    lower.includes("unauthorized") ||
+    lower.includes("permission")
+  ) {
+    return "Image storage is not ready for this environment. Ask an owner to finish media setup.";
+  }
+  if (lower.includes("10 mib") || lower.includes("exceeds")) {
+    return "That file is too large. Use an image under 10 MB.";
+  }
+  if (
+    lower.includes("unsupported") ||
+    lower.includes("magic") ||
+    lower.includes("empty upload")
+  ) {
+    return "Use a JPEG, PNG, or WebP image.";
+  }
+  if (message) {
+    console.error(
+      JSON.stringify({ type: "admin_product_image_upload_error", message }),
+    );
+  }
+  return "Could not upload the image. Please try again.";
 }
 
 export async function adjustStockAction(formData: FormData) {

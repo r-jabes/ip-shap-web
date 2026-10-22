@@ -46,4 +46,45 @@ describe("mapProductRow", () => {
     expect(product.images).toHaveLength(1);
     expect(product.demoLabel).toBe("");
   });
+
+  it("tolerates missing images and soft price values", () => {
+    const product = mapProductRow({
+      id: "55555555-5555-4555-8555-555555555555",
+      slug: "imported-no-image",
+      name: "Imported",
+      description: null,
+      price_rwf: "12000.4",
+      status: "draft",
+      availability: "unknown",
+      is_provisional: null,
+      categories: null,
+      brands: null,
+      product_images: [
+        {
+          id: "bad",
+          role: "catalogue_primary",
+          src: "",
+          zoom_src: null,
+          alt: "",
+          width: 0,
+          height: 0,
+          sort_order: 0,
+          processing_status: "approved_for_catalogue",
+          original_ref: null,
+          source_filename: null,
+          crop_instructions: null,
+          rights_note: null,
+          is_shared_multi_product_photo: null,
+          needs_client_confirmation: null,
+        },
+      ],
+      inventory_levels: null,
+    });
+
+    expect(product.description).toBe("");
+    expect(product.price.amount).toBe(12000);
+    expect(product.images).toHaveLength(0);
+    expect(product.brandSlug).toBe("unknown");
+    expect(product.status).toBe("draft");
+  });
 });
