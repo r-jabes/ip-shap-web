@@ -3,6 +3,11 @@ import {
   resolveEmailLogoUrl,
   sendResendEmail,
 } from "@/lib/notifications/resend";
+import { buildBackInStockEmail } from "@/lib/notifications/templates/back-in-stock";
+import {
+  buildLowStockEmail,
+  type StockLine,
+} from "@/lib/notifications/templates/low-stock";
 import { buildNewOrderStaffEmail } from "@/lib/notifications/templates/new-order";
 import type { StoredOrder } from "@/lib/orders/store";
 
@@ -47,6 +52,73 @@ export async function sendNewOrderStaffEmail(
     to: recipients,
     content,
     entityRefId: order.id,
+  });
+  if (!result.ok) {
+    if (result.skipped === "not_configured") {
+      return { ok: true, skipped: "not_configured" };
+    }
+    return { ok: false, error: result.error };
+  }
+  return { ok: true };
+}
+
+/** Daily-at-most stock alert to the same staff list that gets new-order emails. */
+export async function sendLowStockStaffEmail(input: {
+  soldOut: StockLine[];
+  low: StockLine[];
+  entityRefId: string;
+}): Promise<StaffEmailResult> {
+  const env = getServerEnv();
+  const recipients = parseRecipients(env.ORDER_NOTIFY_EMAILS);
+  if (!env.EMAIL_FROM || !env.RESEND_API_KEY) {
+    return { ok: true, skipped: "not_configured" };
+  }
+  if (recipients.length === 0) return { ok: true, skipped: "no_recipients" };
+
+  const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const content = buildLowStockEmail({
+    soldOut: input.soldOut,
+    low: input.low,
+    adminUrl: `${appUrl}/admin/products?status=low`,
+    logoUrl: await resolveEmailLogoUrl(),
+    appUrl,
+  });
+  const result = await sendResendEmail({
+    to: recipients,
+    content,
+    entityRefId: input.entityRefId,
+  });
+  if (!result.ok) {
+    if (result.skipped === "not_configured") {
+      return { ok: true, skipped: "not_configured" };
+    }
+    return { ok: false, error: result.error };
+  }
+  return { ok: true };
+}
+
+/** One-time branded email to a shopper who asked to be told when a drink is back. */
+export async function sendBackInStockEmail(input: {
+  to: string;
+  productName: string;
+  slug: string;
+  entityRefId: string;
+}): Promise<StaffEmailResult> {
+  const env = getServerEnv();
+  if (!env.EMAIL_FROM || !env.RESEND_API_KEY) {
+    return { ok: true, skipped: "not_configured" };
+  }
+  const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const content = buildBackInStockEmail({
+    productName: input.productName,
+    productUrl: `${appUrl}/product/${encodeURIComponent(input.slug)}`,
+    logoUrl: await resolveEmailLogoUrl(),
+    appUrl,
+  });
+  const result = await sendResendEmail({
+    to: input.to,
+    content,
+    entityRefId: input.entityRefId,
   });
   if (!result.ok) {
     if (result.skipped === "not_configured") {

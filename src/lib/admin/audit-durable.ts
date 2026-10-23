@@ -1,5 +1,5 @@
 import { adminListAudits, type AuditEvent } from "@/lib/admin/store";
-import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
+import { hasDurableStorage } from "@/lib/supabase/config";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 /** Maps actor ids to emails with one lookup per distinct person (not per row). */
@@ -21,7 +21,7 @@ export async function resolveActorEmails(
 }
 
 export async function listAuditsDurable(limit = 8): Promise<AuditEvent[]> {
-  if (!hasSupabaseServiceConfig()) return adminListAudits(limit);
+  if (!hasDurableStorage()) return adminListAudits(limit);
 
   const client = getSupabaseServiceClient()!;
   const { data, error } = await client

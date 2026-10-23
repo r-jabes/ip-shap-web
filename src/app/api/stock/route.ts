@@ -19,7 +19,7 @@ function clientIp(request: Request): string {
  * Live availability for cart lines and product pages. Public data only; never cached.
  */
 export async function GET(request: Request) {
-  const limit = consumeRateLimit(`stock:${clientIp(request)}`, 120, 60 * 1000);
+  const limit = await consumeRateLimit(`stock:${clientIp(request)}`, 120, 60 * 1000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many requests" },

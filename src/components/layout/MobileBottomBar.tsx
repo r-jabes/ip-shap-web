@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useChrome } from "@/components/layout/ChromeProvider";
 import {
   GridIcon,
+  HeartIcon,
   HomeIcon,
   SearchIcon,
   WhatsAppIcon,
@@ -51,6 +52,14 @@ export function MobileBottomBar() {
         <SearchIcon size={22} />
         Search
       </button>
+      <Link
+        href="/saved"
+        aria-current={pathname === "/saved" ? "page" : undefined}
+        className={`${itemClass} ${pathname === "/saved" ? "text-brand-charcoal" : "text-ink-muted"}`}
+      >
+        <HeartIcon size={22} />
+        Saved
+      </Link>
       <a
         href={chatHref("Hello, I would like to ask a question.")}
         {...(chatHref().startsWith("http")

@@ -20,7 +20,7 @@ export async function verifyContactBotAction(
   const headerStore = await headers();
   const ip =
     headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const limit = consumeRateLimit(`contact-bot:${ip}`, 30, 15 * 60 * 1000);
+  const limit = await consumeRateLimit(`contact-bot:${ip}`, 30, 15 * 60 * 1000);
   if (!limit.ok) {
     return { error: "Too many attempts. Please wait and try again." };
   }

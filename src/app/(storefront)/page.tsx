@@ -7,21 +7,18 @@ import { HomeRangeTicker } from "@/components/home/HomeRangeTicker";
 import { HomeTrustFaq } from "@/components/home/HomeTrustFaq";
 import { HomeWhatsAppBand } from "@/components/home/HomeWhatsAppBand";
 import { JsonLd } from "@/components/seo/JsonLd";
-import type { Category, DemoProduct } from "@/domain/catalogue";
+import type { Category } from "@/domain/catalogue";
 import { SHORT_BRAND } from "@/lib/brand";
+import { getCachedCategories } from "@/lib/catalogue/cache";
 import {
-  getCachedCategories,
-  getCachedPublishedProducts,
-} from "@/lib/catalogue/cache";
+  getCategoryCounts,
+  getHomeCollectionsDurable,
+} from "@/lib/catalogue/storefront";
 import {
   getHomeFeaturedSlidesDurable,
   type HomeFeaturedSlide,
 } from "@/lib/home-featured";
-import {
-  getHomeCollections,
-  getHomeCollectionsDurable,
-  type HomeCollectionTile,
-} from "@/lib/range-media";
+import { getHomeCollections, type HomeCollectionTile } from "@/lib/range-media";
 import { organizationJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/site-config";
 
@@ -39,16 +36,16 @@ async function loadHomeCatalogue(): Promise<{
   featured: HomeFeaturedSlide[];
   collections: HomeCollectionTile[];
   categories: Category[];
-  products: DemoProduct[];
+  counts: Record<string, number>;
 }> {
   try {
-    const [featured, collections, categories, products] = await Promise.all([
+    const [featured, collections, categories, counts] = await Promise.all([
       getHomeFeaturedSlidesDurable(),
       getHomeCollectionsDurable(),
       getCachedCategories(),
-      getCachedPublishedProducts(),
+      getCategoryCounts(),
     ]);
-    return { featured, collections, categories, products };
+    return { featured, collections, categories, counts };
   } catch (error) {
     console.error(
       JSON.stringify({
@@ -61,20 +58,19 @@ async function loadHomeCatalogue(): Promise<{
       featured: [] as HomeFeaturedSlide[],
       collections: getHomeCollections(),
       categories: [] as Category[],
-      products: [] as DemoProduct[],
+      counts: {} as Record<string, number>,
     };
   }
 }
 
 export default async function HomePage() {
-  const { featured, collections, categories, products } =
+  const { featured, collections, categories, counts } =
     await loadHomeCatalogue();
 
   const tickerItems = categories.map((category, i) => ({
     index: String(i + 1).padStart(2, "0"),
     name: category.name,
-    count: products.filter((product) => product.categorySlug === category.slug)
-      .length,
+    count: counts[category.slug] ?? 0,
     href: `/shop?category=${category.slug}`,
   }));
 

@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { isCrawlerUserAgent } from "./age-gate";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  AGE_GATE_BOOT_SCRIPT,
+  AGE_GATE_COOKIE,
+  AGE_GATE_OK_ATTRIBUTE,
+  confirmAgeInBrowser,
+  isCrawlerUserAgent,
+} from "./age-gate";
 
 describe("isCrawlerUserAgent", () => {
   it("detects common search crawlers", () => {
@@ -18,5 +24,34 @@ describe("isCrawlerUserAgent", () => {
       ),
     ).toBe(false);
     expect(isCrawlerUserAgent(null)).toBe(false);
+  });
+});
+
+describe("age gate in the browser", () => {
+  afterEach(() => {
+    document.documentElement.removeAttribute(AGE_GATE_OK_ATTRIBUTE);
+    document.cookie = `${AGE_GATE_COOKIE}=; Path=/; Max-Age=0`;
+  });
+
+  it("stays visible for a first-time visitor", () => {
+    new Function(AGE_GATE_BOOT_SCRIPT)();
+    expect(document.documentElement.hasAttribute(AGE_GATE_OK_ATTRIBUTE)).toBe(
+      false,
+    );
+  });
+
+  it("is hidden once the visitor has confirmed, and the answer is remembered", () => {
+    confirmAgeInBrowser();
+    expect(document.documentElement.getAttribute(AGE_GATE_OK_ATTRIBUTE)).toBe(
+      "1",
+    );
+    expect(document.cookie).toContain(`${AGE_GATE_COOKIE}=1`);
+
+    // A later page load: the boot script alone restores the state from the cookie.
+    document.documentElement.removeAttribute(AGE_GATE_OK_ATTRIBUTE);
+    new Function(AGE_GATE_BOOT_SCRIPT)();
+    expect(document.documentElement.getAttribute(AGE_GATE_OK_ATTRIBUTE)).toBe(
+      "1",
+    );
   });
 });

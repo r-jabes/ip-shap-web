@@ -299,6 +299,30 @@ export function adminArchiveProduct(actor: AdminSession, id: string) {
   return product;
 }
 
+export type BulkStatus = "published" | "draft" | "archived";
+
+/** Sets the same status on several products in one go (used by the Products bulk actions). */
+export function adminSetStatusBulk(
+  actor: AdminSession,
+  ids: string[],
+  status: BulkStatus,
+): number {
+  let changed = 0;
+  for (const id of ids) {
+    const product = adminGetProduct(id);
+    if (!product || product.status === status) continue;
+    product.status = status;
+    changed += 1;
+  }
+  if (changed > 0) {
+    writeAudit(actor, "product.bulk_status", "product", undefined, {
+      status,
+      count: changed,
+    });
+  }
+  return changed;
+}
+
 export function adminAdjustStock(
   actor: AdminSession,
   input: {

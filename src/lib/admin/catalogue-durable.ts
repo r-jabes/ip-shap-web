@@ -1,7 +1,8 @@
 import type { Brand, Category, DemoProduct } from "@/domain/catalogue";
-import type { AdminProductInput } from "@/lib/admin/store";
+import type { AdminProductInput, BulkStatus } from "@/lib/admin/store";
 import {
   adminArchiveProduct,
+  adminSetStatusBulk,
   adminExistingSlugs,
   adminGetProduct,
   adminListProducts,
@@ -16,7 +17,7 @@ import {
 import { applyDiscount } from "@/lib/admin/discount";
 import type { AdminSession } from "@/lib/admin/session";
 import { mapProductRow, type ProductRow } from "@/lib/catalogue/map-row";
-import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
+import { hasDurableStorage } from "@/lib/supabase/config";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import type { BulkImportRow } from "@/lib/admin/bulk-import";
 
@@ -35,7 +36,7 @@ const ADMIN_PRODUCT_SELECT = `
 `;
 
 function isDurableCatalogueEnabled(): boolean {
-  return hasSupabaseServiceConfig();
+  return hasDurableStorage();
 }
 
 export async function adminListProductsDurable(): Promise<DemoProduct[]> {
@@ -439,6 +440,35 @@ export async function adminArchiveProductDurable(
   const product = await adminGetProductDurable(id);
   if (!product) throw new Error("Product not found");
   return product;
+}
+
+/** Sets the same status on several products at once. Returns how many actually changed. */
+export async function adminSetStatusBulkDurable(
+  actor: AdminSession,
+  ids: string[],
+  status: BulkStatus,
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  if (!isDurableCatalogueEnabled()) return adminSetStatusBulk(actor, ids, status);
+
+  const client = getSupabaseServiceClient()!;
+  const { data, error } = await client
+    .from("products")
+    .update({ status, updated_at: new Date().toISOString() })
+    .in("id", ids)
+    .neq("status", status)
+    .select("id");
+  if (error) throw new Error(error.message);
+  const changed = (data ?? []).length;
+  if (changed > 0) {
+    await client.from("audit_events").insert({
+      actor_user_id: actor.sub.startsWith("bootstrap:") ? null : actor.sub,
+      action: "product.bulk_status",
+      entity_type: "products",
+      metadata: { status, count: changed },
+    });
+  }
+  return changed;
 }
 
 export async function adminExistingSlugsDurable(): Promise<Set<string>> {

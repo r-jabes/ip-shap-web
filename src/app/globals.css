@@ -457,6 +457,16 @@ textarea::-webkit-resizer {
   background: transparent;
 }
 
+/* Age gate: hidden for returning visitors and crawlers (set by the boot script), and the page
+   behind it does not scroll while it is showing. */
+html[data-age-ok="1"] .age-gate {
+  display: none;
+}
+
+html:not([data-age-ok="1"]):has(.age-gate) body {
+  overflow: hidden;
+}
+
 /* Carousel autoplay progress (restarts per slide via React key) */
 @keyframes featured-progress {
   from {

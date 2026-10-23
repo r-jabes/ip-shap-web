@@ -1,32 +1,18 @@
+import type { ReactNode } from "react";
 import type { DemoProduct } from "@/domain/catalogue";
 import { ProductCard } from "@/components/catalogue/ProductCard";
-import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-export function ProductGrid({ products }: { products: DemoProduct[] }) {
+export function ProductGrid({
+  products,
+  emptyState,
+}: {
+  products: DemoProduct[];
+  /** Shown when there is nothing to list (for example the no-results page on the shop). */
+  emptyState?: ReactNode;
+}) {
   if (products.length === 0) {
-    return (
-      <div className="rounded-[var(--radius-panel)] border-2 border-dashed border-brand-charcoal/30 px-6 py-16 text-center">
-        <p className="text-xs font-semibold tracking-[0.16em] text-ink-muted uppercase">
-          No matches
-        </p>
-        <h2 className="font-display mt-2 text-2xl">
-          No drinks match these filters
-        </h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-          Clear the filters or browse another range — the full catalogue is a
-          tap away.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Button href="/shop" variant="primary" size="md">
-            Clear filters
-          </Button>
-          <Button href="/shop?category=whisky" variant="ghost" size="md">
-            Browse whisky
-          </Button>
-        </div>
-      </div>
-    );
+    return emptyState ?? null;
   }
 
   return (

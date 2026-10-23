@@ -1,7 +1,7 @@
 import type { ProductAvailability } from "@/domain/catalogue";
 import { adminGetProduct } from "@/lib/admin/store";
 import { getProductById } from "@/lib/catalogue";
-import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
+import { hasDurableStorage } from "@/lib/supabase/config";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type LiveStockEntry = {
@@ -29,7 +29,7 @@ export async function getLiveStock(
   const result: Record<string, LiveStockEntry> = {};
   if (unique.length === 0) return result;
 
-  if (hasSupabaseServiceConfig()) {
+  if (hasDurableStorage()) {
     const client = getSupabaseServiceClient()!;
     const { data, error } = await client
       .from("products")

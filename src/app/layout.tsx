@@ -6,6 +6,10 @@ import { getPublicEnv } from "@/lib/env";
 import { defaultRobots } from "@/lib/seo";
 import "./globals.css";
 
+export const viewport = {
+  themeColor: "#20201e",
+};
+
 const bodyFont = DM_Sans({
   variable: "--font-body",
   subsets: ["latin"],
@@ -38,7 +42,9 @@ export const metadata: Metadata = {
     siteName: SHORT_BRAND,
     locale: "en_RW",
     type: "website",
+    images: [{ url: "/branding/main-logo.png", alt: LEGAL_NAME }],
   },
+  twitter: { card: "summary_large_image" },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48" },
@@ -55,7 +61,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // The age-gate boot script sets an attribute on <html> before React hydrates.
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${bodyFont.variable} ${displayFont.variable} font-sans antialiased`}
       >

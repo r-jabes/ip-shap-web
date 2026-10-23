@@ -10,7 +10,11 @@ import {
   mapProductRow,
   type ProductRow,
 } from "@/lib/catalogue/map-row";
-import type { CatalogueRepository } from "@/lib/catalogue/repository";
+import { moneyRwf } from "@/lib/money";
+import type {
+  CatalogueIndexEntry,
+  CatalogueRepository,
+} from "@/lib/catalogue/repository";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const PRODUCT_SELECT = `
@@ -47,20 +51,79 @@ const PRODUCT_SELECT = `
   inventory_levels ( quantity, availability )
 `;
 
+const READ_PAGE = 1000;
+
+/** Columns the slim index needs; no images, descriptions or stock counts. */
+const INDEX_SELECT = `
+  id, slug, name, price_rwf, status, availability,
+  categories ( slug, name ),
+  brands ( slug, name ),
+  inventory_levels ( availability )
+`;
+
+type IndexRow = {
+  id: string;
+  slug: string;
+  name: string;
+  price_rwf: number | string | null;
+  status: string;
+  availability: string;
+  categories: { slug: string } | Array<{ slug: string }> | null;
+  brands:
+    | { slug: string; name: string }
+    | Array<{ slug: string; name: string }>
+    | null;
+  inventory_levels:
+    | { availability: string }
+    | Array<{ availability: string }>
+    | null;
+};
+
+function first<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function mapIndexRow(row: IndexRow): CatalogueIndexEntry {
+  const brand = first(row.brands);
+  const amount = Math.max(0, Math.round(Number(row.price_rwf) || 0));
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name ?? "Untitled product",
+    brandSlug: brand?.slug ?? "",
+    brandName: brand?.name ?? "",
+    categorySlug: first(row.categories)?.slug,
+    status: (row.status || "draft") as DemoProduct["status"],
+    availability: (first(row.inventory_levels)?.availability ??
+      row.availability ??
+      "unknown") as DemoProduct["availability"],
+    price: moneyRwf(amount),
+  };
+}
+
 export function createSupabaseCatalogueRepository(
   client: SupabaseClient,
 ): CatalogueRepository {
+  /** PostgREST caps one response (1,000 rows by default), so read in stable pages. */
   async function fetchPublished(): Promise<DemoProduct[]> {
-    const { data, error } = await client
-      .from("products")
-      .select(PRODUCT_SELECT)
-      .eq("status", "published");
+    const rows: ProductRow[] = [];
+    for (let from = 0; ; from += READ_PAGE) {
+      const { data, error } = await client
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .eq("status", "published")
+        .order("id")
+        .range(from, from + READ_PAGE - 1);
 
-    if (error) {
-      throw new Error(`Catalogue read failed: ${error.message}`);
+      if (error) {
+        throw new Error(`Catalogue read failed: ${error.message}`);
+      }
+      const batch = (data ?? []) as unknown as ProductRow[];
+      rows.push(...batch);
+      if (batch.length < READ_PAGE) break;
     }
-
-    return ((data ?? []) as unknown as ProductRow[]).map(mapProductRow);
+    return rows.map(mapProductRow);
   }
 
   return {
@@ -143,14 +206,57 @@ export function createSupabaseCatalogueRepository(
         throw new Error(`Featured catalogue read failed: ${error.message}`);
       }
 
-      const featured = ((data ?? []) as unknown as ProductRow[]).map(
-        mapProductRow,
-      );
-      if (featured.length) return featured;
+      // Nothing is featured until an admin chooses it: no automatic fallback.
+      return ((data ?? []) as unknown as ProductRow[]).map(mapProductRow);
+    },
 
-      return filterAndSortProducts(await fetchPublished(), {
-        sort: "name_asc",
-      }).slice(0, limit);
+    async listIndex() {
+      const entries: CatalogueIndexEntry[] = [];
+      for (let from = 0; ; from += READ_PAGE) {
+        const { data, error } = await client
+          .from("products")
+          .select(INDEX_SELECT)
+          .eq("status", "published")
+          .order("id")
+          .range(from, from + READ_PAGE - 1);
+        if (error) {
+          throw new Error(`Catalogue index read failed: ${error.message}`);
+        }
+        const batch = (data ?? []) as unknown as IndexRow[];
+        entries.push(...batch.map(mapIndexRow));
+        if (batch.length < READ_PAGE) break;
+      }
+      return entries;
+    },
+
+    async getProductsByIds(ids: string[]) {
+      const unique = [...new Set(ids)].slice(0, 100);
+      if (unique.length === 0) return [];
+      const { data, error } = await client
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .eq("status", "published")
+        .in("id", unique);
+      if (error) {
+        throw new Error(`Products by id read failed: ${error.message}`);
+      }
+      const byId = new Map(
+        ((data ?? []) as unknown as ProductRow[])
+          .map(mapProductRow)
+          .map((product) => [product.id, product] as const),
+      );
+      return unique
+        .map((id) => byId.get(id))
+        .filter((product): product is DemoProduct => !!product);
+    },
+
+    async searchProductIds(query: string) {
+      const { data, error } = await client.rpc("search_catalogue_ids", {
+        p_query: query,
+      });
+      // Older databases without the function fall back to matching on the index.
+      if (error) return null;
+      return Array.isArray(data) ? (data as string[]) : null;
     },
   };
 }

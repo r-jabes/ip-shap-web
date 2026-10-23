@@ -89,6 +89,40 @@ export function buildNavDataFrom(
   };
 }
 
+/**
+ * Menu data from the slim catalogue index. `promo` is the one full product used for the menu's
+ * feature tile; everything else needs only counts.
+ */
+export function buildNavDataFromIndex(
+  index: Array<Pick<DemoProduct, "categorySlug">>,
+  categories: Category[],
+  promo?: DemoProduct,
+): NavData {
+  const counts = new Map<string, number>();
+  for (const entry of index) {
+    if (entry.categorySlug) {
+      counts.set(entry.categorySlug, (counts.get(entry.categorySlug) ?? 0) + 1);
+    }
+  }
+  const image = promo ? primaryCatalogueImage(promo.images) : undefined;
+  return {
+    groups: groupCategories(categories, (slug) => counts.get(slug) ?? 0),
+    totalProducts: index.length,
+    promo:
+      promo && image
+        ? {
+            eyebrow: "Featured",
+            title: promo.name,
+            href: `/product/${promo.slug}`,
+            imageSrc: image.src,
+            imageAlt: image.alt,
+            imageWidth: image.width,
+            imageHeight: image.height,
+          }
+        : null,
+  };
+}
+
 /** Sync demo path — prefer `buildNavDataFrom` with durable data on the storefront. */
 export function buildNavData(): NavData {
   return buildNavDataFrom(listProducts(), getCategories());

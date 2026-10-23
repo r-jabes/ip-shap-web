@@ -3,7 +3,9 @@
 import type { DemoProduct } from "@/domain/catalogue";
 import { useLiveProduct } from "@/components/cart/CartProvider";
 import { AddToCartForm } from "@/components/product/AddToCartForm";
+import { NotifyMeForm } from "@/components/product/NotifyMeForm";
 import { ProductDetails } from "@/components/product/ProductDetails";
+import { SaveButton } from "@/components/saved/SaveButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -88,6 +90,7 @@ export function ProductBuyBox({
           productName={product.name}
           maxQuantity={stock.max}
         />
+        <SaveButton productId={product.id} productName={product.name} variant="button" />
         <Button
           href={chatHref(whatsappMessage)}
           variant="secondary"
@@ -98,16 +101,19 @@ export function ProductBuyBox({
           Ask about this bottle
         </Button>
         {unavailable ? (
-          <p className="text-sm text-ink-muted">
-            This one is out of stock right now.{" "}
-            <a
-              href={chatHref(`Hello — when is ${product.name} back in stock?`)}
-              className="font-semibold underline underline-offset-4"
-            >
-              Ask us when it is back
-            </a>
-            .
-          </p>
+          <div className="space-y-2">
+            <NotifyMeForm productId={product.id} productName={product.name} />
+            <p className="text-sm text-ink-muted">
+              Prefer to chat?{" "}
+              <a
+                href={chatHref(`Hello — when is ${product.name} back in stock?`)}
+                className="font-semibold underline underline-offset-4"
+              >
+                Ask us when it is back
+              </a>
+              .
+            </p>
+          </div>
         ) : null}
       </div>
 

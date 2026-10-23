@@ -25,32 +25,58 @@ import {
   adminListProductsDurable,
 } from "@/lib/admin/catalogue-durable";
 import { impliedDiscountPercent } from "@/lib/admin/discount";
-import { paginateItems, parseAdminPage } from "@/lib/admin/pagination";
+import {
+  buildAdminPageHref,
+  paginateItems,
+  parseAdminPage,
+} from "@/lib/admin/pagination";
+import {
+  filterProducts,
+  parseProductSort,
+  PRODUCT_FILTERS,
+  sortProducts,
+  type ProductSortKey,
+  type SortDirection,
+} from "@/lib/admin/products-query";
+import {
+  BulkActionBar,
+  BulkRowCheckbox,
+  BulkSelectAll,
+} from "@/components/admin/BulkSelect";
 import { roleHasPermission } from "@/lib/admin/roles";
 import { getAdminSession } from "@/lib/admin/session";
 
-/** Archived products stay out of the list unless someone asks for them. */
-const STATUS_FILTERS = [
-  { value: "", label: "Active (hide archived)" },
-  { value: "published", label: "Published only" },
-  { value: "draft", label: "Drafts only" },
-  { value: "archived", label: "Archived only" },
-  { value: "all", label: "Everything" },
-] as const;
-
-function applyStatusFilter(products: DemoProduct[], filter: string) {
-  switch (filter) {
-    case "published":
-      return products.filter((p) => p.status === "published");
-    case "draft":
-      return products.filter((p) => p.status === "draft" || p.status === "demo");
-    case "archived":
-      return products.filter((p) => p.status === "archived");
-    case "all":
-      return products;
-    default:
-      return products.filter((p) => p.status !== "archived");
-  }
+/** Column title that sorts the list when clicked; clicking again reverses it. */
+function SortHeader({
+  label,
+  sortKey,
+  active,
+  query,
+}: {
+  label: string;
+  sortKey: ProductSortKey;
+  active: { key: ProductSortKey; dir: SortDirection };
+  query: Record<string, string | undefined>;
+}) {
+  const isActive = active.key === sortKey;
+  const nextDir: SortDirection = isActive && active.dir === "asc" ? "desc" : "asc";
+  const href = buildAdminPageHref(
+    "/admin/products",
+    { ...query, sort: sortKey, dir: nextDir },
+    1,
+  );
+  return (
+    <AdminTh
+      aria-sort={
+        isActive ? (active.dir === "asc" ? "ascending" : "descending") : undefined
+      }
+    >
+      <Link href={href} className="inline-flex items-center gap-1 underline-offset-4 hover:underline">
+        {label}
+        <span aria-hidden="true">{isActive ? (active.dir === "asc" ? "↑" : "↓") : ""}</span>
+      </Link>
+    </AdminTh>
+  );
 }
 
 function PriceCell({ product }: { product: DemoProduct }) {
@@ -93,13 +119,16 @@ export default async function AdminProductsPage({
   searchParams: Promise<{
     q?: string;
     status?: string;
+    sort?: string;
+    dir?: string;
     add?: string;
     page?: string;
   }>;
 }) {
   const params = await searchParams;
-  const q = (params.q ?? "").trim().toLowerCase();
+  const q = (params.q ?? "").trim();
   const statusFilter = (params.status ?? "").trim();
+  const sort = parseProductSort(params.sort, params.dir);
 
   const [allProducts, categories, brands, session] = await Promise.all([
     adminListProductsDurable(),
@@ -111,20 +140,22 @@ export default async function AdminProductsPage({
     ? roleHasPermission(session.role, "products:price")
     : false;
 
-  let products = applyStatusFilter(allProducts, statusFilter);
-  if (q) {
-    products = products.filter((product) =>
-      `${product.name} ${product.slug} ${product.brandName} ${product.sku ?? ""}`
-        .toLowerCase()
-        .includes(q),
-    );
-  }
+  const products = sortProducts(
+    filterProducts(allProducts, { status: statusFilter, q }),
+    sort.key,
+    sort.dir,
+  );
 
   const archivedCount = allProducts.filter(
     (product) => product.status === "archived",
   ).length;
   const pageResult = paginateItems(products, parseAdminPage(params.page));
-  const query = { q: params.q, status: params.status };
+  const query = {
+    q: params.q,
+    status: params.status,
+    sort: params.sort,
+    dir: params.dir,
+  };
   const filtered = !!q || !!statusFilter;
 
   const modalProps = {
@@ -140,6 +171,9 @@ export default async function AdminProductsPage({
         description="Find, add and edit the products in your shop."
         actions={
           <>
+            <Button href="/admin/export/products" variant="ghost" size="sm">
+              Download (CSV)
+            </Button>
             <Button href="/admin/import" variant="ghost" size="sm">
               Import from spreadsheet
             </Button>
@@ -157,7 +191,7 @@ export default async function AdminProductsPage({
             id="admin-product-q"
             name="q"
             defaultValue={params.q}
-            placeholder="Search by name, brand or SKU"
+            placeholder="Search by name, brand, SKU or barcode"
             pill
           />
         </div>
@@ -170,7 +204,7 @@ export default async function AdminProductsPage({
             name="status"
             defaultValue={statusFilter}
           >
-            {STATUS_FILTERS.map((option) => (
+            {PRODUCT_FILTERS.map((option) => (
               <option key={option.value || "active"} value={option.value}>
                 {option.label}
               </option>
@@ -247,13 +281,16 @@ export default async function AdminProductsPage({
           >
             <thead>
               <tr>
+                <AdminTh className="w-8">
+                  <BulkSelectAll />
+                </AdminTh>
                 <AdminTh className="w-14">
                   <span className="sr-only">Image</span>
                 </AdminTh>
-                <AdminTh>Product</AdminTh>
-                <AdminTh>Status</AdminTh>
-                <AdminTh>Stock</AdminTh>
-                <AdminTh>Price</AdminTh>
+                <SortHeader label="Product" sortKey="name" active={sort} query={query} />
+                <SortHeader label="Status" sortKey="status" active={sort} query={query} />
+                <SortHeader label="Stock" sortKey="stock" active={sort} query={query} />
+                <SortHeader label="Price" sortKey="price" active={sort} query={query} />
                 <AdminTh>
                   <span className="sr-only">Actions</span>
                 </AdminTh>
@@ -262,6 +299,9 @@ export default async function AdminProductsPage({
             <tbody>
               {pageResult.items.map((product) => (
                 <tr key={product.id}>
+                  <AdminTd>
+                    <BulkRowCheckbox id={product.id} name={product.name} />
+                  </AdminTd>
                   <AdminTd>
                     <AdminProductThumb product={product} />
                   </AdminTd>
@@ -302,6 +342,7 @@ export default async function AdminProductsPage({
               ))}
             </tbody>
           </AdminTable>
+          <BulkActionBar />
           <AdminPagination
             pathname="/admin/products"
             searchParams={query}

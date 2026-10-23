@@ -17,6 +17,11 @@ import {
 /** Bump when the stored shape changes; old keys are discarded on load. */
 export const CART_STORAGE_KEY = "ip-shap-cart-v2";
 export const LEGACY_CART_KEYS = ["ip-shap-demo-cart"] as const;
+/**
+ * Small saved copy of each cart product (name, price, one photo) so the cart shows instantly
+ * on the next visit without sending the whole catalogue to the browser.
+ */
+export const CART_PRODUCTS_STORAGE_KEY = "ip-shap-cart-products-v1";
 export const MAX_LINE_QUANTITY = MAX_ORDER_LINE_QUANTITY;
 
 const storedLineSchema = z.object({
@@ -38,6 +43,67 @@ export type CartItem = {
 export function clampQuantity(quantity: number): number {
   if (!Number.isFinite(quantity)) return 1;
   return Math.min(MAX_LINE_QUANTITY, Math.max(1, Math.floor(quantity)));
+}
+
+/** The part of a product the cart needs, kept small for local storage. */
+export function snapshotProduct(product: DemoProduct): DemoProduct {
+  return {
+    ...product,
+    description: "",
+    internalNotes: undefined,
+    images: product.images.slice(0, 1).map((image) => ({
+      id: image.id,
+      role: image.role,
+      src: image.src,
+      alt: image.alt,
+      width: image.width,
+      height: image.height,
+      sortOrder: image.sortOrder,
+      processingStatus: image.processingStatus,
+    })),
+  };
+}
+
+const storedProductSchema = z.object({
+  id: z.string().min(1).max(64),
+  slug: z.string().min(1).max(200),
+  name: z.string().min(1).max(300),
+  price: z.object({
+    amount: z.number().int().nonnegative(),
+    currency: z.literal("RWF"),
+  }),
+  images: z.array(z.unknown()).default([]),
+  availability: z
+    .enum(["in_stock", "low_stock", "out_of_stock", "unknown"])
+    .default("unknown"),
+});
+
+/** Parses saved product copies from untrusted storage. Anything malformed is skipped. */
+export function parseStoredProducts(raw: string | null): DemoProduct[] {
+  if (!raw) return [];
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(data)) return [];
+  const products: DemoProduct[] = [];
+  for (const entry of data) {
+    const parsed = storedProductSchema.safeParse(entry);
+    if (!parsed.success) continue;
+    // Validated for the fields the cart relies on; the rest is the shape we saved ourselves.
+    products.push({
+      ...(entry as DemoProduct),
+      description: "",
+      status: "published",
+      isProvisional: false,
+      brandSlug: (entry as DemoProduct).brandSlug ?? "",
+      brandName: (entry as DemoProduct).brandName ?? "",
+      demoLabel: "",
+    });
+  }
+  return products;
 }
 
 /** Parses untrusted localStorage content. Invalid lines are dropped; duplicates are merged. */

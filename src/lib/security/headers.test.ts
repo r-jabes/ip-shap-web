@@ -11,6 +11,16 @@ describe("securityHeaders", () => {
     expect(csp).toContain("frame-ancestors 'none'");
   });
 
+  it("allows eval only in development, never in production", () => {
+    const scriptSrc = (isProduction: boolean) =>
+      securityHeaders({ isProduction })
+        .find((h) => h.key === "Content-Security-Policy")
+        ?.value.split("; ")
+        .find((part) => part.startsWith("script-src"));
+    expect(scriptSrc(true)).not.toContain("unsafe-eval");
+    expect(scriptSrc(false)).toContain("unsafe-eval");
+  });
+
   it("adds HSTS only in production", () => {
     const prod = securityHeaders({ isProduction: true });
     const dev = securityHeaders({ isProduction: false });

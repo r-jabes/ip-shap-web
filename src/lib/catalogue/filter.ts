@@ -4,6 +4,18 @@ import type {
   DemoProduct,
 } from "@/domain/catalogue";
 
+/** The few fields filtering needs, so the same rules run on full products and on the slim index. */
+export type FilterableProduct = {
+  status: string;
+  name: string;
+  brandName: string;
+  brandSlug: string;
+  description?: string;
+  categorySlug?: string;
+  availability: DemoProduct["availability"];
+  price: { amount: number };
+};
+
 function categorySlugsOf(filters: CatalogueFilters): string[] {
   if (filters.categorySlugs?.length) return filters.categorySlugs;
   return filters.categorySlug ? [filters.categorySlug] : [];
@@ -14,15 +26,15 @@ function brandSlugsOf(filters: CatalogueFilters): string[] {
   return filters.brandSlug ? [filters.brandSlug] : [];
 }
 
-export function isStorefrontVisible(product: DemoProduct): boolean {
+export function isStorefrontVisible(product: { status: string }): boolean {
   return product.status === "published" || product.status === "demo";
 }
 
-/** Shared filter/sort used by memory + post-fetch Supabase paths. */
-export function filterAndSortProducts(
-  source: DemoProduct[],
+/** Shared filter/sort used by memory + post-fetch Supabase paths and the slim catalogue index. */
+export function filterAndSortProducts<T extends FilterableProduct>(
+  source: T[],
   filters: CatalogueFilters = {},
-): DemoProduct[] {
+): T[] {
   let items = source.filter(isStorefrontVisible);
 
   const categories = categorySlugsOf(filters);
@@ -56,7 +68,7 @@ export function filterAndSortProducts(
       const haystack = [
         product.name,
         product.brandName,
-        product.description,
+        product.description ?? "",
         product.categorySlug ?? "",
       ]
         .join(" ")

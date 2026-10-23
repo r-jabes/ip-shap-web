@@ -62,6 +62,11 @@ const serverEnvSchema = z.object({
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
   /** Server Sentry DSN (P8). Prefer this over the public DSN on the server. */
   SENTRY_DSN: z.string().url().optional(),
+  /**
+   * Shared secret for the scheduled maintenance job (`/api/cron/maintenance`). Vercel Cron sends
+   * it automatically as `Authorization: Bearer <value>`. At least 16 characters.
+   */
+  CRON_SECRET: z.string().min(16).optional(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -94,6 +99,7 @@ function readServerEnv(): ServerEnv {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
     SENTRY_DSN: process.env.SENTRY_DSN,
+    CRON_SECRET: process.env.CRON_SECRET,
     NODE_ENV: process.env.NODE_ENV,
   });
 }

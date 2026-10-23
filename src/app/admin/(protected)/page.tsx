@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   AdminPageHeader,
   AdminPanel,
@@ -12,7 +13,8 @@ import { loadAdminDashboard } from "@/lib/admin/dashboard";
 import { describeAuditAction, formatAdminDateTime } from "@/lib/admin/format";
 
 export default async function AdminDashboardPage() {
-  const { counts, adjustments, audits, lowStock } = await loadAdminDashboard();
+  const { counts, adjustments, audits, lowStock, attention } =
+    await loadAdminDashboard();
 
   return (
     <div className="space-y-10">
@@ -36,6 +38,36 @@ export default async function AdminDashboardPage() {
           </>
         }
       />
+
+      <AdminPanel>
+        <h2 className="font-display text-xl">Needs your attention</h2>
+        {attention.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-muted">
+            All clear — nothing needs doing right now.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2 text-sm">
+            {attention.map((item) => (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
+                  className="flex items-start gap-3 rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 bg-white/50 px-4 py-3 transition-colors hover:border-brand-charcoal"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`mt-1.5 size-2.5 shrink-0 rounded-full ${
+                      item.tone === "urgent"
+                        ? "bg-brand-burnt-orange"
+                        : "bg-brand-charcoal/40"
+                    }`}
+                  />
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </AdminPanel>
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { ClearCartOnConfirm } from "@/components/checkout/ClearCartOnConfirm";
 import { OrderStatusTimeline } from "@/components/checkout/OrderStatusTimeline";
+import { RememberOrder } from "@/components/orders/RememberOrder";
+import { ReorderButton } from "@/components/orders/ReorderButton";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -132,6 +134,15 @@ export default async function OrderConfirmationPage({
               >
                 Message us
               </Button>
+              <ReorderButton
+                variant="on-dark"
+                size="lg"
+                items={order.items.map((item) => ({
+                  productId: item.productId,
+                  name: item.productName,
+                  quantity: item.quantity,
+                }))}
+              />
               <Button
                 href="/shop"
                 variant="link"
@@ -145,8 +156,9 @@ export default async function OrderConfirmationPage({
       </div>
 
       <p className="mt-10 text-xs text-ink-muted">
-        Save this page URL to look up your order later. Lookup needs your
-        private token and is rate limited.{" "}
+        We remember this order on this device. To find it later on another
+        phone or computer, use your reference and the phone number you ordered
+        with.{" "}
         <Link
           href="/order/lookup"
           className="font-semibold underline underline-offset-4"
@@ -156,6 +168,14 @@ export default async function OrderConfirmationPage({
       </p>
 
       <ClearCartOnConfirm placedAt={order.createdAt} />
+      <RememberOrder
+        order={{
+          reference: order.reference,
+          token: order.lookupToken,
+          placedAt: order.createdAt,
+          totalRwf: order.total.amount,
+        }}
+      />
     </Container>
   );
 }

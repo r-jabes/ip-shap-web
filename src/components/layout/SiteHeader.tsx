@@ -9,8 +9,10 @@ import { useChrome } from "@/components/layout/ChromeProvider";
 import { MegaMenu } from "@/components/layout/MegaMenu";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
+import { useSavedIds } from "@/lib/device/use-saved";
 import {
   BagIcon,
+  HeartIcon,
   MenuIcon,
   SearchIcon,
   WhatsAppIcon,
@@ -28,6 +30,8 @@ const links = [
 export function SiteHeader({ nav }: { nav: NavData }) {
   const { itemCount, productCount, openCart, feedback } = useCart();
   const { openSearch, openMenu } = useChrome();
+  const { ids: savedIds } = useSavedIds();
+  const savedCount = savedIds.length;
   const pathname = usePathname();
   const [pulse, setPulse] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -118,6 +122,25 @@ export function SiteHeader({ nav }: { nav: NavData }) {
               Contact us
             </Button>
           </div>
+
+          <Link
+            href="/saved"
+            aria-label={
+              savedCount > 0 ? `Saved drinks, ${savedCount}` : "Saved drinks"
+            }
+            aria-current={pathname === "/saved" ? "page" : undefined}
+            className="relative hidden h-11 w-11 items-center justify-center rounded-full transition-colors duration-[var(--motion-fast)] hover:bg-paper-2 sm:inline-flex"
+          >
+            <HeartIcon size={21} />
+            {savedCount > 0 ? (
+              <span
+                aria-hidden="true"
+                className="absolute top-0.5 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-burnt-orange px-1 text-[0.65rem] leading-none font-bold text-brand-charcoal tabular"
+              >
+                {savedCount > 99 ? "99+" : savedCount}
+              </span>
+            ) : null}
+          </Link>
 
           <button
             type="button"

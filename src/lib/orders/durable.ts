@@ -10,8 +10,14 @@ import {
   type OrderItemRow,
   type OrderRow,
 } from "@/lib/orders/map-row";
-import { isValidCheckoutPhone, normalizePhone } from "@/lib/orders/phone";
 import {
+  isValidCheckoutPhone,
+  normalizePhone,
+  phonesMatch,
+} from "@/lib/orders/phone";
+import type { PaymentEvent } from "@/lib/payments/types";
+import {
+  applyPaymentStatusFromWebhook,
   cancelOrder,
   createOrder,
   getOrderById,
@@ -35,7 +41,7 @@ import {
   reserveOrderStockDurable,
   restoreOrderStockDurable,
 } from "@/lib/stock/durable";
-import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
+import { hasDurableStorage } from "@/lib/supabase/config";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import { adminGetProduct } from "@/lib/admin/store";
 import { getProductById } from "@/lib/catalogue";
@@ -50,7 +56,7 @@ import {
 } from "@/lib/orders/stock-messages";
 
 function isDurableOrdersEnabled(): boolean {
-  return hasSupabaseServiceConfig();
+  return hasDurableStorage();
 }
 
 function makeLookupToken(): string {
@@ -396,6 +402,19 @@ export async function lookupOrderDurable(
   return (await fetchOrderBundle(data.id as string)) ?? undefined;
 }
 
+/**
+ * Finds an order by reference when the shopper proves it is theirs with the phone number used at
+ * checkout (for when the private token was lost). Callers must rate limit by reference.
+ */
+export async function lookupOrderByPhoneDurable(
+  reference: string,
+  phone: string,
+): Promise<StoredOrder | undefined> {
+  const order = await getOrderByReferenceDurable(reference);
+  if (!order || !phonesMatch(order.customerPhone, phone)) return undefined;
+  return order;
+}
+
 export async function getOrderByIdDurable(
   id: string,
 ): Promise<StoredOrder | undefined> {
@@ -434,52 +453,69 @@ export async function countAwaitingOrdersDurable(): Promise<number> {
   return count ?? 0;
 }
 
-export async function listOrdersDurable(): Promise<StoredOrder[]> {
-  if (!isDurableOrdersEnabled()) return listOrders();
+/**
+ * Newest orders first. By default the latest 200; pass `since` (and a larger `limit`) for
+ * reports and exports that need a whole date range.
+ */
+export async function listOrdersDurable(
+  options: { since?: Date; limit?: number } = {},
+): Promise<StoredOrder[]> {
+  if (!isDurableOrdersEnabled()) {
+    const since = options.since?.getTime();
+    return listOrders().filter(
+      (order) => since === undefined || new Date(order.createdAt).getTime() >= since,
+    );
+  }
   const client = getSupabaseServiceClient()!;
-  const { data, error } = await client
+  let query = client
     .from("orders")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(options.limit ?? 200);
+  if (options.since) query = query.gte("created_at", options.since.toISOString());
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const rows = (data ?? []) as OrderRow[];
   if (rows.length === 0) return [];
   const ids = rows.map((row) => row.id);
 
-  // Three queries in total (not three per order) so the list opens quickly.
-  const [itemsResult, historyResult] = await Promise.all([
-    client
-      .from("order_items")
-      .select(
-        "order_id, product_id, product_name_snapshot, product_slug_snapshot, sku_snapshot, quantity, unit_price_rwf, line_total_rwf",
-      )
-      .in("order_id", ids),
-    client
-      .from("order_status_history")
-      .select("order_id, from_fulfilment, to_fulfilment, reason, created_at")
-      .in("order_id", ids)
-      .order("created_at", { ascending: true }),
-  ]);
-  if (itemsResult.error) throw new Error(itemsResult.error.message);
-  if (historyResult.error) throw new Error(historyResult.error.message);
-
+  // Two queries per group of 25 orders (not per order) keeps the list quick, and the groups keep
+  // each request short and under the database's 1000-row response cap.
   const itemsByOrder = new Map<string, OrderItemRow[]>();
-  for (const item of (itemsResult.data ?? []) as Array<
-    OrderItemRow & { order_id: string }
-  >) {
-    const list = itemsByOrder.get(item.order_id) ?? [];
-    list.push(item);
-    itemsByOrder.set(item.order_id, list);
-  }
   const historyByOrder = new Map<string, OrderHistoryRow[]>();
-  for (const entry of (historyResult.data ?? []) as Array<
-    OrderHistoryRow & { order_id: string }
-  >) {
-    const list = historyByOrder.get(entry.order_id) ?? [];
-    list.push(entry);
-    historyByOrder.set(entry.order_id, list);
+  for (let start = 0; start < ids.length; start += 25) {
+    const group = ids.slice(start, start + 25);
+    const [itemsResult, historyResult] = await Promise.all([
+      client
+        .from("order_items")
+        .select(
+          "order_id, product_id, product_name_snapshot, product_slug_snapshot, sku_snapshot, quantity, unit_price_rwf, line_total_rwf",
+        )
+        .in("order_id", group),
+      client
+        .from("order_status_history")
+        .select("order_id, from_fulfilment, to_fulfilment, reason, created_at")
+        .in("order_id", group)
+        .order("created_at", { ascending: true }),
+    ]);
+    if (itemsResult.error) throw new Error(itemsResult.error.message);
+    if (historyResult.error) throw new Error(historyResult.error.message);
+
+    for (const item of (itemsResult.data ?? []) as Array<
+      OrderItemRow & { order_id: string }
+    >) {
+      const list = itemsByOrder.get(item.order_id) ?? [];
+      list.push(item);
+      itemsByOrder.set(item.order_id, list);
+    }
+    for (const entry of (historyResult.data ?? []) as Array<
+      OrderHistoryRow & { order_id: string }
+    >) {
+      const list = historyByOrder.get(entry.order_id) ?? [];
+      list.push(entry);
+      historyByOrder.set(entry.order_id, list);
+    }
   }
 
   return rows.map((row) =>
@@ -601,6 +637,63 @@ export async function markManualPaymentDurable(
   });
 
   return (await fetchOrderBundle(orderId))!;
+}
+
+/**
+ * Applies a payment provider's event to an order, once. A repeated delivery of the same event is
+ * a no-op, and a late "pending"/"failed" event never undoes a payment already received.
+ */
+export async function applyPaymentEventDurable(
+  providerId: string,
+  event: PaymentEvent,
+): Promise<{ order: StoredOrder; duplicate: boolean }> {
+  if (!isDurableOrdersEnabled()) {
+    return applyPaymentStatusFromWebhook(event.orderId, event.status, event.id);
+  }
+
+  const client = getSupabaseServiceClient()!;
+  const order = await fetchOrderBundle(event.orderId);
+  if (!order) throw new Error("Order not found");
+
+  const { error: eventError } = await client
+    .from("payment_webhook_events")
+    .insert({
+      provider: providerId,
+      provider_event_id: event.id,
+      payload: event,
+    });
+  if (eventError) {
+    if (eventError.code === "23505") return { order, duplicate: true };
+    throw new Error(eventError.message);
+  }
+
+  if (order.paymentStatus === "paid" && event.status !== "refunded") {
+    return { order, duplicate: false };
+  }
+
+  const { error } = await client
+    .from("orders")
+    .update({
+      payment_status: event.status,
+      ...(event.status === "paid"
+        ? { amount_paid_rwf: event.amountRwf }
+        : {}),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", event.orderId);
+  if (error) throw new Error(error.message);
+
+  await client.from("order_status_history").insert({
+    order_id: event.orderId,
+    from_fulfilment: order.fulfilmentStatus,
+    to_fulfilment: order.fulfilmentStatus,
+    from_payment: order.paymentStatus,
+    to_payment: event.status,
+    actor_label: providerId,
+    reason: `Payment ${event.status} (${providerId} event ${event.id})`,
+  });
+
+  return { order: (await fetchOrderBundle(event.orderId))!, duplicate: false };
 }
 
 export { toOrderSummary };

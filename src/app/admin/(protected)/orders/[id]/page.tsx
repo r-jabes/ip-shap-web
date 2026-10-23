@@ -21,7 +21,9 @@ import { nextFulfilmentStatuses } from "@/lib/orders/transitions";
 import {
   customerTelHref,
   customerWhatsAppHref,
+  orderUpdateMessage,
 } from "@/lib/orders/customer-contact";
+import { customerStatusLabel } from "@/lib/orders/customer-status";
 import { getOrderByIdDurable } from "@/lib/orders/durable";
 
 type Params = Promise<{ id: string }>;
@@ -37,7 +39,11 @@ export default async function AdminOrderDetailPage({
 
   const customerWa = customerWhatsAppHref(
     order.customerPhone,
-    `Hello ${order.customerName}, regarding your order ${order.reference}…`,
+    orderUpdateMessage({
+      customerName: order.customerName,
+      reference: order.reference,
+      statusLabel: customerStatusLabel(order.fulfilmentStatus),
+    }),
   );
   const customerTel = customerTelHref(order.customerPhone);
 
@@ -47,9 +53,14 @@ export default async function AdminOrderDetailPage({
         title={order.reference}
         description={`${order.customerName} · ${order.customerPhone} · ${order.channel}`}
         actions={
-          <Button href="/admin/orders" variant="ghost" size="sm">
-            All orders
-          </Button>
+          <>
+            <Button href={`/admin/print/${order.id}`} variant="ghost" size="sm">
+              Print
+            </Button>
+            <Button href="/admin/orders" variant="ghost" size="sm">
+              All orders
+            </Button>
+          </>
         }
       />
 

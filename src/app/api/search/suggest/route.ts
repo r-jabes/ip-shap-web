@@ -82,7 +82,7 @@ async function suggestFromMemory(
  */
 export async function GET(request: Request) {
   const ip = clientIp(request);
-  const limit = consumeRateLimit(`search-suggest:${ip}`, 60, 60 * 1000);
+  const limit = await consumeRateLimit(`search-suggest:${ip}`, 60, 60 * 1000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many requests" },

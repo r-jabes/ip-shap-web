@@ -4,17 +4,19 @@ import { ProductBuyBox } from "@/components/product/ProductBuyBox";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductRelated } from "@/components/product/ProductRelated";
 import { ProductStickyBar } from "@/components/product/ProductStickyBar";
+import { RecentlyViewed } from "@/components/saved/RecentlyViewed";
+import { RecordView } from "@/components/saved/RecordView";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { getProductBySlugDurable } from "@/lib/catalogue";
+import { getCachedCategories } from "@/lib/catalogue/cache";
 import {
-  getBrandSiblingsDurable,
-  getCategoriesDurable,
-  getProductBySlugDurable,
-  getRelatedProductsDurable,
-  listProductsDurable,
-} from "@/lib/catalogue";
+  getAllProductSlugs,
+  getProductSiblings,
+  getRelatedForProduct,
+} from "@/lib/catalogue/storefront";
 import {
   breadcrumbJsonLd,
   productJsonLd,
@@ -26,8 +28,8 @@ type Params = Promise<{ slug: string }>;
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const products = await listProductsDurable();
-  return products.map((product) => ({ slug: product.slug }));
+  const slugs = await getAllProductSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -47,9 +49,9 @@ export default async function ProductPage({ params }: { params: Params }) {
   if (!product) notFound();
 
   const [categories, siblings, related] = await Promise.all([
-    getCategoriesDurable(),
-    getBrandSiblingsDurable(product),
-    getRelatedProductsDurable(product, 4),
+    getCachedCategories(),
+    getProductSiblings(product),
+    getRelatedForProduct(product, 4),
   ]);
   const category = categories.find((c) => c.slug === product.categorySlug);
 
@@ -111,7 +113,9 @@ export default async function ProductPage({ params }: { params: Params }) {
           categoryName={category?.name}
           categorySlug={category?.slug}
         />
+        <RecentlyViewed currentProductId={product.id} />
       </Container>
+      <RecordView productId={product.id} />
       <ProductStickyBar product={product} />
     </>
   );

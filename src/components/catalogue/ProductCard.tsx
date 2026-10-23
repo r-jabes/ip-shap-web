@@ -6,6 +6,7 @@ import type { DemoProduct } from "@/domain/catalogue";
 import { useCart, useLiveProduct } from "@/components/cart/CartProvider";
 import { ProductQuickView } from "@/components/catalogue/ProductQuickView";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
+import { SaveButton } from "@/components/saved/SaveButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
@@ -99,14 +100,21 @@ export function ProductCard({
             {product.brandName}
           </p>
         ) : null}
-        <h3 className="font-display text-lg leading-snug sm:text-xl">
-          <Link
-            href={`/product/${product.slug}`}
-            className="underline-offset-4 hover:underline"
-          >
-            {product.name}
-          </Link>
-        </h3>
+        <div className="flex items-start justify-between gap-1">
+          <h3 className="font-display text-lg leading-snug sm:text-xl">
+            <Link
+              href={`/product/${product.slug}`}
+              className="underline-offset-4 hover:underline"
+            >
+              {product.name}
+            </Link>
+          </h3>
+          <SaveButton
+            productId={product.id}
+            productName={product.name}
+            className="-mt-1.5 -mr-2"
+          />
+        </div>
         <div className="mt-auto pt-2">
           <PriceTag
             price={product.price}

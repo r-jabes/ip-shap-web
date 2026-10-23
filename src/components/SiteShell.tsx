@@ -10,27 +10,17 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { PageEnter } from "@/components/motion/PageEnter";
 import { SkipLink } from "@/components/SkipLink";
-import {
-  getCachedBrands,
-  getCachedCategories,
-  getCachedPublishedProducts,
-} from "@/lib/catalogue/cache";
-import { buildNavDataFrom } from "@/lib/navigation";
+import { getCachedCategories } from "@/lib/catalogue/cache";
+import { getNavData } from "@/lib/catalogue/storefront";
 
 export async function SiteShell({ children }: { children: React.ReactNode }) {
-  const [products, categories, brands] = await Promise.all([
-    getCachedPublishedProducts(),
+  const [categories, nav] = await Promise.all([
     getCachedCategories(),
-    getCachedBrands(),
+    getNavData(),
   ]);
-  const nav = buildNavDataFrom(products, categories);
 
   return (
-    <CatalogueProvider
-      products={products}
-      categories={categories}
-      brands={brands}
-    >
+    <CatalogueProvider categories={categories}>
       <CartProvider>
         <ChromeProvider>
           <div className="flex min-h-dvh flex-col bg-brand-warm-white pb-[var(--bottom-bar-h)] text-brand-charcoal lg:pb-0">

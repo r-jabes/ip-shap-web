@@ -1,8 +1,9 @@
 /**
  * Baseline security headers for Next.js `headers()` config.
  * CSP allows Next.js inline hydration, Cloudflare Turnstile, Supabase, and Sentry
- * when those integrations are configured. Nonces (remove unsafe-inline/eval) remain
- * a tracked hardening step — see documentation/SECURITY.md waiver.
+ * when those integrations are configured. `unsafe-eval` is dropped in production.
+ * Nonces (remove unsafe-inline) are deliberately not used: they force every page to render
+ * per request and would defeat storefront caching — see documentation/SECURITY.md waiver.
  */
 export function securityHeaders(
   options: { isProduction?: boolean } = {},
@@ -17,7 +18,8 @@ export function securityHeaders(
     "img-src 'self' data: blob: https://*.supabase.co",
     "font-src 'self' data:",
     // Next.js App Router still needs inline scripts/styles; Turnstile loads from Cloudflare.
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
+    // `unsafe-eval` is development only (React's dev tooling); production pages never need it.
+    `script-src 'self' 'unsafe-inline'${options.isProduction ? "" : " 'unsafe-eval'"} https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "frame-src https://challenges.cloudflare.com",
     // API + realtime + ingest (regional Sentry hosts covered by wildcard).

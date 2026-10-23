@@ -1,6 +1,6 @@
 import type { MoneyRwf } from "@/lib/money";
 import { moneyRwf } from "@/lib/money";
-import { listProducts, listProductsDurable } from "@/lib/catalogue";
+import { listProducts } from "@/lib/catalogue";
 
 /**
  * One photograph per product range (UI redesign photo allocation).
@@ -56,16 +56,6 @@ export function fromPriceForCategory(categorySlug: string): MoneyRwf | null {
   return moneyRwf(Math.min(...amounts));
 }
 
-export async function fromPriceForCategoryDurable(
-  categorySlug: string,
-): Promise<MoneyRwf | null> {
-  const amounts = (
-    await listProductsDurable({ categorySlug })
-  ).map((p) => p.price.amount);
-  if (amounts.length === 0) return null;
-  return moneyRwf(Math.min(...amounts));
-}
-
 export type RangePhoto = (typeof RANGE_MEDIA)[keyof typeof RANGE_MEDIA];
 
 export type HomeCollectionTile = {
@@ -111,17 +101,6 @@ export function getHomeCollections(
       image: RANGE_MEDIA.vodka,
     },
   ];
-}
-
-export async function getHomeCollectionsDurable(): Promise<
-  HomeCollectionTile[]
-> {
-  const [wine, sparkling, vodka] = await Promise.all([
-    fromPriceForCategoryDurable("wine"),
-    fromPriceForCategoryDurable("sparkling"),
-    fromPriceForCategoryDurable("vodka"),
-  ]);
-  return getHomeCollections({ wine, sparkling, vodka });
 }
 
 export const HOME_MARQUEE_RANGES = [

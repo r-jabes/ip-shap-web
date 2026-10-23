@@ -23,7 +23,7 @@ export async function requestAdminPasswordResetAction(
   const headerStore = await headers();
   const ip =
     headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const limit = consumeRateLimit(`admin-reset:${ip}`, 5, 15 * 60 * 1000);
+  const limit = await consumeRateLimit(`admin-reset:${ip}`, 5, 15 * 60 * 1000);
   if (!limit.ok) {
     return { error: "Too many attempts. Please wait and try again." };
   }

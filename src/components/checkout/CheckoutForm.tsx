@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   placeOrderAction,
@@ -12,9 +12,16 @@ import type { DeliveryZone } from "@/lib/orders/delivery";
 import { formatRwf } from "@/lib/money";
 import { TurnstileField } from "@/components/security/TurnstileField";
 import { Button } from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { InlineToast } from "@/components/ui/InlineToast";
+import {
+  CHECKOUT_DETAILS_STORAGE_KEY,
+  parseCheckoutDetails,
+  serializeCheckoutDetails,
+} from "@/lib/device/checkout-details";
+import { writeDevice } from "@/lib/device/storage";
+import { useDeviceValue } from "@/lib/device/use-device-value";
 
 type Line = { product: DemoProduct; quantity: number };
 
@@ -58,6 +65,53 @@ export function CheckoutForm({
   const [deliveryVillage, setDeliveryVillage] = useState("");
   const [deliveryDirections, setDeliveryDirections] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
+
+  // Details remembered on this device (never sent anywhere until the order is placed).
+  const [remember, setRemember] = useState(true);
+  const savedRaw = useDeviceValue(CHECKOUT_DETAILS_STORAGE_KEY);
+  const saved = useMemo(() => parseCheckoutDetails(savedRaw), [savedRaw]);
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || !saved) return;
+    prefilled.current = true;
+    setCustomerName(saved.customerName);
+    setCustomerPhone(saved.customerPhone);
+    setDeliveryDistrict(saved.deliveryDistrict);
+    setDeliverySector(saved.deliverySector);
+    setDeliveryCell(saved.deliveryCell);
+    setDeliveryVillage(saved.deliveryVillage);
+    setDeliveryDirections(saved.deliveryDirections);
+  }, [saved]);
+
+  function rememberDetails() {
+    if (!remember) {
+      writeDevice(CHECKOUT_DETAILS_STORAGE_KEY, null);
+      return;
+    }
+    writeDevice(
+      CHECKOUT_DETAILS_STORAGE_KEY,
+      serializeCheckoutDetails({
+        customerName,
+        customerPhone,
+        deliveryDistrict,
+        deliverySector,
+        deliveryCell,
+        deliveryVillage,
+        deliveryDirections,
+      }),
+    );
+  }
+
+  function forgetDetails() {
+    writeDevice(CHECKOUT_DETAILS_STORAGE_KEY, null);
+    setCustomerName("");
+    setCustomerPhone("");
+    setDeliveryDistrict("");
+    setDeliverySector("");
+    setDeliveryCell("");
+    setDeliveryVillage("");
+    setDeliveryDirections("");
+  }
 
   useEffect(() => {
     if (state.error) onOrderRejected?.();
@@ -115,6 +169,7 @@ export function CheckoutForm({
       <InlineToast message={toastMessage} />
       <form
       action={formAction}
+      onSubmit={rememberDetails}
       className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
       noValidate
     >
@@ -133,6 +188,18 @@ export function CheckoutForm({
             <p className="mt-1 text-sm text-ink-muted">
               We use these details to confirm your order.
             </p>
+            {saved ? (
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-paper-2 px-4 py-2.5 text-sm">
+                <span>Filled in from the last order on this device.</span>
+                <button
+                  type="button"
+                  onClick={forgetDetails}
+                  className="min-h-8 font-semibold underline underline-offset-4"
+                >
+                  Not you? Clear my details
+                </button>
+              </p>
+            ) : null}
             <div className="mt-5 space-y-4">
               <Field
                 id="customerName"
@@ -186,6 +253,18 @@ export function CheckoutForm({
                   onChange={(event) => setCustomerNotes(event.target.value)}
                 />
               </Field>
+              <Checkbox
+                checked={remember}
+                onChange={(event) => setRemember(event.target.checked)}
+                label={
+                  <>
+                    Remember my details on this device
+                    <span className="block text-xs text-ink-muted">
+                      Saved in your browser only, so next time is quicker.
+                    </span>
+                  </>
+                }
+              />
             </div>
           </section>
 

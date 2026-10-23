@@ -13,6 +13,8 @@ import { SITE, chatHref, formatPhoneDisplay } from "@/lib/site-config";
 const helpLinks = [
   { href: "/delivery", label: "Delivery" },
   { href: "/faq", label: "FAQ" },
+  { href: "/order/lookup", label: "Find your order" },
+  { href: "/saved", label: "Saved drinks" },
   { href: "/about", label: "About us" },
   { href: "/contact", label: "Contact" },
 ];

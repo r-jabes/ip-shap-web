@@ -13,6 +13,8 @@ import {
 import { ConfirmActionModal } from "@/components/admin/ConfirmActionModal";
 import { DiscountModal, ProductModal } from "@/components/admin/ProductForm";
 import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
+import { RestockWaitlist } from "@/components/admin/RestockWaitlist";
+import { isOrderableNow } from "@/lib/notifications/back-in-stock";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Button } from "@/components/ui/Button";
 import { formatDemoPrice } from "@/domain/catalogue";
@@ -150,6 +152,12 @@ export default async function AdminProductPage({ params }: { params: Params }) {
           </p>
         ) : null}
       </AdminPanel>
+
+      <RestockWaitlist
+        productId={product.id}
+        productName={product.name}
+        orderableNow={isOrderableNow(product)}
+      />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { CartLine, DemoProduct } from "@/domain/catalogue";
 import {
+  CART_PRODUCTS_STORAGE_KEY,
   CART_STORAGE_KEY,
   LEGACY_CART_KEYS,
   type CartItem,
@@ -20,10 +21,10 @@ import {
   cartSubtotal,
   clampQuantity,
   parseStoredCart,
+  parseStoredProducts,
   resolveCart,
+  snapshotProduct,
 } from "@/lib/cart";
-import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
-import { getProductById as getFixtureProductById } from "@/lib/catalogue";
 import { MOTION } from "@/lib/motion";
 import { maxOrderableQuantity } from "@/lib/stock/storefront";
 
@@ -61,6 +62,13 @@ type CartContextValue = {
   removeItem: (productId: string) => void;
   clearCart: () => void;
   /**
+   * Puts the items of an earlier order back in the cart, using current prices and stock.
+   * Items that are gone or sold out are skipped and returned by name.
+   */
+  reorder: (
+    items: Array<{ productId: string; quantity: number; name: string }>,
+  ) => Promise<{ added: number; skipped: string[] }>;
+  /**
    * Re-reads current stock from the server. With no ids, refreshes every product in the cart.
    * Calls within a few seconds of each other are skipped unless `force` is set.
    */
@@ -70,6 +78,11 @@ type CartContextValue = {
   ) => Promise<void>;
   /** Product with live stock applied (falls back to the page's own data). */
   withLiveStock: (product: DemoProduct) => DemoProduct;
+  /**
+   * Tells the cart about products the page is showing, so adding one needs no extra lookup and
+   * the saved cart can show them. The full catalogue is never sent to the browser.
+   */
+  rememberProducts: (products: DemoProduct[]) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -94,49 +107,42 @@ function applyLiveStock(
   };
 }
 
-function toLines(items: CartItem[]): CartLine[] {
-  return items.map(({ productId, quantity }) => ({ productId, quantity }));
-}
-
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const catalogue = useCatalogueOptional();
   const [liveStock, setLiveStock] = useState<Record<string, LiveStock>>({});
   const [lines, setLines] = useState<CartLine[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Bumped when a product in the cart is learned or refreshed, so the derived list recomputes.
+  const [directoryVersion, setDirectoryVersion] = useState(0);
 
+  // Products the cart knows about: shown on this page, saved from last time, or fetched.
+  // The server never sends the whole catalogue to the browser.
+  const directoryRef = useRef(new Map<string, DemoProduct>());
   const baseProduct = useCallback(
-    (id: string) => catalogue?.getProductById(id) ?? getFixtureProductById(id),
-    [catalogue],
+    (id: string) => directoryRef.current.get(id),
+    [],
   );
   const resolveProduct = useCallback(
     (id: string) => {
       const product = baseProduct(id);
       return product ? applyLiveStock(product, liveStock[id]) : undefined;
     },
-    [baseProduct, liveStock],
+    // directoryVersion makes this change whenever the directory does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseProduct, liveStock, directoryVersion],
   );
 
   // Mutable mirrors for async callbacks and one-shot effects. The hydration and cross-tab effects
-  // must not re-run when the server re-renders the layout with a fresh catalogue: re-reading
-  // storage at that moment can resurrect a cart that was just cleared after an order.
-  const baseProductRef = useRef(baseProduct);
+  // must not re-run on re-render: re-reading storage at the wrong moment can resurrect a cart
+  // that was just cleared after an order.
   const liveStockRef = useRef(liveStock);
   const linesRef = useRef<CartLine[]>([]);
   const lastRefreshRef = useRef(new Map<string, number>());
   useEffect(() => {
-    baseProductRef.current = baseProduct;
     liveStockRef.current = liveStock;
   });
-
-  const resolveFromRefs = useCallback((id: string) => {
-    const product = baseProductRef.current(id);
-    return product
-      ? applyLiveStock(product, liveStockRef.current[id])
-      : undefined;
-  }, []);
 
   /** Single write path so the ref, state and storage never disagree. */
   const commit = useCallback((next: CartLine[]) => {
@@ -144,44 +150,130 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLines(next);
   }, []);
 
-  // Load once, validate, discard legacy storage and prune unresolvable lines.
-  useEffect(() => {
-    try {
-      for (const key of LEGACY_CART_KEYS) {
-        window.localStorage.removeItem(key);
+  const rememberProducts = useCallback((products: DemoProduct[]) => {
+    let cartChanged = false;
+    for (const product of products) {
+      if (directoryRef.current.get(product.id) === product) continue;
+      directoryRef.current.set(product.id, product);
+      if (linesRef.current.some((line) => line.productId === product.id)) {
+        cartChanged = true;
       }
-      const stored = parseStoredCart(
-        window.localStorage.getItem(CART_STORAGE_KEY),
-      );
-      const { items, removed } = resolveCart(stored, resolveFromRefs);
-      commit(toLines(items));
-      if (removed.length > 0) setNotice(removalNotice(removed.length));
-    } catch {
-      // Storage unavailable (private mode, quota): start with an empty cart.
     }
-    setHydrated(true);
-  }, [commit, resolveFromRefs]);
+    if (cartChanged) setDirectoryVersion((version) => version + 1);
+  }, []);
+
+  /**
+   * Fetches current data for cart products from the server and drops lines that can no longer
+   * be sold. Network failures change nothing: the saved copy stays on screen and checkout
+   * re-validates everything anyway.
+   */
+  const syncWithServer = useCallback(
+    async (ids: string[]) => {
+      const unique = [...new Set(ids)];
+      if (unique.length === 0) return;
+      try {
+        const response = await fetch(
+          `/api/cart/products?ids=${unique.map(encodeURIComponent).join(",")}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) return;
+        const body = (await response.json()) as { products?: DemoProduct[] };
+        if (!Array.isArray(body.products)) return;
+        const found = new Set<string>();
+        for (const product of body.products) {
+          directoryRef.current.set(product.id, product);
+          found.add(product.id);
+        }
+        const gone = linesRef.current.filter(
+          (line) => unique.includes(line.productId) && !found.has(line.productId),
+        );
+        if (gone.length > 0) {
+          commit(
+            linesRef.current.filter(
+              (line) => !gone.some((g) => g.productId === line.productId),
+            ),
+          );
+          setNotice(removalNotice(gone.length));
+        }
+        setDirectoryVersion((version) => version + 1);
+      } catch {
+        // Offline or blocked: keep what we have.
+      }
+    },
+    [commit],
+  );
+
+  // Load once: saved lines + saved product copies, so the cart shows instantly; then confirm
+  // with the server (and fetch anything we have no copy of, such as carts saved by older versions).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      let stored: CartLine[] = [];
+      try {
+        for (const key of LEGACY_CART_KEYS) {
+          window.localStorage.removeItem(key);
+        }
+        stored = parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY));
+        for (const product of parseStoredProducts(
+          window.localStorage.getItem(CART_PRODUCTS_STORAGE_KEY),
+        )) {
+          if (!directoryRef.current.has(product.id)) {
+            directoryRef.current.set(product.id, product);
+          }
+        }
+      } catch {
+        // Storage unavailable (private mode, quota): start with an empty cart.
+      }
+      commit(stored);
+      setDirectoryVersion((version) => version + 1);
+      const ids = stored.map((line) => line.productId);
+      const unknown = ids.some((id) => !directoryRef.current.has(id));
+      if (unknown) {
+        // Nothing to show yet for some lines: wait for the server so the cart never flashes empty.
+        await syncWithServer(ids);
+      } else {
+        void syncWithServer(ids);
+      }
+      if (!cancelled) setHydrated(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [commit, syncWithServer]);
 
   useEffect(() => {
     if (!hydrated) return;
     try {
       window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(lines));
+      // Keep a small copy of each cart product so the cart can be shown without a lookup.
+      const copies = lines
+        .map((line) => directoryRef.current.get(line.productId))
+        .filter((product): product is DemoProduct => !!product)
+        .map(snapshotProduct);
+      window.localStorage.setItem(
+        CART_PRODUCTS_STORAGE_KEY,
+        JSON.stringify(copies),
+      );
     } catch {
       // ignore quota / privacy-mode errors; the cart still works for this session
     }
-  }, [lines, hydrated]);
+  }, [lines, hydrated, directoryVersion]);
 
   // Keep several tabs in sync.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== CART_STORAGE_KEY) return;
       const stored = parseStoredCart(event.newValue);
-      const { items } = resolveCart(stored, resolveFromRefs);
-      commit(toLines(items));
+      commit(stored);
+      const unknown = stored
+        .map((line) => line.productId)
+        .filter((id) => !directoryRef.current.has(id));
+      if (unknown.length > 0) void syncWithServer(unknown);
+      else setDirectoryVersion((version) => version + 1);
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [commit, resolveFromRefs]);
+  }, [commit, syncWithServer]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -231,7 +323,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const lowered: string[] = [];
       const soldOut: string[] = [];
       const next = linesRef.current.map((line) => {
-        const base = baseProductRef.current(line.productId);
+        const base = baseProduct(line.productId);
         if (!base || !fresh[line.productId]) return line;
         const max = maxOrderableQuantity(
           applyLiveStock(base, merged[line.productId]),
@@ -262,7 +354,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setNotice(parts.join(" "));
       }
     },
-    [commit],
+    [commit, baseProduct],
   );
 
   // Check live stock once the saved cart is loaded, and again when the shopper returns to the tab.
@@ -360,6 +452,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [commit]);
 
+  const reorder = useCallback<CartContextValue["reorder"]>(
+    async (items) => {
+      const ids = [...new Set(items.map((item) => item.productId))];
+      await syncWithServer(ids);
+      await refreshStock(ids, { force: true });
+
+      let next = [...linesRef.current];
+      const skipped: string[] = [];
+      let added = 0;
+      for (const item of items) {
+        const base = directoryRef.current.get(item.productId);
+        const max = base
+          ? maxOrderableQuantity(
+              applyLiveStock(base, liveStockRef.current[item.productId]),
+            )
+          : 0;
+        const inCart =
+          next.find((line) => line.productId === item.productId)?.quantity ?? 0;
+        const room = max - inCart;
+        if (!base || max === 0 || room <= 0) {
+          skipped.push(item.name);
+          continue;
+        }
+        const toAdd = Math.min(clampQuantity(item.quantity), room);
+        next =
+          inCart > 0
+            ? next.map((line) =>
+                line.productId === item.productId
+                  ? { ...line, quantity: clampQuantity(line.quantity + toAdd) }
+                  : line,
+              )
+            : [...next, { productId: item.productId, quantity: toAdd }];
+        added += 1;
+      }
+      commit(next);
+      if (added > 0) setIsOpen(true);
+      return { added, skipped };
+    },
+    [syncWithServer, refreshStock, commit],
+  );
+
   const openCart = useCallback(() => {
     setIsOpen(true);
     void refreshStock();
@@ -396,8 +529,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setQuantity,
       removeItem,
       clearCart,
+      reorder,
       refreshStock,
       withLiveStock,
+      rememberProducts,
     }),
     [
       lines,
@@ -413,8 +548,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setQuantity,
       removeItem,
       clearCart,
+      reorder,
       refreshStock,
       withLiveStock,
+      rememberProducts,
     ],
   );
 
@@ -437,9 +574,12 @@ export function useLiveProduct(
   product: DemoProduct,
   options?: { refresh?: boolean },
 ): DemoProduct {
-  const { withLiveStock, refreshStock } = useCart();
+  const { withLiveStock, refreshStock, rememberProducts } = useCart();
   const refresh = options?.refresh ?? false;
   const productId = product.id;
+  useEffect(() => {
+    rememberProducts([product]);
+  }, [product, rememberProducts]);
   useEffect(() => {
     if (refresh) void refreshStock([productId]);
   }, [refresh, productId, refreshStock]);

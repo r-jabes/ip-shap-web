@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import {
   actionError,
   actionOk,
@@ -47,18 +48,29 @@ import {
   adminListBrandsDurable,
   adminListCategoriesDurable,
   adminSetDiscountDurable,
+  adminListProductsDurable,
   adminSetFeaturedDurable,
+  adminSetStatusBulkDurable,
   adminUpsertBrandDurable,
   adminUpsertCategoryDurable,
   adminUpsertProductDurable,
 } from "@/lib/admin/catalogue-durable";
 import { uploadProductImage } from "@/lib/admin/media/upload";
+import { publishIssues } from "@/lib/admin/readiness";
 import type { AdminProductInput } from "@/lib/admin/store";
 import { revalidateCatalogue } from "@/lib/catalogue/cache";
 import { getServerEnv } from "@/lib/env";
+import { queueBackInStockNotices } from "@/lib/notifications/back-in-stock";
+import { processDueNotifications } from "@/lib/notifications/outbox";
+import {
+  eraseCustomerData,
+  parseCustomerPhone,
+} from "@/lib/privacy/customer-data";
 import { primaryCatalogueImage } from "@/lib/product-image";
+import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import { isValidSlug, uniqueSlug } from "@/lib/slug";
 import { adjustStockDurable } from "@/lib/stock/durable";
+import { getRestockStore } from "@/lib/stock/restock-requests";
 
 const SLUG_RULE =
   "Web address names can only use lowercase letters, numbers and hyphens.";
@@ -80,6 +92,20 @@ async function requireSession(
 function refreshAdmin() {
   revalidatePath("/admin", "layout");
   revalidateCatalogue();
+  // After the response is sent: email shoppers waiting for a drink that has just come back.
+  try {
+    after(async () => {
+      try {
+        if ((await queueBackInStockNotices()) > 0) {
+          await processDueNotifications({ limit: 20 });
+        }
+      } catch {
+        // The daily maintenance run retries, so a failure here is never user-visible.
+      }
+    });
+  } catch {
+    // Not inside a request (tests): skip, the daily run covers it.
+  }
 }
 
 function text(formData: FormData, key: string): string {
@@ -102,7 +128,7 @@ export async function adminLoginAction(formData: FormData): Promise<{
   const headerStore = await headers();
   const ip =
     headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const limit = consumeRateLimit(`admin-login:${ip}`, 8, 15 * 60 * 1000);
+  const limit = await consumeRateLimit(`admin-login:${ip}`, 8, 15 * 60 * 1000);
   if (!limit.ok) {
     return { error: GENERIC_AUTH_ERROR };
   }
@@ -158,7 +184,7 @@ export async function inviteAdminAction(
       return actionError("You do not have permission to do that.");
     }
 
-    const limit = consumeRateLimit(
+    const limit = await consumeRateLimit(
       `admin-invite:${session.sub}`,
       10,
       60 * 60 * 1000,
@@ -247,7 +273,7 @@ export async function resendInviteAction(
     const userId = text(formData, "userId");
     if (!userId) return actionError("Member not found.");
 
-    const limit = consumeRateLimit(
+    const limit = await consumeRateLimit(
       `admin-invite:${session.sub}`,
       10,
       60 * 60 * 1000,
@@ -492,6 +518,122 @@ export async function archiveProductAction(
     refreshAdmin();
     revalidatePath(`/product/${product.slug}`);
     return actionOk("Product archived. It is hidden from the shop.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/** Staff messaged a shopper who asked to be told when a drink is back: take them off the list. */
+export async function markRestockContactedAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    await requireSession("products:write");
+    const id = text(formData, "id");
+    const productId = text(formData, "productId");
+    const store = getRestockStore();
+    const waiting = await store.listWaiting({ productId });
+    const target = waiting.filter((request) => request.id === id);
+    if (target.length === 0) return actionOk("That request was already cleared.");
+    await store.markNotified([id], new Date());
+    revalidatePath(`/admin/products/${productId}`);
+    return actionOk("Done. They are off the waiting list.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/** Removes a customer's personal details on request (owner only). The activity log never stores the phone number. */
+export async function eraseCustomerDataAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("admins:manage");
+    const phone = parseCustomerPhone(text(formData, "phone"));
+    if (!phone) return actionError("Enter a valid phone number first.");
+
+    const result = await eraseCustomerData(phone);
+    const client = getSupabaseServiceClient();
+    await client?.from("audit_events").insert({
+      actor_user_id: actorUserId(session),
+      action: "privacy.erase",
+      entity_type: "customer_data",
+      entity_id: null,
+      metadata: { ...result },
+    });
+    revalidatePath("/admin/privacy");
+
+    const left =
+      result.ordersInProgress > 0
+        ? ` ${result.ordersInProgress} order(s) are still in progress and were kept. Come back once they are delivered or cancelled.`
+        : "";
+    return actionOk(
+      `Removed details from ${result.ordersErased} finished order(s) and deleted ${result.requestsDeleted} stock request(s).${left}`,
+    );
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+const BULK_LIMIT = 200;
+
+/** Publish, move to drafts, or archive several products at once from the Products list. */
+export async function bulkProductsAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:write");
+    const intent = text(formData, "intent");
+    const status =
+      intent === "publish"
+        ? "published"
+        : intent === "draft"
+          ? "draft"
+          : intent === "archive"
+            ? "archived"
+            : null;
+    if (!status) return actionError("Choose what to do with the selected products.");
+
+    const ids = [
+      ...new Set(formData.getAll("ids").map((value) => String(value))),
+    ].slice(0, BULK_LIMIT);
+    if (ids.length === 0) return actionError("Select at least one product first.");
+
+    const all = await adminListProductsDurable();
+    const selected = all.filter((product) => ids.includes(product.id));
+    let eligible = selected;
+    const held: string[] = [];
+
+    if (status === "published") {
+      // Never put an unfinished product in front of customers.
+      eligible = selected.filter((product) => {
+        const issues = publishIssues(product);
+        if (issues.length > 0) held.push(`${product.name} (${issues.join(", ").toLowerCase()})`);
+        return issues.length === 0;
+      });
+    }
+
+    const changed = await adminSetStatusBulkDurable(
+      session,
+      eligible.map((product) => product.id),
+      status,
+    );
+    refreshAdmin();
+    revalidatePath("/");
+
+    const verb =
+      status === "published"
+        ? "published"
+        : status === "draft"
+          ? "moved to drafts"
+          : "archived";
+    const base = `${changed} ${changed === 1 ? "product" : "products"} ${verb}.`;
+    if (held.length > 0) {
+      return actionOk(
+        `${base} Not published because something is missing: ${held.slice(0, 3).join("; ")}${held.length > 3 ? ` and ${held.length - 3} more` : ""}.`,
+      );
+    }
+    return actionOk(base);
   } catch (error) {
     return toActionError(error);
   }

@@ -13,7 +13,10 @@ import {
   filterAndSortProducts,
   isStorefrontVisible,
 } from "@/lib/catalogue/filter";
-import type { CatalogueRepository } from "@/lib/catalogue/repository";
+import type {
+  CatalogueIndexEntry,
+  CatalogueRepository,
+} from "@/lib/catalogue/repository";
 
 export type MemoryRepositoryOptions = {
   /** When false, all reads return empty (production fail-closed). */
@@ -53,18 +56,43 @@ export function createMemoryCatalogueRepository(
     },
     async getFeaturedProducts(limit = 4) {
       if (!options.enabled) return [];
-      const featured = products
+      // Only what has been featured on purpose; never an automatic pick.
+      return products
         .filter(
           (row) =>
             isStorefrontVisible(row) &&
             (row as DemoProduct & { isFeatured?: boolean }).isFeatured === true,
         )
-        .sort((a, b) => a.name.localeCompare(b.name));
-      if (featured.length) return featured.slice(0, limit);
-      return filterAndSortProducts(products, { sort: "name_asc" }).slice(
-        0,
-        limit,
-      );
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, limit);
+    },
+    async listIndex(): Promise<CatalogueIndexEntry[]> {
+      if (!options.enabled) return [];
+      return products.filter(isStorefrontVisible).map((product) => ({
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        brandSlug: product.brandSlug,
+        brandName: product.brandName,
+        categorySlug: product.categorySlug,
+        availability: product.availability,
+        status: product.status,
+        price: product.price,
+      }));
+    },
+    async getProductsByIds(ids: string[]) {
+      if (!options.enabled) return [];
+      const byId = new Map(products.map((product) => [product.id, product]));
+      return [...new Set(ids)]
+        .map((id) => byId.get(id))
+        .filter(
+          (product): product is DemoProduct =>
+            !!product && isStorefrontVisible(product),
+        );
+    },
+    async searchProductIds() {
+      // The index is small here; the caller matches text on it directly.
+      return null;
     },
   };
 }

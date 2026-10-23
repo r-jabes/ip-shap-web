@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Returning shoppers without accounts: details remembered on the device (optional, clearable), recent orders with live status, one-tap reorder, saved drinks and recently viewed, order lookup by reference plus phone (rate limited); Saved page and heart links in header, bottom bar and footer
+- Back-in-stock requests: "tell me when it is back" on sold-out products (email or phone, honeypot + rate limits); branded one-time email via the outbox when stock returns; staff see waiting phone numbers on the product page with a WhatsApp button; migration `restock_requests`
+- Admin order WhatsApp button now pre-fills a friendly status message; local numbers (0788…) get the country code
+- Notifications: channel-based outbox with retries, daily maintenance job (`/api/cron/maintenance`), low-stock alert, 3-day hold on unconfirmed orders; all emails go through Resend from `EMAIL_FROM` with the IP SHAP branding
+- Privacy and storage: purge of sent notifications (30 days), answered/old restock requests, stock history and activity log (12 months); owner-only Privacy page to download or remove a customer's details by phone
+- Accessibility: axe-core checks in component tests; saved-button labels fixed
+- Search, reports, activity log, CSV export, bulk actions, print views, shared rate limiting in Supabase (see migrations 20261023*)
 - Hardening: CSP/HSTS (Turnstile/Supabase/Sentry hosts); optional Turnstile; Sentry; `/api/health`; analyze + smoke scripts; security checklist + restore drill docs
 - Search suggest API + SEO (canonical/JSON-LD); crawler-safe age gate; confirmed contact/policies
 - Storefront on published Supabase catalogue; production blocks demo fixtures; catalogue revalidate on publish

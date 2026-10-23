@@ -6,7 +6,7 @@ import {
   adminListAdjustments,
   type StockAdjustmentRecord,
 } from "@/lib/admin/store";
-import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
+import { hasDurableStorage } from "@/lib/supabase/config";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 export async function adjustStockDurable(
@@ -19,7 +19,7 @@ export async function adjustStockDurable(
     expectedQuantity?: number | null;
   },
 ): Promise<StockAdjustmentRecord> {
-  if (!hasSupabaseServiceConfig()) {
+  if (!hasDurableStorage()) {
     return adminAdjustStock(actor, input);
   }
 
@@ -52,7 +52,7 @@ export async function adjustStockDurable(
 export async function listAdjustmentsDurable(
   limit = 25,
 ): Promise<StockAdjustmentRecord[]> {
-  if (!hasSupabaseServiceConfig()) {
+  if (!hasDurableStorage()) {
     return adminListAdjustments(limit);
   }
 
@@ -87,7 +87,7 @@ export async function listAdjustmentsDurable(
 
 /** Call after durable order + items insert — not on confirm/payment. */
 export async function reserveOrderStockDurable(orderId: string): Promise<void> {
-  if (!hasSupabaseServiceConfig()) return;
+  if (!hasDurableStorage()) return;
   const client = getSupabaseServiceClient()!;
   const { error } = await client.rpc("reserve_order_stock", {
     p_order_id: orderId,
@@ -96,7 +96,7 @@ export async function reserveOrderStockDurable(orderId: string): Promise<void> {
 }
 
 export async function restoreOrderStockDurable(orderId: string): Promise<void> {
-  if (!hasSupabaseServiceConfig()) return;
+  if (!hasDurableStorage()) return;
   const client = getSupabaseServiceClient()!;
   const { error } = await client.rpc("restore_order_stock", {
     p_order_id: orderId,

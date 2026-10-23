@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getPublicEnv } from "@/lib/env";
-import { listProductsDurable } from "@/lib/catalogue";
+import { getAllProductSlugs } from "@/lib/catalogue/storefront";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getPublicEnv().NEXT_PUBLIC_APP_URL;
@@ -16,8 +16,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/policies/terms",
   ];
 
-  const products = await listProductsDurable();
-  const productRoutes = products.map((product) => `/product/${product.slug}`);
+  const slugs = await getAllProductSlugs();
+  const productRoutes = slugs.map((slug) => `/product/${slug}`);
 
   return [...staticRoutes, ...productRoutes].map((path) => ({
     url: `${base}${path}`,

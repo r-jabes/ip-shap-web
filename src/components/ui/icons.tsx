@@ -34,6 +34,13 @@ export const SearchIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** Outline by default; pass `fill="currentColor"` for the saved state. */
+export const HeartIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z" />
+  </Icon>
+);
+
 export const BagIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M5.5 8h13l1 12h-15l1-12Z" />

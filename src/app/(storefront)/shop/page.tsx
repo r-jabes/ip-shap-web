@@ -6,16 +6,12 @@ import {
   ProductGridSkeleton,
 } from "@/components/catalogue/ProductGrid";
 import { ShopFilters } from "@/components/catalogue/ShopFilters";
+import { ShopNoResults } from "@/components/catalogue/ShopNoResults";
 import { ShopPagination } from "@/components/catalogue/ShopPagination";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { Container } from "@/components/ui/Container";
-import {
-  getBrandsDurable,
-  getCategoriesDurable,
-  getFilterFacetsDurable,
-  listProductsDurable,
-  paginateProducts,
-} from "@/lib/catalogue";
+import { getCachedCategories } from "@/lib/catalogue/cache";
+import { getShopListing } from "@/lib/catalogue/storefront";
 import { shopMetadata } from "@/lib/seo";
 import {
   buildShopHref,
@@ -35,7 +31,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams;
   const query = parseShopSearchParams(params);
-  const categories = await getCategoriesDurable();
+  const categories = await getCachedCategories();
   const activeCategory =
     query.categories.length === 1
       ? categories.find((category) => category.slug === query.categories[0])
@@ -60,18 +56,15 @@ export default async function ShopPage({
   const params = await searchParams;
   const query = parseShopSearchParams(params);
   const filters = shopQueryToFilters(query);
-  const [allProducts, facets, categories, brands] = await Promise.all([
-    listProductsDurable(filters),
-    getFilterFacetsDurable(filters),
-    getCategoriesDurable(),
-    getBrandsDurable(),
-  ]);
   const {
-    items: products,
+    products,
     page,
     totalPages,
     total,
-  } = paginateProducts(allProducts, query.page);
+    facets,
+    categories,
+    brands,
+  } = await getShopListing(filters, query.page);
 
   const categoryNames = Object.fromEntries(
     categories.map((category) => [category.slug, category.name]),
@@ -156,7 +149,24 @@ export default async function ShopPage({
           </div>
 
           <Suspense fallback={<ProductGridSkeleton />}>
-            <ProductGrid products={products} />
+            <ProductGrid
+              products={products}
+              emptyState={
+                <ShopNoResults
+                  searchText={query.q || undefined}
+                  hasFilters={
+                    query.categories.length > 0 ||
+                    query.brands.length > 0 ||
+                    query.availability !== "all" ||
+                    typeof query.minPrice === "number" ||
+                    typeof query.maxPrice === "number"
+                  }
+                  suggestions={categories
+                    .filter((category) => !query.categories.includes(category.slug))
+                    .slice(0, 8)}
+                />
+              }
+            />
           </Suspense>
 
           <ShopPagination

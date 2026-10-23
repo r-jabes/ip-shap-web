@@ -1,29 +1,63 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
-import { CartProvider, useCart } from "@/components/cart/CartProvider";
-import { CatalogueProvider } from "@/components/catalogue/CatalogueProvider";
-import { CART_STORAGE_KEY } from "@/lib/cart";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { DemoProduct } from "@/domain/catalogue";
+import {
+  CartProvider,
+  useCart,
+  useLiveProduct,
+} from "@/components/cart/CartProvider";
+import {
+  CART_PRODUCTS_STORAGE_KEY,
+  CART_STORAGE_KEY,
+  snapshotProduct,
+} from "@/lib/cart";
 import { listProducts } from "@/lib/catalogue";
 
-function Probe() {
+/** Stands in for the server: answers cart lookups for the given set of sellable products. */
+function mockServer(sellable: DemoProduct[]) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.startsWith("/api/cart/products")) {
+      const ids = decodeURIComponent(url.split("ids=")[1] ?? "").split(",");
+      return new Response(
+        JSON.stringify({
+          products: sellable
+            .filter((product) => ids.includes(product.id))
+            .map(snapshotProduct),
+        }),
+        { status: 200 },
+      );
+    }
+    return new Response(JSON.stringify({ stock: {} }), { status: 200 });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+/** What a product card does: tell the cart about the product it shows. */
+function Probe({ product }: { product: DemoProduct }) {
   const { itemCount, items, notice, hydrated, addItem, setQuantity } =
     useCart();
+  useLiveProduct(product);
   return (
     <div>
       <p data-testid="hydrated">{String(hydrated)}</p>
       <p data-testid="count">{itemCount}</p>
       <p data-testid="rows">{items.length}</p>
       <p data-testid="notice">{notice ?? ""}</p>
-      <button type="button" onClick={() => addItem(listProducts()[0].id, 2)}>
+      <button type="button" onClick={() => addItem(product.id, 2)}>
         add
       </button>
-      <button
-        type="button"
-        onClick={() => setQuantity(listProducts()[0].id, 500)}
-      >
+      <button type="button" onClick={() => setQuantity(product.id, 500)}>
         max
       </button>
     </div>
+  );
+}
+
+async function hydrated() {
+  await waitFor(() =>
+    expect(screen.getByTestId("hydrated")).toHaveTextContent("true"),
   );
 }
 
@@ -31,9 +65,13 @@ describe("CartProvider", () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-  it("prunes stale lines on load so the badge matches what can be shown", async () => {
+  it("removes saved lines the server no longer sells, so the badge matches what can be shown", async () => {
     const [product] = listProducts();
+    mockServer([product]);
     window.localStorage.setItem(
       CART_STORAGE_KEY,
       JSON.stringify([
@@ -48,30 +86,101 @@ describe("CartProvider", () => {
 
     render(
       <CartProvider>
-        <Probe />
+        <Probe product={product} />
       </CartProvider>,
     );
 
+    await hydrated();
     await waitFor(() =>
-      expect(screen.getByTestId("hydrated")).toHaveTextContent("true"),
+      expect(screen.getByTestId("notice")).toHaveTextContent(
+        /no longer available/,
+      ),
     );
     expect(screen.getByTestId("count")).toHaveTextContent("1");
     expect(screen.getByTestId("rows")).toHaveTextContent("1");
-    expect(screen.getByTestId("notice")).toHaveTextContent(
-      /no longer available/,
-    );
     expect(window.localStorage.getItem("ip-shap-demo-cart")).toBeNull();
   });
 
-  it("adds items and clamps quantity", async () => {
+  it("shows a saved cart straight away from the saved product copies", async () => {
+    const [product] = listProducts();
+    const fetchMock = mockServer([product]);
+    window.localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([{ productId: product.id, quantity: 3 }]),
+    );
+    window.localStorage.setItem(
+      CART_PRODUCTS_STORAGE_KEY,
+      JSON.stringify([snapshotProduct(product)]),
+    );
+
     render(
       <CartProvider>
-        <Probe />
+        <div />
+        <ProbeCount />
       </CartProvider>,
     );
-    await waitFor(() =>
-      expect(screen.getByTestId("hydrated")).toHaveTextContent("true"),
+
+    await hydrated();
+    expect(screen.getByTestId("count")).toHaveTextContent("3");
+    // It still confirms with the server in the background.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+  });
+
+  it("fetches products for a cart saved by an older version before showing it", async () => {
+    const [product] = listProducts();
+    mockServer([product]);
+    window.localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([{ productId: product.id, quantity: 2 }]),
     );
+
+    render(
+      <CartProvider>
+        <ProbeCount />
+      </CartProvider>,
+    );
+
+    await hydrated();
+    expect(screen.getByTestId("count")).toHaveTextContent("2");
+  });
+
+  it("keeps the saved cart when the server cannot be reached", async () => {
+    const [product] = listProducts();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+    window.localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([{ productId: product.id, quantity: 1 }]),
+    );
+    window.localStorage.setItem(
+      CART_PRODUCTS_STORAGE_KEY,
+      JSON.stringify([snapshotProduct(product)]),
+    );
+
+    render(
+      <CartProvider>
+        <ProbeCount />
+      </CartProvider>,
+    );
+
+    await hydrated();
+    expect(screen.getByTestId("count")).toHaveTextContent("1");
+    expect(window.localStorage.getItem(CART_STORAGE_KEY)).toContain(product.id);
+  });
+
+  it("adds items and clamps quantity", async () => {
+    const [product] = listProducts();
+    mockServer([product]);
+    render(
+      <CartProvider>
+        <Probe product={product} />
+      </CartProvider>,
+    );
+    await hydrated();
 
     act(() => screen.getByText("add").click());
     expect(screen.getByTestId("count")).toHaveTextContent("2");
@@ -82,17 +191,18 @@ describe("CartProvider", () => {
 
   it("never lets a shopper put more in the cart than is in stock", async () => {
     const [base] = listProducts();
-    const limited = { ...base, availability: "in_stock" as const, stockQuantity: 3 };
+    const limited = {
+      ...base,
+      availability: "in_stock" as const,
+      stockQuantity: 3,
+    };
+    mockServer([limited]);
     render(
-      <CatalogueProvider products={[limited]} categories={[]} brands={[]}>
-        <CartProvider>
-          <Probe />
-        </CartProvider>
-      </CatalogueProvider>,
+      <CartProvider>
+        <Probe product={limited} />
+      </CartProvider>,
     );
-    await waitFor(() =>
-      expect(screen.getByTestId("hydrated")).toHaveTextContent("true"),
-    );
+    await hydrated();
 
     act(() => screen.getByText("add").click()); // 2
     act(() => screen.getByText("add").click()); // would be 4, capped at 3
@@ -101,16 +211,9 @@ describe("CartProvider", () => {
     expect(screen.getByTestId("count")).toHaveTextContent("3");
   });
 
-  it("stays empty after clearing even when the catalogue is re-supplied by the server", async () => {
+  it("stays empty after clearing even when the page hands the cart a fresh copy of the product", async () => {
     const [base] = listProducts();
-    const tree = (products: typeof base[]) => (
-      <CatalogueProvider products={products} categories={[]} brands={[]}>
-        <CartProvider>
-          <Clearer />
-          <Probe />
-        </CartProvider>
-      </CatalogueProvider>
-    );
+    mockServer([base]);
     function Clearer() {
       const { clearCart } = useCart();
       return (
@@ -119,20 +222,34 @@ describe("CartProvider", () => {
         </button>
       );
     }
-
-    const { rerender } = render(tree([base]));
-    await waitFor(() =>
-      expect(screen.getByTestId("hydrated")).toHaveTextContent("true"),
+    const tree = (product: DemoProduct) => (
+      <CartProvider>
+        <Clearer />
+        <Probe product={product} />
+      </CartProvider>
     );
+
+    const { rerender } = render(tree(base));
+    await hydrated();
     act(() => screen.getByText("add").click());
     expect(screen.getByTestId("count")).toHaveTextContent("2");
 
-    // A server refresh hands the provider a brand-new catalogue array in the same commit as a clear.
+    // A server refresh hands the provider a brand-new product object in the same commit as a clear.
     act(() => {
       screen.getByText("clear").click();
-      rerender(tree([{ ...base }]));
+      rerender(tree({ ...base }));
     });
     expect(screen.getByTestId("count")).toHaveTextContent("0");
     expect(window.localStorage.getItem(CART_STORAGE_KEY)).toBe("[]");
   });
 });
+
+function ProbeCount() {
+  const { itemCount, hydrated: ready } = useCart();
+  return (
+    <div>
+      <p data-testid="hydrated">{String(ready)}</p>
+      <p data-testid="count">{itemCount}</p>
+    </div>
+  );
+}

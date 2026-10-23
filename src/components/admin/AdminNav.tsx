@@ -16,7 +16,14 @@ const links = [
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/brands", label: "Brands" },
   { href: "/admin/stock", label: "Stock" },
+  { href: "/admin/reports", label: "Reports", permission: "orders:manage" as const },
   { href: "/admin/import", label: "Import", permission: "import:run" as const },
+  { href: "/admin/activity", label: "Activity", permission: "audit:read" as const },
+  {
+    href: "/admin/privacy",
+    label: "Privacy",
+    permission: "admins:manage" as const,
+  },
   {
     href: "/admin/team",
     label: "Team",
