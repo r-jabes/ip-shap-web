@@ -125,8 +125,9 @@ export function ProductCard({
         </div>
       </div>
 
+      {/* The catalogue copy, not the live-stock one: the quick view applies live stock itself. */}
       <ProductQuickView
-        product={product}
+        product={catalogueProduct}
         open={quickOpen}
         onClose={() => setQuickOpen(false)}
       />

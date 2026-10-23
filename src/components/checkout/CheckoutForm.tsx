@@ -170,7 +170,7 @@ export function CheckoutForm({
       <form
       action={formAction}
       onSubmit={rememberDetails}
-      className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
+      className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
       noValidate
     >
         {blockedByStock ? (
@@ -182,7 +182,7 @@ export function CheckoutForm({
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <input type="hidden" name="channel" value={channel} />
 
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-8">
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
             <h2 className="font-display text-2xl">Contact</h2>
             <p className="mt-1 text-sm text-ink-muted">
@@ -420,7 +420,7 @@ export function CheckoutForm({
           ) : null}
         </div>
 
-        <aside className="h-fit rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-6 shadow-[6px_6px_0_0_var(--brand-charcoal)] lg:sticky lg:top-[calc(var(--header-h)+1.25rem)]">
+        <aside className="h-fit min-w-0 rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-5 shadow-[4px_4px_0_0_var(--brand-charcoal)] sm:p-6 sm:shadow-[6px_6px_0_0_var(--brand-charcoal)] lg:sticky lg:top-[calc(var(--header-h)+1.25rem)]">
           <h2 className="font-display text-2xl">Order summary</h2>
           <ul className="mt-5 space-y-3 border-b-2 border-brand-charcoal/10 pb-4 text-sm">
             {lines.map(({ product, quantity }) => (
@@ -463,7 +463,7 @@ export function CheckoutForm({
               </dd>
             </div>
           </dl>
-          <div className="mt-6">
+          <div className="mt-6 max-w-full overflow-x-auto">
             <TurnstileField siteKey={turnstileSiteKey} />
           </div>
           <Button

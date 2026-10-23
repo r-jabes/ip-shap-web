@@ -153,7 +153,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const rememberProducts = useCallback((products: DemoProduct[]) => {
     let cartChanged = false;
     for (const product of products) {
-      if (directoryRef.current.get(product.id) === product) continue;
+      const known = directoryRef.current.get(product.id);
+      // Same data means nothing to learn. Comparing by content (not identity) matters: a fresh
+      // copy of an unchanged product must never trigger a re-render, or pages that remember
+      // products from an effect would re-render forever once the product is in the cart.
+      if (
+        known === product ||
+        (known && JSON.stringify(known) === JSON.stringify(product))
+      ) {
+        continue;
+      }
       directoryRef.current.set(product.id, product);
       if (linesRef.current.some((line) => line.productId === product.id)) {
         cartChanged = true;

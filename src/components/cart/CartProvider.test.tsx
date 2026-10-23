@@ -242,6 +242,64 @@ describe("CartProvider", () => {
     expect(screen.getByTestId("count")).toHaveTextContent("0");
     expect(window.localStorage.getItem(CART_STORAGE_KEY)).toBe("[]");
   });
+
+  it("does not re-render forever when a product in the cart is shown by a card that hands its live copy to a child", async () => {
+    // Regression: the shop page froze (navigation never completed) because a card passed its
+    // live-stock copy to the quick view, which re-registered the "new" object after every render.
+    const [base] = listProducts();
+    mockServer([base]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.startsWith("/api/cart/products")) {
+          return new Response(
+            JSON.stringify({ products: [snapshotProduct(base)] }),
+            { status: 200 },
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            stock: { [base.id]: { availability: "in_stock", quantity: 5 } },
+          }),
+          { status: 200 },
+        );
+      }),
+    );
+    window.localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([{ productId: base.id, quantity: 1 }]),
+    );
+    window.localStorage.setItem(
+      CART_PRODUCTS_STORAGE_KEY,
+      JSON.stringify([snapshotProduct(base)]),
+    );
+    let renders = 0;
+    function Child({ product }: { product: DemoProduct }) {
+      renders += 1;
+      // Fail fast instead of hanging the test run if the loop ever comes back.
+      if (renders > 200) throw new Error("render loop");
+      useLiveProduct(product);
+      return null;
+    }
+    function Card({ product }: { product: DemoProduct }) {
+      const live = useLiveProduct(product);
+      // Passing the live copy (a new object whenever live stock is known) used to start the loop.
+      return <Child product={live} />;
+    }
+
+    render(
+      <CartProvider>
+        <ProbeCount />
+        <Card product={base} />
+      </CartProvider>,
+    );
+    await hydrated();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    expect(renders).toBeLessThan(30);
+  });
 });
 
 function ProbeCount() {

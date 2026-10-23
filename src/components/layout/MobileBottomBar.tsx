@@ -13,7 +13,7 @@ import {
 import { chatHref } from "@/lib/site-config";
 
 const itemClass =
-  "flex h-full flex-1 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-semibold transition-colors duration-[var(--motion-fast)] active:bg-paper-2";
+  "flex h-full min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-semibold transition-colors duration-[var(--motion-fast)] active:bg-paper-2";
 
 /** Thumb-reach navigation for phones. Hidden from `lg` up; the page reserves space for it. */
 export function MobileBottomBar() {

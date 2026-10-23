@@ -36,7 +36,7 @@ export function CartDrawer() {
       onClose={closeCart}
       side="right"
       label="Shopping cart"
-      panelClassName="flex h-dvh w-screen max-w-[28rem] flex-col bg-brand-warm-white text-brand-charcoal shadow-[var(--shadow-overlay)] sm:rounded-l-[var(--radius-panel)]"
+      panelClassName="flex h-dvh w-full max-w-[28rem] flex-col bg-brand-warm-white text-brand-charcoal shadow-[var(--shadow-overlay)] sm:rounded-l-[var(--radius-panel)]"
     >
       <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
         <h2 className="font-display flex items-baseline gap-3 text-2xl">
