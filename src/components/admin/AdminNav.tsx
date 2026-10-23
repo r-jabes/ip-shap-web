@@ -10,7 +10,7 @@ import { roleHasPermission, type AdminRole } from "@/lib/admin/roles";
 
 const links = [
   { href: "/admin", label: "Dashboard", exact: true },
-  { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/orders", label: "Orders", badge: "orders" as const },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/featured", label: "Featured" },
   { href: "/admin/categories", label: "Categories" },
@@ -29,14 +29,33 @@ function isActive(pathname: string, href: string, exact?: boolean) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function OrdersBadge({ count, active }: { count: number; active: boolean }) {
+  if (count <= 0) return null;
+  const label = count > 99 ? "99+" : String(count);
+  return (
+    <span
+      className={`ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[0.65rem] font-bold tabular leading-none ${
+        active
+          ? "bg-brand-burnt-orange text-brand-charcoal"
+          : "bg-brand-burnt-orange text-brand-charcoal"
+      }`}
+      aria-label={`${count} new ${count === 1 ? "order" : "orders"}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 function NavLinks({
   role,
   pathname,
+  newOrderCount,
   onNavigate,
   className = "",
 }: {
   role: AdminRole;
   pathname: string;
+  newOrderCount: number;
   onNavigate?: () => void;
   className?: string;
 }) {
@@ -51,6 +70,8 @@ function NavLinks({
           return null;
         }
         const active = isActive(pathname, link.href, "exact" in link);
+        const showOrdersBadge =
+          "badge" in link && link.badge === "orders" && newOrderCount > 0;
         return (
           <li key={link.href}>
             <Link
@@ -64,6 +85,9 @@ function NavLinks({
               }`}
             >
               {link.label}
+              {showOrdersBadge ? (
+                <OrdersBadge count={newOrderCount} active={active} />
+              ) : null}
             </Link>
           </li>
         );
@@ -87,7 +111,13 @@ function UtilityActions({ className = "" }: { className?: string }) {
   );
 }
 
-export function AdminNav({ role }: { role: AdminRole }) {
+export function AdminNav({
+  role,
+  newOrderCount = 0,
+}: {
+  role: AdminRole;
+  newOrderCount?: number;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -107,17 +137,16 @@ export function AdminNav({ role }: { role: AdminRole }) {
 
   return (
     <nav aria-label="Admin" className="w-full">
-      {/* Desktop */}
       <div className="hidden items-center gap-2 md:flex">
         <NavLinks
           role={role}
           pathname={pathname}
+          newOrderCount={newOrderCount}
           className="flex flex-wrap items-center gap-1.5"
         />
         <UtilityActions className="ml-auto flex flex-wrap items-center gap-2" />
       </div>
 
-      {/* Mobile */}
       <div className="md:hidden">
         <button
           type="button"
@@ -128,6 +157,12 @@ export function AdminNav({ role }: { role: AdminRole }) {
         >
           {open ? <CloseIcon size={18} /> : <MenuIcon size={18} />}
           {open ? "Close" : "Menu"}
+          {!open && newOrderCount > 0 ? (
+            <span
+              className="ml-1 inline-flex h-2.5 w-2.5 rounded-full bg-brand-burnt-orange"
+              aria-hidden="true"
+            />
+          ) : null}
         </button>
 
         {open ? (
@@ -138,6 +173,7 @@ export function AdminNav({ role }: { role: AdminRole }) {
             <NavLinks
               role={role}
               pathname={pathname}
+              newOrderCount={newOrderCount}
               onNavigate={() => setOpen(false)}
               className="flex flex-col gap-1"
             />

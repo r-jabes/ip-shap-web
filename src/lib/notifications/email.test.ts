@@ -77,12 +77,14 @@ describe("sendNewOrderStaffEmail", () => {
       subject: string;
       html: string;
       text: string;
+      attachments?: Array<{ content_id?: string }>;
     };
     expect(body.from).toBe("IP SHAP Orders <orders@example.com>");
     expect(body.subject).toContain("IP SHAP · New order");
     expect(body.html).toContain("THE IP SHAP BUSINESS LTD");
-    expect(body.html).toContain("/branding/main-logo-reversed.png");
+    expect(body.html).toContain("cid:ipshap-logo");
     expect(body.text).toContain("Open in admin");
+    expect(body.attachments?.[0]?.content_id).toBe("ipshap-logo");
   });
 });
 

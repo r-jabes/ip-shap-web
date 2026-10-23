@@ -7,9 +7,11 @@ const ROLE_LABEL = { owner: "Owner", manager: "Manager", staff: "Staff" } as con
 
 export function AdminShell({
   session,
+  newOrderCount = 0,
   children,
 }: {
   session: AdminSession;
+  newOrderCount?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -26,7 +28,7 @@ export function AdminShell({
                 </p>
               </div>
             </div>
-            <AdminNav role={session.role} />
+            <AdminNav role={session.role} newOrderCount={newOrderCount} />
           </div>
         </header>
         <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:px-6 sm:py-10">

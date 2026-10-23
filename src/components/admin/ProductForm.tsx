@@ -5,10 +5,12 @@ import { saveProductAction, setDiscountAction } from "@/app/admin/actions";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdvancedSection } from "@/components/admin/AdvancedSection";
+import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/Field";
 import type { DemoProduct } from "@/domain/catalogue";
 import { applyDiscount, impliedDiscountPercent } from "@/lib/admin/discount";
 import { formatRwf } from "@/lib/money";
+import { primaryCatalogueImage } from "@/lib/product-image";
 
 function regularPriceOf(product?: DemoProduct): number | undefined {
   if (!product) return undefined;
@@ -74,7 +76,7 @@ export function ProductModal({
       description={
         editing
           ? product.name
-          : "Only the name, brand and price are needed. New products start as drafts, hidden from the shop."
+          : "Add a name, brand, price and photo. Products without a photo stay as drafts."
       }
       width="lg"
       defaultOpen={defaultOpen}
@@ -109,10 +111,14 @@ function ProductFormBody({
   const [discount, setDiscount] = useState(
     discountOf(product) ? String(discountOf(product)) : "",
   );
-  const status =
+  const [status, setStatus] = useState(
     product?.status === "published" || product?.status === "archived"
       ? product.status
-      : "draft";
+      : "draft",
+  );
+  const [pickedImage, setPickedImage] = useState(false);
+  const currentImage = primaryCatalogueImage(product?.images ?? []);
+  const hasImage = !!currentImage || pickedImage;
 
   return (
     <ActionForm
@@ -120,12 +126,12 @@ function ProductFormBody({
       submitLabel={product ? "Save changes" : "Add product"}
       onDone={onDone}
       onCancel={onDone}
-      className="grid gap-6"
+      className="grid gap-6 text-left"
     >
       {product ? <input type="hidden" name="id" value={product.id} /> : null}
 
       <section className="grid gap-4">
-        <h3 className="font-display text-lg">Basics</h3>
+        <h3 className="font-display text-left text-lg">Basics</h3>
         <Field
           id="product-name"
           label="Product name"
@@ -195,7 +201,38 @@ function ProductFormBody({
       </section>
 
       <section className="grid gap-4 border-t border-brand-charcoal/10 pt-5">
-        <h3 className="font-display text-lg">Price</h3>
+        <h3 className="font-display text-left text-lg">Photo</h3>
+        <p className="text-left text-sm text-ink-muted">
+          A product cannot go live without a photo. Without one, it stays as a
+          draft.
+        </p>
+        <div className="w-32 overflow-hidden rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15">
+          <ProductImageFrame
+            image={currentImage}
+            alt={currentImage?.alt ?? product?.name ?? "Product"}
+            emptyLabel="No image yet"
+          />
+        </div>
+        <Field
+          id="product-image"
+          label={currentImage ? "Replace photo" : "Add photo"}
+          hint="JPEG, PNG or WebP, up to 10 MB."
+        >
+          <Input
+            id="product-image"
+            name="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) =>
+              setPickedImage(!!event.target.files?.[0])
+            }
+          />
+        </Field>
+        <input type="hidden" name="imageAlt" value={product?.name ?? ""} />
+      </section>
+
+      <section className="grid gap-4 border-t border-brand-charcoal/10 pt-5">
+        <h3 className="font-display text-left text-lg">Price</h3>
         <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
           <Field
             id="product-price"
@@ -237,7 +274,7 @@ function ProductFormBody({
       </section>
 
       <section className="grid gap-4 border-t border-brand-charcoal/10 pt-5">
-        <h3 className="font-display text-lg">Stock</h3>
+        <h3 className="font-display text-left text-lg">Stock</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             id="product-availability"
@@ -277,18 +314,36 @@ function ProductFormBody({
       </section>
 
       <section className="grid gap-4 border-t border-brand-charcoal/10 pt-5">
-        <h3 className="font-display text-lg">Visibility</h3>
+        <h3 className="font-display text-left text-lg">Visibility</h3>
         <Field
           id="product-status"
           label="Status"
           hint="Draft is hidden from the shop. Published is live. Archived hides it and removes it from the main list."
         >
-          <Select id="product-status" name="status" defaultValue={status}>
+          <Select
+            id="product-status"
+            name="status"
+            value={status}
+            onChange={(event) =>
+              setStatus(
+                event.target.value as "draft" | "published" | "archived",
+              )
+            }
+          >
             <option value="draft">Draft (hidden)</option>
             <option value="published">Published (live)</option>
             <option value="archived">Archived</option>
           </Select>
         </Field>
+        {status === "published" && !hasImage ? (
+          <p
+            className="rounded-2xl border border-amber-600/40 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900"
+            role="status"
+          >
+            This product has no photo yet. Saving will keep it as a draft until
+            you add one.
+          </p>
+        ) : null}
         <div className="space-y-1">
           <Checkbox
             name="isProvisional"

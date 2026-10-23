@@ -1,7 +1,10 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { getPublicEnv, getServerEnv } from "@/lib/env";
 import {
   brandedFromAddress,
   buildNewOrderStaffEmail,
+  ORDER_EMAIL_LOGO_CID,
 } from "@/lib/notifications/templates/new-order";
 import type { StoredOrder } from "@/lib/orders/store";
 
@@ -15,6 +18,35 @@ function parseRecipients(raw: string | undefined): string[] {
     .split(",")
     .map((part) => part.trim())
     .filter((part) => part.includes("@"));
+}
+
+async function loadLogoAttachment(): Promise<{
+  filename: string;
+  content: string;
+  contentId: string;
+} | null> {
+  try {
+    const filePath = path.join(
+      process.cwd(),
+      "public",
+      "branding",
+      "main-logo-reversed.png",
+    );
+    const bytes = await readFile(filePath);
+    return {
+      filename: "ipshap-logo.png",
+      content: bytes.toString("base64"),
+      contentId: ORDER_EMAIL_LOGO_CID,
+    };
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "order_email_logo_read_error",
+        message: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    return null;
+  }
 }
 
 /**
@@ -38,7 +70,12 @@ export async function sendNewOrderStaffEmail(
 
   const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const adminUrl = `${appUrl}/admin/orders/${order.id}`;
-  const logoUrl = `${appUrl}/branding/main-logo-reversed.png`;
+  const logoAttachment = await loadLogoAttachment();
+  // Inline CID so Gmail/Outlook do not depend on fetching the live site (which
+  // often shows a broken image when NEXT_PUBLIC_APP_URL is wrong or blocked).
+  const logoUrl = logoAttachment
+    ? `cid:${ORDER_EMAIL_LOGO_CID}`
+    : `${appUrl}/branding/main-logo-reversed.png`;
   const content = buildNewOrderStaffEmail({
     order,
     adminUrl,
@@ -62,6 +99,17 @@ export async function sendNewOrderStaffEmail(
         headers: {
           "X-Entity-Ref-ID": order.id,
         },
+        ...(logoAttachment
+          ? {
+              attachments: [
+                {
+                  filename: logoAttachment.filename,
+                  content: logoAttachment.content,
+                  content_id: logoAttachment.contentId,
+                },
+              ],
+            }
+          : {}),
       }),
     });
     if (!response.ok) {

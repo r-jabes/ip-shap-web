@@ -54,9 +54,13 @@ export type NewOrderEmailContent = {
  * Branded staff alert for a newly placed order.
  * HTML is table-based for Outlook / Gmail / Apple Mail compatibility.
  */
+/** Content-ID used when the logo is attached inline (cid:…). */
+export const ORDER_EMAIL_LOGO_CID = "ipshap-logo";
+
 export function buildNewOrderStaffEmail(input: {
   order: StoredOrder;
   adminUrl: string;
+  /** Prefer a cid: URL so the logo is not fetched from the live site. */
   logoUrl: string;
   appUrl: string;
 }): NewOrderEmailContent {

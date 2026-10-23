@@ -13,7 +13,7 @@ Operators sign in at **`/admin/login`** with Supabase Auth email/password (must 
 
 **Password reset:** `/admin/forgot-password` uses Supabase Auth email. In Supabase → Authentication → URL configuration, allow redirect `https://your-domain/admin/reset-password` (and staging URL).
 
-**Team invites:** invite emails send people to `${NEXT_PUBLIC_APP_URL}/admin/accept-invite`. In Supabase → Authentication → URL configuration:
+**Team invites:** invite emails are sent by **Supabase Auth SMTP**, not by Resend (Resend is only for new-order staff alerts). They will not appear in the Resend dashboard. Invites send people to `${NEXT_PUBLIC_APP_URL}/admin/accept-invite`. In Supabase → Authentication → URL configuration:
 
 - set **Site URL** to the deployed site (for example `https://staging.the-ipshap.com`), never `http://localhost:3000`;
 - add `https://your-domain/admin/accept-invite` and `https://your-domain/admin/reset-password` to **Redirect URLs**;

@@ -14,6 +14,7 @@ import { TurnstileField } from "@/components/security/TurnstileField";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { WhatsAppIcon } from "@/components/ui/icons";
+import { InlineToast } from "@/components/ui/InlineToast";
 
 type Line = { product: DemoProduct; quantity: number };
 
@@ -41,6 +42,22 @@ export function CheckoutForm({
   const [channel, setChannel] = useState<"whatsapp_assisted" | "online_payment">(
     "whatsapp_assisted",
   );
+  // Controlled so React 19's form reset after the action does not wipe the user's input.
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [deliveryDistrict, setDeliveryDistrict] = useState("");
+  const [deliverySector, setDeliverySector] = useState("");
+  const [deliveryCell, setDeliveryCell] = useState("");
+  const [deliveryVillage, setDeliveryVillage] = useState("");
+  const [deliveryDirections, setDeliveryDirections] = useState("");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+
+  const toastMessage =
+    state.error ??
+    (state.fieldErrors
+      ? Object.values(state.fieldErrors)[0]
+      : undefined);
 
   const subtotal = useMemo(
     () =>
@@ -78,7 +95,9 @@ export function CheckoutForm({
   }
 
   return (
-    <form
+    <>
+      <InlineToast message={toastMessage} />
+      <form
       action={formAction}
       className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
       noValidate
@@ -105,6 +124,8 @@ export function CheckoutForm({
                   required
                   maxLength={200}
                   autoComplete="name"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
                   aria-invalid={fieldErrors.customerName ? true : undefined}
                   aria-describedby={
                     fieldErrors.customerName ? "customerName-error" : undefined
@@ -124,6 +145,8 @@ export function CheckoutForm({
                   maxLength={20}
                   autoComplete="tel"
                   placeholder="+2507…"
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
                   aria-invalid={fieldErrors.customerPhone ? true : undefined}
                   aria-describedby={
                     fieldErrors.customerPhone
@@ -138,6 +161,8 @@ export function CheckoutForm({
                   name="customerNotes"
                   maxLength={2000}
                   rows={3}
+                  value={customerNotes}
+                  onChange={(event) => setCustomerNotes(event.target.value)}
                 />
               </Field>
             </div>
@@ -189,6 +214,10 @@ export function CheckoutForm({
                     name="deliveryDistrict"
                     maxLength={120}
                     autoComplete="address-level2"
+                    value={deliveryDistrict}
+                    onChange={(event) =>
+                      setDeliveryDistrict(event.target.value)
+                    }
                   />
                 </Field>
                 <Field id="deliverySector" label="Sector">
@@ -196,16 +225,26 @@ export function CheckoutForm({
                     id="deliverySector"
                     name="deliverySector"
                     maxLength={120}
+                    value={deliverySector}
+                    onChange={(event) => setDeliverySector(event.target.value)}
                   />
                 </Field>
                 <Field id="deliveryCell" label="Cell">
-                  <Input id="deliveryCell" name="deliveryCell" maxLength={120} />
+                  <Input
+                    id="deliveryCell"
+                    name="deliveryCell"
+                    maxLength={120}
+                    value={deliveryCell}
+                    onChange={(event) => setDeliveryCell(event.target.value)}
+                  />
                 </Field>
                 <Field id="deliveryVillage" label="Village">
                   <Input
                     id="deliveryVillage"
                     name="deliveryVillage"
                     maxLength={120}
+                    value={deliveryVillage}
+                    onChange={(event) => setDeliveryVillage(event.target.value)}
                   />
                 </Field>
               </div>
@@ -215,6 +254,10 @@ export function CheckoutForm({
                   name="deliveryDirections"
                   maxLength={500}
                   rows={2}
+                  value={deliveryDirections}
+                  onChange={(event) =>
+                    setDeliveryDirections(event.target.value)
+                  }
                 />
               </Field>
               <Field
@@ -226,6 +269,10 @@ export function CheckoutForm({
                   name="deliveryInstructions"
                   maxLength={500}
                   rows={2}
+                  value={deliveryInstructions}
+                  onChange={(event) =>
+                    setDeliveryInstructions(event.target.value)
+                  }
                 />
               </Field>
             </div>
@@ -340,6 +387,7 @@ export function CheckoutForm({
           </p>
         </aside>
     </form>
+    </>
   );
 }
 

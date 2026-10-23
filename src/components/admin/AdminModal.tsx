@@ -78,17 +78,19 @@ export function AdminModal({
         onClick={(event) => {
           if (event.target === event.currentTarget) setOpen(false);
         }}
-        className={`fixed inset-0 m-auto h-fit max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] ${maxWidth} overflow-y-auto rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-0 text-brand-charcoal shadow-[6px_6px_0_0_var(--brand-charcoal)] backdrop:bg-brand-charcoal/60`}
+        className={`fixed inset-0 m-auto h-fit max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] ${maxWidth} overflow-y-auto rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-0 text-left text-brand-charcoal shadow-[6px_6px_0_0_var(--brand-charcoal)] backdrop:bg-brand-charcoal/60`}
       >
         {open ? (
-          <div className="p-5 sm:p-7">
+          <div className="p-5 text-left sm:p-7">
             <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 id={titleId} className="font-display text-2xl">
+              <div className="min-w-0 text-left">
+                <h2 id={titleId} className="font-display text-left text-2xl">
                   {title}
                 </h2>
                 {description ? (
-                  <p className="mt-1.5 text-sm text-ink-muted">{description}</p>
+                  <p className="mt-1.5 text-left text-sm text-ink-muted">
+                    {description}
+                  </p>
                 ) : null}
               </div>
               <button

@@ -56,6 +56,7 @@ import { uploadProductImage } from "@/lib/admin/media/upload";
 import type { AdminProductInput } from "@/lib/admin/store";
 import { revalidateCatalogue } from "@/lib/catalogue/cache";
 import { getServerEnv } from "@/lib/env";
+import { primaryCatalogueImage } from "@/lib/product-image";
 import { isValidSlug, uniqueSlug } from "@/lib/slug";
 import { adjustStockDurable } from "@/lib/stock/durable";
 
@@ -184,7 +185,7 @@ export async function inviteAdminAction(
     }
 
     refreshAdmin();
-    return actionOk(`Invite sent to ${email}.`);
+    return actionOk(result.message ?? `Invite sent to ${email}.`);
   } catch (error) {
     return toActionError(error);
   }
@@ -344,6 +345,17 @@ export async function saveProductAction(
       return actionError("Choose a valid status.");
     }
 
+    const imageFile = formData.get("image");
+    const willUpload =
+      imageFile instanceof File && imageFile.size > 0;
+    const hasExistingImage = !!primaryCatalogueImage(existing?.images ?? []);
+    let status = statusRaw as AdminProductInput["status"];
+    let heldAsDraftForImage = false;
+    if (status === "published" && !willUpload && !hasExistingImage) {
+      status = "draft";
+      heldAsDraftForImage = true;
+    }
+
     // Web address name: generated from the name unless someone chose their own.
     let slug = text(formData, "slug").toLowerCase();
     if (slug) {
@@ -366,7 +378,7 @@ export async function saveProductAction(
       categorySlug: text(formData, "categorySlug") || undefined,
       brandSlug: brand.brandSlug,
       brandName: brand.brandName,
-      status: statusRaw as AdminProductInput["status"],
+      status,
       availability,
       isProvisional: formData.get("isProvisional") === "on",
       sku: text(formData, "sku") || undefined,
@@ -374,9 +386,50 @@ export async function saveProductAction(
       stockQuantity,
     };
 
-    const product = await adminUpsertProductDurable(session, input);
+    let product = await adminUpsertProductDurable(session, input);
+
+    if (willUpload && imageFile instanceof File) {
+      try {
+        const buffer = new Uint8Array(await imageFile.arrayBuffer());
+        await uploadProductImage({
+          productId: product.id,
+          bytes: buffer,
+          alt: text(formData, "imageAlt") || product.name,
+          role: "catalogue_primary",
+        });
+      } catch (error) {
+        if (status === "published") {
+          product = await adminUpsertProductDurable(session, {
+            ...input,
+            id: product.id,
+            status: "draft",
+          });
+          refreshAdmin();
+          revalidatePath(`/product/${product.slug}`);
+          return actionOk(
+            "Product saved as a draft — the image failed to upload. Fix the image, then publish.",
+          );
+        }
+        console.error(
+          JSON.stringify({
+            type: "admin_product_image_with_save_error",
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+        refreshAdmin();
+        return actionOk(
+          "Product saved, but the image failed to upload. Try uploading it again.",
+        );
+      }
+    }
+
     refreshAdmin();
     revalidatePath(`/product/${product.slug}`);
+    if (heldAsDraftForImage) {
+      return actionOk(
+        "Saved as a draft. Add a product photo before you publish it.",
+      );
+    }
     return actionOk(id ? "Product saved." : "Product added.");
   } catch (error) {
     return toActionError(error);

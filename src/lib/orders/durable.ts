@@ -408,6 +408,22 @@ export async function getOrderByReferenceDurable(
   return (await fetchOrderBundle(data.id as string)) ?? undefined;
 }
 
+/** New orders waiting for staff to confirm — used for the admin nav badge. */
+export async function countAwaitingOrdersDurable(): Promise<number> {
+  if (!isDurableOrdersEnabled()) {
+    return listOrders().filter(
+      (order) => order.fulfilmentStatus === "awaiting_confirmation",
+    ).length;
+  }
+  const client = getSupabaseServiceClient()!;
+  const { count, error } = await client
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("fulfilment_status", "awaiting_confirmation");
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 export async function listOrdersDurable(): Promise<StoredOrder[]> {
   if (!isDurableOrdersEnabled()) return listOrders();
   const client = getSupabaseServiceClient()!;

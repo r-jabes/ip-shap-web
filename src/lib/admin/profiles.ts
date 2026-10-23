@@ -6,6 +6,7 @@ import {
   type MemberStatus,
 } from "@/lib/admin/team-rules";
 import { getPublicEnv } from "@/lib/env";
+import { getSupabaseAnonClient } from "@/lib/supabase/anon";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type AdminProfileRow = {
@@ -32,7 +33,7 @@ type ProfileQueryRow = {
 };
 
 export type ProfileResult =
-  | { ok: true; userId: string }
+  | { ok: true; userId: string; message?: string }
   | { ok: false; error: string };
 
 /** Where invite emails send people. Must be in the Supabase Auth redirect allow-list. */
@@ -143,22 +144,35 @@ export async function inviteAdminByEmail(input: {
     return { ok: false, error: "Enter a valid email address." };
   }
 
+  // Invites are emailed by Supabase Auth (its SMTP), not by Resend.
+  // Resend is only used for new-order staff alerts.
   const { data: invited, error: inviteError } =
     await client.auth.admin.inviteUserByEmail(email, {
       redirectTo: inviteRedirectUrl(),
     });
 
   let userId = invited?.user?.id;
+  let alreadyHadAccount = false;
+
   if (inviteError || !userId) {
-    // The person may already have an account — attach admin access to it.
+    // They may already have an Auth account (previous invite, password reset, etc.).
+    // In that case Supabase will not send another invite email — we attach access
+    // and email them a password link so they still hear from us.
     const authUsers = await loadAuthUsers(client);
     const existing = Array.from(authUsers.values()).find(
       (user) => user.email?.toLowerCase() === email,
     );
     if (!existing) {
+      console.error(
+        JSON.stringify({
+          type: "admin_invite_supabase_error",
+          message: inviteError?.message ?? "Invite failed.",
+        }),
+      );
       return { ok: false, error: inviteError?.message ?? "Invite failed." };
     }
     userId = existing.id;
+    alreadyHadAccount = true;
   }
 
   const { data: existingProfile } = await client
@@ -175,12 +189,49 @@ export async function inviteAdminByEmail(input: {
     };
   }
 
-  return upsertProfile({
+  const saved = await upsertProfile({
     userId,
     role: input.role,
     displayName: input.displayName,
     createdBy: input.invitedByUserId,
   });
+  if (!saved.ok) return saved;
+
+  if (alreadyHadAccount) {
+    const anon = getSupabaseAnonClient();
+    const { error: recoveryError } = anon
+      ? await anon.auth.resetPasswordForEmail(email, {
+          redirectTo: inviteRedirectUrl(),
+        })
+      : { error: { message: "Anon client not configured" } };
+    if (recoveryError) {
+      console.error(
+        JSON.stringify({
+          type: "admin_invite_recovery_email_error",
+          message: recoveryError.message,
+        }),
+      );
+      return {
+        ok: true,
+        userId,
+        message:
+          "Added to the team, but we could not email them. Ask them to use “Forgot password” on the sign-in page.",
+      };
+    }
+    return {
+      ok: true,
+      userId,
+      message:
+        "They already had an account, so we emailed a link to set their password (sent by Supabase, not Resend).",
+    };
+  }
+
+  return {
+    ok: true,
+    userId,
+    message:
+      "Invite sent. The email comes from Supabase Auth (check spam) — it will not appear in Resend.",
+  };
 }
 
 /** Sends a fresh invite email to someone who has not accepted yet. */
