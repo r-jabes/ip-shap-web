@@ -84,7 +84,8 @@ describe("mapProductRow", () => {
     expect(product.description).toBe("");
     expect(product.price.amount).toBe(12000);
     expect(product.images).toHaveLength(0);
-    expect(product.brandSlug).toBe("unknown");
+    expect(product.brandSlug).toBe("");
+    expect(product.brandName).toBe("");
     expect(product.status).toBe("draft");
   });
 });

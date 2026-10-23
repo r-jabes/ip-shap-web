@@ -172,7 +172,7 @@ export function SearchOverlay({
       </form>
 
       <div
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6"
+        className="site-scroll min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6"
         onKeyDown={(event) => {
           if (event.key === "ArrowDown") moveFocus(event, 1);
           if (event.key === "ArrowUp") moveFocus(event, -1);
@@ -266,9 +266,11 @@ export function SearchOverlay({
                         ) : null}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-xs tracking-[0.1em] text-ink-muted uppercase">
-                          {product.brandName}
-                        </span>
+                        {product.brandName ? (
+                          <span className="block text-xs tracking-[0.1em] text-ink-muted uppercase">
+                            {product.brandName}
+                          </span>
+                        ) : null}
                         <span className="block truncate font-semibold">
                           {product.name}
                         </span>

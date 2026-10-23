@@ -35,11 +35,13 @@ export function ProductBuyBox({
         {onSale ? <Badge tone="accent">Sale</Badge> : null}
       </div>
 
-      <p className="mt-4 text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
-        {product.brandName}
-      </p>
+      {product.brandName ? (
+        <p className="mt-4 text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
+          {product.brandName}
+        </p>
+      ) : null}
       <h1
-        className="font-display mt-2 text-balance text-brand-charcoal"
+        className={`font-display text-balance text-brand-charcoal ${product.brandName ? "mt-2" : "mt-4"}`}
         style={{ fontSize: "clamp(1.85rem, 1.3rem + 1.6vw, 2.75rem)" }}
       >
         {product.name}
@@ -119,7 +121,7 @@ export function ProductBuyBox({
 /** Prefer the flavour/label word after the brand name when present. */
 function shortLabel(product: DemoProduct): string {
   const brand = product.brandName.trim();
-  if (product.name.toLowerCase().startsWith(brand.toLowerCase())) {
+  if (brand && product.name.toLowerCase().startsWith(brand.toLowerCase())) {
     const rest = product.name.slice(brand.length).trim();
     if (rest) return rest;
   }

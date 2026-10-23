@@ -67,15 +67,17 @@ function QuickViewBody({
             />
           </div>
         </div>
-        <div className="flex max-h-[min(92dvh,40rem)] flex-col gap-4 overflow-y-auto p-5 sm:p-6">
+        <div className="site-scroll flex max-h-[min(92dvh,40rem)] flex-col gap-4 overflow-y-auto p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2">
             {categoryName ? <Badge tone="outline">{categoryName}</Badge> : null}
             {onSale ? <Badge tone="accent">Sale</Badge> : null}
           </div>
           <div>
-            <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
-              {product.brandName}
-            </p>
+            {product.brandName ? (
+              <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
+                {product.brandName}
+              </p>
+            ) : null}
             <h2 className="font-display mt-1 text-2xl leading-snug">
               {product.name}
             </h2>

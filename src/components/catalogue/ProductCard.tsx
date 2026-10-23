@@ -94,9 +94,11 @@ export function ProductCard({
       </div>
 
       <div className="mt-3 flex flex-1 flex-col gap-1">
-        <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
-          {product.brandName}
-        </p>
+        {product.brandName ? (
+          <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
+            {product.brandName}
+          </p>
+        ) : null}
         <h3 className="font-display text-lg leading-snug sm:text-xl">
           <Link
             href={`/product/${product.slug}`}

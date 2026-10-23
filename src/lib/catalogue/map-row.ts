@@ -105,8 +105,9 @@ export function mapProductRow(row: ProductRow): DemoProduct {
   const inventory = firstEmbed(row.inventory_levels);
   const brand = firstEmbed(row.brands);
   const category = firstEmbed(row.categories);
-  const brandSlug = brand?.slug ?? "unknown";
-  const brandName = brand?.name ?? "Unknown";
+  // Brand is optional: no brand is an empty string and the UI simply leaves it out.
+  const brandSlug = brand?.slug ?? "";
+  const brandName = brand?.name ?? "";
   const priceAmount = coercePriceRwf(row.price_rwf);
   const compareRaw =
     row.compare_at_price_rwf === null || row.compare_at_price_rwf === undefined

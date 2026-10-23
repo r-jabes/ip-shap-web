@@ -175,6 +175,7 @@ function primarySrc(product: DemoProduct): string | undefined {
 
 /** Same brand, other bottles — used as flavour/label chips on the product page. */
 export function getBrandSiblings(product: DemoProduct): DemoProduct[] {
+  if (!product.brandSlug) return [];
   return listProducts({ brandSlugs: [product.brandSlug] }).filter(
     (row) => row.id !== product.id,
   );
@@ -315,6 +316,7 @@ export async function getFilterFacetsDurable(
 export async function getBrandSiblingsDurable(
   product: DemoProduct,
 ): Promise<DemoProduct[]> {
+  if (!product.brandSlug) return [];
   const siblings = await listProductsDurable({
     brandSlugs: [product.brandSlug],
   });

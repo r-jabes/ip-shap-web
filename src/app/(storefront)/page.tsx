@@ -14,7 +14,6 @@ import {
   getCachedPublishedProducts,
 } from "@/lib/catalogue/cache";
 import {
-  getHomeFeaturedSlides,
   getHomeFeaturedSlidesDurable,
   type HomeFeaturedSlide,
 } from "@/lib/home-featured";
@@ -59,7 +58,7 @@ async function loadHomeCatalogue(): Promise<{
     );
     // Always render marketing sections even if Supabase/catalogue fails.
     return {
-      featured: getHomeFeaturedSlides(),
+      featured: [] as HomeFeaturedSlide[],
       collections: getHomeCollections(),
       categories: [] as Category[],
       products: [] as DemoProduct[],
@@ -91,7 +90,7 @@ export default async function HomePage() {
       <HomeHero />
       <HomeRangeTicker items={tickerItems} />
       <HomeCollections tiles={collections} />
-      <HomeFeatured slides={featured} />
+      {featured.length > 0 ? <HomeFeatured slides={featured} /> : null}
       <HomeHowItWorks />
       <HomeWhatsAppBand />
       <HomeTrustFaq />

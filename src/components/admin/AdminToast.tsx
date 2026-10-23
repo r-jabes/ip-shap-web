@@ -58,7 +58,7 @@ export function AdminToastProvider({ children }: { children: ReactNode }) {
           <p
             key={toast.id}
             role={toast.tone === "error" ? "alert" : "status"}
-            className={`pointer-events-auto max-w-md rounded-full border-2 px-5 py-2.5 text-sm font-semibold shadow-[3px_3px_0_0_rgba(0,0,0,0.2)] ${
+            className={`pointer-events-auto max-w-md rounded-2xl border-2 px-5 py-2.5 text-center text-sm font-semibold shadow-[3px_3px_0_0_rgba(0,0,0,0.2)] ${
               toast.tone === "error"
                 ? "border-red-700 bg-red-100 text-red-950"
                 : "border-emerald-700 bg-emerald-100 text-emerald-950"

@@ -81,7 +81,8 @@ export default async function AdminFeaturedPage({
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{product.name}</p>
                     <p className="text-xs text-ink-muted">
-                      Position {product.featuredSort ?? 0} · {product.brandName}
+                      Position {product.featuredSort ?? 0}
+                      {product.brandName ? ` · ${product.brandName}` : ""}
                     </p>
                     <div className="mt-2">
                       <AdminStatusBadge status={product.status} />
@@ -128,7 +129,9 @@ export default async function AdminFeaturedPage({
                   </AdminTd>
                   <AdminTd>
                     <p className="font-medium">{product.name}</p>
-                    <p className="text-xs text-ink-muted">{product.brandName}</p>
+                    {product.brandName ? (
+                      <p className="text-xs text-ink-muted">{product.brandName}</p>
+                    ) : null}
                   </AdminTd>
                   <AdminTd>
                     <AdminStatusBadge status={product.status} />

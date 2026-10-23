@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { saveProductAction, setDiscountAction } from "@/app/admin/actions";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdvancedSection } from "@/components/admin/AdvancedSection";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { FilePicker } from "@/components/ui/FilePicker";
 import type { DemoProduct } from "@/domain/catalogue";
 import { applyDiscount, impliedDiscountPercent } from "@/lib/admin/discount";
 import { formatRwf } from "@/lib/money";
@@ -76,7 +77,7 @@ export function ProductModal({
       description={
         editing
           ? product.name
-          : "Add a name, brand, price and photo. Products without a photo stay as drafts."
+          : "Add a name, price and photo. Products without a photo stay as drafts."
       }
       width="lg"
       defaultOpen={defaultOpen}
@@ -117,6 +118,14 @@ function ProductFormBody({
       : "draft",
   );
   const [pickedImage, setPickedImage] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Free the browser's copy of the previous preview when it changes or the form closes.
+  useEffect(
+    () => () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    },
+    [previewUrl],
+  );
   const currentImage = primaryCatalogueImage(product?.images ?? []);
   const hasImage = !!currentImage || pickedImage;
 
@@ -148,16 +157,15 @@ function ProductFormBody({
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             id="product-brand"
-            label="Brand"
-            hint="Pick an existing brand or type a new one."
+            label="Brand (optional)"
+            hint="Pick an existing brand or type a new one. Leave blank if there is none."
           >
             <Input
               id="product-brand"
               name="brandName"
-              required
               list="product-brand-options"
               defaultValue={product?.brandName}
-              placeholder="IP SHAP"
+              placeholder="e.g. Johnnie Walker"
               autoComplete="off"
             />
             <datalist id="product-brand-options">
@@ -207,25 +215,38 @@ function ProductFormBody({
           draft.
         </p>
         <div className="w-32 overflow-hidden rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15">
-          <ProductImageFrame
-            image={currentImage}
-            alt={currentImage?.alt ?? product?.name ?? "Product"}
-            emptyLabel="No image yet"
-          />
+          {previewUrl ? (
+            // A local blob preview of the file the admin just picked; next/image cannot optimise it.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="Selected photo preview"
+              className="aspect-[4/5] w-full object-cover"
+            />
+          ) : (
+            <ProductImageFrame
+              image={currentImage}
+              alt={currentImage?.alt ?? product?.name ?? "Product"}
+              emptyLabel="No image yet"
+            />
+          )}
         </div>
         <Field
           id="product-image"
-          label={currentImage ? "Replace photo" : "Add photo"}
+          label={currentImage || pickedImage ? "Replace photo" : "Add photo"}
           hint="JPEG, PNG or WebP, up to 10 MB."
         >
-          <Input
+          <FilePicker
             id="product-image"
             name="image"
-            type="file"
             accept="image/jpeg,image/png,image/webp"
-            onChange={(event) =>
-              setPickedImage(!!event.target.files?.[0])
-            }
+            buttonLabel={currentImage || pickedImage ? "Choose another" : "Choose photo"}
+            emptyText="No photo selected"
+            describedBy="product-image-hint"
+            onPick={(file) => {
+              setPickedImage(!!file);
+              setPreviewUrl(file ? URL.createObjectURL(file) : null);
+            }}
           />
         </Field>
         <input type="hidden" name="imageAlt" value={product?.name ?? ""} />

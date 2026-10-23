@@ -414,29 +414,47 @@
   overscroll-behavior-x: contain;
 }
 
-/* Shop filters — one soft scrollbar (sticky panel + mobile sheet). */
-.shop-filters-scroll {
+/*
+ * One soft scrollbar for the site: shop filters (sticky panel + mobile sheet), admin dialogs
+ * (`.site-scroll`) and every text area.
+ */
+.shop-filters-scroll,
+.site-scroll,
+textarea {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--brand-charcoal) 28%, transparent)
     transparent;
 }
 
-.shop-filters-scroll::-webkit-scrollbar {
+.shop-filters-scroll::-webkit-scrollbar,
+.site-scroll::-webkit-scrollbar,
+textarea::-webkit-scrollbar {
   width: 5px;
+  height: 5px;
 }
 
-.shop-filters-scroll::-webkit-scrollbar-track {
+.shop-filters-scroll::-webkit-scrollbar-track,
+.site-scroll::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track {
   background: transparent;
   margin-block: 10px;
 }
 
-.shop-filters-scroll::-webkit-scrollbar-thumb {
+.shop-filters-scroll::-webkit-scrollbar-thumb,
+.site-scroll::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--brand-charcoal) 22%, transparent);
   border-radius: 999px;
 }
 
-.shop-filters-scroll::-webkit-scrollbar-thumb:hover {
+.shop-filters-scroll::-webkit-scrollbar-thumb:hover,
+.site-scroll::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--brand-charcoal) 40%, transparent);
+}
+
+textarea::-webkit-resizer {
+  background: transparent;
 }
 
 /* Carousel autoplay progress (restarts per slide via React key) */

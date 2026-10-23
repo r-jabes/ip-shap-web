@@ -77,7 +77,7 @@ export function CartDrawer() {
         </p>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+      <div className="site-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
         {!hydrated ? (
           <p className="py-10 text-center text-sm text-ink-muted">
             Loading your cart…
@@ -122,9 +122,11 @@ export function CartDrawer() {
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-ink-muted uppercase">
-                          {product.brandName}
-                        </p>
+                        {product.brandName ? (
+                          <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-ink-muted uppercase">
+                            {product.brandName}
+                          </p>
+                        ) : null}
                         <Link
                           href={`/product/${product.slug}`}
                           onClick={closeCart}

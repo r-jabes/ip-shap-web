@@ -64,7 +64,7 @@ export default async function AdminProductPage({ params }: { params: Params }) {
     <div className="space-y-6">
       <AdminPageHeader
         title={product.name}
-        description={product.brandName}
+        description={product.brandName || undefined}
         actions={
           <Button href="/admin/products" variant="ghost" size="sm">
             Back to products

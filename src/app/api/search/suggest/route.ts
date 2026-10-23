@@ -48,7 +48,7 @@ async function suggestFromSql(
       id: row.id,
       slug: row.slug,
       name: row.name,
-      brandName: row.brand_name,
+      brandName: row.brand_name ?? "",
       priceAmount: row.price_rwf,
       imageSrc: row.image_src,
       imageAlt: row.image_alt,

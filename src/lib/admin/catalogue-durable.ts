@@ -231,25 +231,32 @@ export async function adminUpsertProductDurable(
     }
   }
 
-  const { data: brandExisting } = await client
-    .from("brands")
-    .select("id")
-    .eq("slug", input.brandSlug)
-    .maybeSingle();
-  let brandId = brandExisting?.id ?? null;
-  if (!brandId) {
-    const { data: created, error } = await client
+  // A brand is optional: an empty slug means "no brand" (and clears any previous one).
+  let brandId: string | null = null;
+  if (input.brandSlug) {
+    const { data: brandExisting } = await client
       .from("brands")
-      .insert({ slug: input.brandSlug, name: input.brandName })
       .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    brandId = created.id;
-  } else {
-    await client
-      .from("brands")
-      .update({ name: input.brandName, updated_at: new Date().toISOString() })
-      .eq("id", brandId);
+      .eq("slug", input.brandSlug)
+      .maybeSingle();
+    brandId = brandExisting?.id ?? null;
+    if (!brandId) {
+      const { data: created, error } = await client
+        .from("brands")
+        .insert({
+          slug: input.brandSlug,
+          name: input.brandName || input.brandSlug,
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message);
+      brandId = created.id;
+    } else if (input.brandName) {
+      await client
+        .from("brands")
+        .update({ name: input.brandName, updated_at: new Date().toISOString() })
+        .eq("id", brandId);
+    }
   }
 
   let productId = input.id;
@@ -452,8 +459,8 @@ export async function adminApplyBulkImportDurable(
         description: row.description,
         priceAmount: row.price_rwf,
         categorySlug: row.category_slug,
-        brandSlug: row.brand_slug ?? "unknown",
-        brandName: row.brand_name ?? row.brand_slug ?? "Unknown",
+        brandSlug: row.brand_slug ?? "",
+        brandName: row.brand_name ?? row.brand_slug ?? "",
         status: row.status,
         availability: row.availability,
         isProvisional: row.is_provisional,

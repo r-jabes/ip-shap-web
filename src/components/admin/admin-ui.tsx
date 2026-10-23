@@ -93,7 +93,7 @@ export function AdminTable({
     <>
       {mobile ? <ul className="space-y-3 md:hidden">{mobile}</ul> : null}
       <div
-        className={`overflow-x-auto rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 ${mobile ? "hidden md:block" : ""}`}
+        className={`site-scroll overflow-x-auto rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 ${mobile ? "hidden md:block" : ""}`}
       >
         <table className="min-w-full text-left text-sm">{children}</table>
       </div>

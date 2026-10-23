@@ -78,7 +78,7 @@ export function AdminModal({
         onClick={(event) => {
           if (event.target === event.currentTarget) setOpen(false);
         }}
-        className={`fixed inset-0 m-auto h-fit max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] ${maxWidth} overflow-y-auto rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-0 text-left text-brand-charcoal shadow-[6px_6px_0_0_var(--brand-charcoal)] backdrop:bg-brand-charcoal/60`}
+        className={`fixed inset-0 m-auto h-fit max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] ${maxWidth} site-scroll overflow-y-auto rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-0 text-left text-brand-charcoal shadow-[6px_6px_0_0_var(--brand-charcoal)] backdrop:bg-brand-charcoal/60`}
       >
         {open ? (
           <div className="p-5 text-left sm:p-7">

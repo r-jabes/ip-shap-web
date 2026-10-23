@@ -78,7 +78,7 @@ function PriceCell({ product }: { product: DemoProduct }) {
 function ProductNotes({ product }: { product: DemoProduct }) {
   return (
     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
-      <span>{product.brandName}</span>
+      {product.brandName ? <span>{product.brandName}</span> : null}
       {product.isFeatured ? <AdminPill tone="good">Featured</AdminPill> : null}
       {product.isProvisional ? (
         <AdminPill tone="warn">Needs review</AdminPill>

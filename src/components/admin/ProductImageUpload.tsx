@@ -7,6 +7,7 @@ import { useAdminToast } from "@/components/admin/AdminToast";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import { FilePicker } from "@/components/ui/FilePicker";
 import type { ProductImage } from "@/domain/product";
 import { primaryCatalogueImage } from "@/lib/product-image";
 
@@ -91,11 +92,13 @@ function ImageForm({
         label="Image file"
         hint="Without a photo, the shop shows a neutral placeholder."
       >
-        <Input
+        <FilePicker
           id="image-file"
           name="file"
-          type="file"
           accept="image/jpeg,image/png,image/webp"
+          buttonLabel="Choose photo"
+          emptyText="No photo selected"
+          describedBy="image-file-hint"
           required
         />
       </Field>

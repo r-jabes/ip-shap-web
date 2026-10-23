@@ -13,7 +13,9 @@ export function ProductDetails({
   categoryName?: string;
 }) {
   const rows: Row[] = [
-    { label: "Brand", value: product.brandName },
+    ...(product.brandName
+      ? [{ label: "Brand", value: product.brandName }]
+      : []),
     ...(categoryName ? [{ label: "Range", value: categoryName }] : []),
     ...(typeof product.stockQuantity === "number"
       ? [{ label: "Quantity on hand", value: String(product.stockQuantity) }]

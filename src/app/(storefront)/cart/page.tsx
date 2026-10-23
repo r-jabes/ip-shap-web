@@ -114,9 +114,11 @@ export default function CartPage() {
                     <div className="flex min-w-0 flex-1 flex-col">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-ink-muted uppercase">
-                            {product.brandName}
-                          </p>
+                          {product.brandName ? (
+                            <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-ink-muted uppercase">
+                              {product.brandName}
+                            </p>
+                          ) : null}
                           <Link
                             href={`/product/${product.slug}`}
                             className="font-display mt-1 block text-xl leading-tight text-brand-charcoal underline-offset-4 hover:underline"

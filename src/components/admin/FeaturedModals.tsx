@@ -40,7 +40,9 @@ export function AddFeaturedModal({
                 </option>
                 {candidates.map((product) => (
                   <option key={product.id} value={product.id}>
-                    {product.name} · {product.brandName}
+                    {product.brandName
+                      ? `${product.name} · ${product.brandName}`
+                      : product.name}
                   </option>
                 ))}
               </Select>

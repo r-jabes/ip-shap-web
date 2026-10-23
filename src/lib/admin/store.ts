@@ -119,6 +119,7 @@ export type AdminProductInput = {
   /** 0 = no discount. */
   discountPercent?: number;
   categorySlug?: string;
+  /** Empty string means the product has no brand. */
   brandSlug: string;
   brandName: string;
   status: DemoProduct["status"];

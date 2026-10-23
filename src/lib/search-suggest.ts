@@ -25,7 +25,7 @@ function score(product: DemoProduct, query: string, categoryName: string) {
   if (name.split(/\s+/).some((word) => word.startsWith(query))) return 80;
   if (name.includes(query)) return 60;
   const brand = normalizeSearchText(product.brandName);
-  if (brand.includes(query)) return 40;
+  if (brand && brand.includes(query)) return 40;
   if (normalizeSearchText(categoryName).includes(query)) return 30;
   return 0;
 }

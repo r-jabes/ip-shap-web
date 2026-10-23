@@ -98,7 +98,7 @@ export type ProductJsonLd = {
   name: string;
   description: string;
   sku: string;
-  brand: { "@type": "Brand"; name: string };
+  brand?: { "@type": "Brand"; name: string };
   image?: string[];
   offers: {
     "@type": "Offer";
@@ -120,10 +120,9 @@ export function productJsonLd(product: CatalogueProduct): ProductJsonLd {
     name: product.name,
     description: product.description,
     sku: product.id,
-    brand: {
-      "@type": "Brand",
-      name: product.brandName,
-    },
+    ...(product.brandName
+      ? { brand: { "@type": "Brand", name: product.brandName } }
+      : {}),
     ...(image ? { image: [absoluteUrl(image.src)] } : {}),
     offers: {
       "@type": "Offer",

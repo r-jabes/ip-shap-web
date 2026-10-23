@@ -271,9 +271,11 @@ export async function resendInviteAction(
 
 const EDITABLE_STATUSES = ["draft", "published", "archived"] as const;
 
+/** A brand is optional: a blank name means "no brand". */
 async function resolveBrand(
   brandName: string,
 ): Promise<{ brandSlug: string; brandName: string }> {
+  if (!brandName) return { brandSlug: "", brandName: "" };
   const brands = await adminListBrandsDurable();
   const match = brands.find(
     (brand) => brand.name.toLowerCase() === brandName.toLowerCase(),
@@ -297,7 +299,6 @@ export async function saveProductAction(
     const name = text(formData, "name");
     if (!name) return actionError("Product name is required.");
     const brandNameRaw = text(formData, "brandName");
-    if (!brandNameRaw) return actionError("Brand is required.");
 
     const existing = id ? await adminGetProductDurable(id) : undefined;
     if (id && !existing) return actionError("That product no longer exists.");

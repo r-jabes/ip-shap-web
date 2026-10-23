@@ -1,26 +1,51 @@
-import { describe, expect, it } from "vitest";
-import { getHomeFeaturedSlides } from "@/lib/home-featured";
-import { RANGE_MEDIA } from "@/lib/range-media";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { DemoProduct } from "@/domain/catalogue";
+
+const getFeaturedProductsDurable = vi.fn();
+
+vi.mock("@/lib/catalogue", () => ({
+  getFeaturedProductsDurable: (...args: unknown[]) =>
+    getFeaturedProductsDurable(...args),
+}));
+
+import { getHomeFeaturedSlidesDurable } from "@/lib/home-featured";
+
+function product(overrides: Partial<DemoProduct> = {}): DemoProduct {
+  return {
+    id: "p1",
+    slug: "house-red",
+    name: "House Red",
+    description: "A red wine.",
+    price: { amount: 12000, currency: "RWF" },
+    brandSlug: "",
+    brandName: "",
+    status: "published",
+    availability: "in_stock",
+    isProvisional: false,
+    images: [],
+    ...overrides,
+  } as DemoProduct;
+}
 
 describe("home featured slides", () => {
-  const slides = getHomeFeaturedSlides();
-
-  it("returns several slides, each with a link and a photo", () => {
-    expect(slides.length).toBeGreaterThanOrEqual(3);
-    const known = Object.values(RANGE_MEDIA).map((m) => m.src);
-    for (const slide of slides) {
-      expect(slide.title.length).toBeGreaterThan(0);
-      expect(slide.href.startsWith("/")).toBe(true);
-      expect(slide.secondaryHref.startsWith("/")).toBe(true);
-      expect(known).toContain(slide.image.src);
-    }
+  beforeEach(() => {
+    getFeaturedProductsDurable.mockReset();
   });
 
-  it("uses unique slide ids and never repeats a photo back to back", () => {
-    expect(new Set(slides.map((s) => s.id)).size).toBe(slides.length);
-    slides.forEach((slide, i) => {
-      const next = slides[(i + 1) % slides.length]!;
-      expect(next.image.src).not.toBe(slide.image.src);
-    });
+  it("is empty when the admin has not featured anything", async () => {
+    getFeaturedProductsDurable.mockResolvedValue([]);
+    await expect(getHomeFeaturedSlidesDurable()).resolves.toEqual([]);
+  });
+
+  it("builds one slide per featured product, with or without a brand", async () => {
+    getFeaturedProductsDurable.mockResolvedValue([
+      product(),
+      product({ id: "p2", slug: "gin", name: "Gin", brandName: "Rozzita" }),
+    ]);
+    const slides = await getHomeFeaturedSlidesDurable();
+    expect(slides.map((slide) => slide.id)).toEqual(["p1", "p2"]);
+    expect(slides[0]!.href).toBe("/product/house-red");
+    expect(slides[0]!.points[0]).toBe("From our shelf");
+    expect(slides[1]!.points[0]).toBe("From Rozzita");
   });
 });
