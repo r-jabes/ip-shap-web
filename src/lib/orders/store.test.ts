@@ -86,7 +86,7 @@ describe("createOrder", () => {
     expect(lookupOrder(order.reference, order.lookupToken)?.id).toBe(order.id);
   });
 
-  it("records manual payment only with reference and reason", async () => {
+  it("records manual payment with an amount; reference and note are optional", async () => {
     const { createOrder, markManualPayment } = await import("./store");
     const product = DEMO_PRODUCTS[0]!;
     const order = createOrder({
@@ -97,22 +97,23 @@ describe("createOrder", () => {
       idempotencyKey: "11111111-1111-4111-8111-111111111105",
     });
     expect(() =>
-      markManualPayment(order.id, {
-        reference: "",
-        reason: "bank",
-        actorLabel: "staff@example.com",
-      }),
-    ).toThrow(/reference/i);
+      markManualPayment(order.id, { amount: 0, actorLabel: "staff@example.com" }),
+    ).toThrow(/amount/i);
+    const discounted = order.total.amount - 1000;
     const paid = markManualPayment(order.id, {
-      reference: "MOMO-99",
-      reason: "Verified MoMo slip",
+      amount: discounted,
       actorLabel: "staff@example.com",
     });
     expect(paid.paymentStatus).toBe("paid");
+    expect(paid.amountPaid?.amount).toBe(discounted);
+    expect(paid.statusHistory.at(-1)?.reason).toMatch(
+      /Payment of .* recorded · staff@example\.com$/,
+    );
     expect(() =>
       markManualPayment(order.id, {
+        amount: order.total.amount,
         reference: "MOMO-100",
-        reason: "again",
+        note: "again",
         actorLabel: "staff@example.com",
       }),
     ).toThrow(/already marked paid/i);

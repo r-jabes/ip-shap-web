@@ -8,6 +8,15 @@ import { moneyRwf, type MoneyRwf } from "@/lib/money";
 import { getDeliveryZone } from "@/lib/orders/delivery";
 import { isValidCheckoutPhone, normalizePhone } from "@/lib/orders/phone";
 import {
+  assertValidPaymentAmount,
+  describeManualPayment,
+  type ManualPaymentInput,
+} from "@/lib/orders/manual-payment";
+import {
+  insufficientStockMessage,
+  unavailableMessage,
+} from "@/lib/orders/stock-messages";
+import {
   assertFulfilmentTransition,
   type FulfilmentStatus,
   type PaymentStatus,
@@ -40,6 +49,8 @@ export type StoredOrder = {
   subtotal: MoneyRwf;
   deliveryFee: MoneyRwf | null;
   total: MoneyRwf;
+  /** Amount staff recorded as received (may differ from `total`, e.g. a discount). Null until recorded. */
+  amountPaid?: MoneyRwf | null;
   items: OrderItemSnapshot[];
   customerName: string;
   customerPhone: string;
@@ -258,10 +269,13 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
       throw new Error("Invalid quantity.");
     }
     const product = resolveProduct(line.productId);
-    if (!product || !isPubliclyOrderable(product)) {
+    if (!product) {
       throw new Error(
-        "A cart item is unavailable (unpublished or out of stock). Update your cart.",
+        "An item in your cart is no longer available. Remove it from your cart and try again.",
       );
+    }
+    if (!isPubliclyOrderable(product)) {
+      throw new Error(unavailableMessage(product.name));
     }
 
     const unit = product.price.amount;
@@ -291,9 +305,7 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     const remaining = remainingStock(product);
     if (remaining === null) continue;
     if (remaining < qty) {
-      throw new Error(
-        `Insufficient stock for ${product.name}. Available: ${Math.max(0, remaining)}.`,
-      );
+      throw new Error(insufficientStockMessage(product.name, remaining));
     }
     hasCountedStockLines = true;
   }
@@ -318,6 +330,7 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     deliveryFee:
       deliveryFeeAmount === null ? null : moneyRwf(deliveryFeeAmount),
     total: moneyRwf(totalAmount),
+    amountPaid: null,
     items: snapshots,
     customerName: input.customerName.trim(),
     customerPhone: normalizePhone(input.customerPhone),
@@ -453,26 +466,26 @@ export function transitionFulfilment(
 }
 
 /**
- * Manual payment recording — requires reference + reason (staff must verify offline).
+ * Manual payment recording by staff after they have checked the money themselves.
+ * The amount is required (it may differ from the total); reference and note are optional.
  * Does not accept browser redirects as proof.
  */
 export function markManualPayment(
   orderId: string,
-  input: { reference: string; reason: string; actorLabel: string },
+  input: ManualPaymentInput,
 ): StoredOrder {
   const order = getOrderById(orderId);
   if (!order) throw new Error("Order not found");
-  if (!input.reference.trim() || !input.reason.trim()) {
-    throw new Error("Payment reference and reason are required.");
-  }
+  assertValidPaymentAmount(input.amount);
   if (order.paymentStatus === "paid") {
     throw new Error("Payment already marked paid.");
   }
   order.paymentStatus = "paid";
+  order.amountPaid = moneyRwf(input.amount);
   order.statusHistory.push({
     from: order.fulfilmentStatus,
     to: order.fulfilmentStatus,
-    reason: `Manual payment recorded (${input.reference}): ${input.reason} · ${input.actorLabel}`,
+    reason: describeManualPayment(input),
     at: new Date().toISOString(),
   });
   order.updatedAt = new Date().toISOString();

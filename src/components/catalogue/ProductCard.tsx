@@ -3,21 +3,30 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { DemoProduct } from "@/domain/catalogue";
-import { useCart } from "@/components/cart/CartProvider";
+import { useCart, useLiveProduct } from "@/components/cart/CartProvider";
 import { ProductQuickView } from "@/components/catalogue/ProductQuickView";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
+import { StockNote } from "@/components/ui/StockNote";
 import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
-export function ProductCard({ product }: { product: DemoProduct }) {
+import { describeStock } from "@/lib/stock/storefront";
+
+export function ProductCard({
+  product: catalogueProduct,
+}: {
+  product: DemoProduct;
+}) {
   const { addItem } = useCart();
+  const product = useLiveProduct(catalogueProduct);
+  const stock = describeStock(product);
   const catalogue = useCatalogueOptional();
   const [quickOpen, setQuickOpen] = useState(false);
   const image = primaryCatalogueImage(product.images);
   const categoryName = catalogue?.categoryName(product.categorySlug);
-  const unavailable = product.availability === "out_of_stock";
+  const unavailable = stock.max === 0;
   const onSale = !!product.compareAtPrice;
 
   return (
@@ -29,7 +38,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
           objectFit="cover"
           sizes={sizesForRole("catalogue_primary")}
           className="rounded-none"
-          imageClassName="origin-center transition-transform duration-[var(--motion-editorial)] ease-[var(--ease-out)] group-hover:scale-[1.04] group-hover:-translate-y-1 group-focus-within:scale-[1.04] group-focus-within:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-hover:translate-y-0 motion-reduce:group-focus-within:scale-100 motion-reduce:group-focus-within:translate-y-0"
+          imageClassName={`${unavailable ? "opacity-60 grayscale " : ""}origin-center transition-transform duration-[var(--motion-editorial)] ease-[var(--ease-out)] group-hover:scale-[1.04] group-hover:-translate-y-1 group-focus-within:scale-[1.04] group-focus-within:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-hover:translate-y-0 motion-reduce:group-focus-within:scale-100 motion-reduce:group-focus-within:translate-y-0`}
         />
         <Link
           href={`/product/${product.slug}`}
@@ -65,7 +74,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
               addItem(product.id, 1);
             }}
           >
-            Add
+            {unavailable ? "Out of stock" : "Add"}
           </Button>
           <Button
             type="button"
@@ -102,6 +111,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
             compareAt={product.compareAtPrice}
             size="sm"
           />
+          <StockNote stock={stock} className="mt-1" />
         </div>
       </div>
 

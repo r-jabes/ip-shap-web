@@ -58,10 +58,10 @@ export function AdminToastProvider({ children }: { children: ReactNode }) {
           <p
             key={toast.id}
             role={toast.tone === "error" ? "alert" : "status"}
-            className={`pointer-events-auto max-w-md rounded-full border-2 px-5 py-2.5 text-sm font-semibold shadow-[3px_3px_0_0_var(--brand-charcoal)] ${
+            className={`pointer-events-auto max-w-md rounded-full border-2 px-5 py-2.5 text-sm font-semibold shadow-[3px_3px_0_0_rgba(0,0,0,0.2)] ${
               toast.tone === "error"
-                ? "border-red-800 bg-red-50 text-red-900"
-                : "border-brand-charcoal bg-brand-warm-white text-brand-charcoal"
+                ? "border-red-700 bg-red-100 text-red-950"
+                : "border-emerald-700 bg-emerald-100 text-emerald-950"
             }`}
           >
             {toast.message}

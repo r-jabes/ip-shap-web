@@ -19,6 +19,8 @@ export type OrderRow = {
   subtotal_rwf: number;
   delivery_fee_rwf: number | null;
   total_rwf: number;
+  /** Amount staff recorded as received; null until a manual payment is recorded. */
+  amount_paid_rwf?: number | null;
   customer_name: string;
   customer_phone: string;
   delivery_district: string | null;
@@ -82,6 +84,10 @@ export function mapOrderRow(
     deliveryFee:
       row.delivery_fee_rwf === null ? null : moneyRwf(row.delivery_fee_rwf),
     total: moneyRwf(row.total_rwf),
+    amountPaid:
+      row.amount_paid_rwf === null || row.amount_paid_rwf === undefined
+        ? null
+        : moneyRwf(row.amount_paid_rwf),
     items: items.map(mapOrderItemRow),
     customerName: row.customer_name,
     customerPhone: row.customer_phone,

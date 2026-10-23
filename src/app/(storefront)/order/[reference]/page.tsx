@@ -28,7 +28,7 @@ export default async function OrderConfirmationPage({
   searchParams: SearchParams;
 }) {
   const { reference } = await params;
-  const { token, payment } = await searchParams;
+  const { token } = await searchParams;
   if (!token) notFound();
 
   const order = await lookupOrderDurable(decodeURIComponent(reference), token);
@@ -41,8 +41,6 @@ export default async function OrderConfirmationPage({
     chatHref(
       `Hello — I placed order ${order.reference} and would like to ask about it.`,
     );
-  const sandboxPending = payment === "sandbox_pending";
-
   return (
     <Container className="py-10 lg:py-14">
       <CheckoutSteps current="confirmed" />
@@ -56,19 +54,13 @@ export default async function OrderConfirmationPage({
         Thank you
       </h1>
       <p className="mt-3 max-w-2xl text-ink-muted">
-        Your order{" "}
+        We have received your order{" "}
         <span className="font-semibold text-brand-charcoal">
           {order.reference}
-        </span>{" "}
-        was created and is awaiting confirmation
-        {order.channel === "whatsapp_assisted"
-          ? " and payment instructions"
-          : ""}
-        . A browser redirect is never proof of payment
-        {sandboxPending
-          ? " — sandbox checkout is pending a verified webhook"
-          : ""}
-        .
+        </span>
+        . Our team will reach out to you shortly to confirm availability,
+        delivery and payment. Need it sooner? Use the Message us button below
+        and we will look at your order straight away.
       </p>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start lg:gap-12">
@@ -125,10 +117,11 @@ export default async function OrderConfirmationPage({
           </section>
 
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-charcoal p-6 text-brand-warm-white shadow-[6px_6px_0_0_var(--brand-burnt-orange)]">
-            <h2 className="font-display text-2xl">Next step</h2>
+            <h2 className="font-display text-2xl">Need it sooner?</h2>
             <p className="mt-2 text-sm text-brand-warm-white/75">
-              Message us with your reference so we can confirm availability,
-              delivery and payment.
+              We will contact you as soon as we have checked your order. If it
+              is urgent, message us with your reference and we will look at it
+              straight away.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button
@@ -162,7 +155,7 @@ export default async function OrderConfirmationPage({
         </Link>
       </p>
 
-      <ClearCartOnConfirm />
+      <ClearCartOnConfirm placedAt={order.createdAt} />
     </Container>
   );
 }

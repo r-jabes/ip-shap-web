@@ -31,10 +31,10 @@ export function InlineToast({
     >
       <p
         role="alert"
-        className={`pointer-events-auto max-w-md rounded-full border-2 px-5 py-2.5 text-sm font-semibold shadow-[3px_3px_0_0_var(--brand-charcoal)] ${
+        className={`pointer-events-auto max-w-md rounded-full border-2 px-5 py-2.5 text-sm font-semibold shadow-[3px_3px_0_0_rgba(0,0,0,0.2)] ${
           tone === "error"
-            ? "border-brand-burnt-orange bg-brand-burnt-orange/15 text-brand-charcoal"
-            : "border-brand-charcoal bg-brand-warm-white text-brand-charcoal"
+            ? "border-red-700 bg-red-100 text-red-950"
+            : "border-emerald-700 bg-emerald-100 text-emerald-950"
         }`}
       >
         {message}

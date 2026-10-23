@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   placeOrderAction,
@@ -22,12 +22,18 @@ const initialState: CheckoutActionState = {};
 
 export function CheckoutForm({
   lines,
+  unavailableNames = [],
+  onOrderRejected,
   zones,
   onlinePaymentEnabled,
   whatsappConfigured,
   turnstileSiteKey = null,
 }: {
   lines: Line[];
+  /** Names of cart items that are out of stock; they block checkout until removed. */
+  unavailableNames?: string[];
+  /** Called when the server rejects an order so the caller can refresh stock. */
+  onOrderRejected?: () => void;
   zones: DeliveryZone[];
   onlinePaymentEnabled: boolean;
   whatsappConfigured: boolean;
@@ -52,6 +58,10 @@ export function CheckoutForm({
   const [deliveryVillage, setDeliveryVillage] = useState("");
   const [deliveryDirections, setDeliveryDirections] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
+
+  useEffect(() => {
+    if (state.error) onOrderRejected?.();
+  }, [state, onOrderRejected]);
 
   const toastMessage =
     state.error ??
@@ -80,6 +90,12 @@ export function CheckoutForm({
     })),
   );
 
+  const blockedByStock = unavailableNames.length > 0;
+
+  if (lines.length === 0 && blockedByStock) {
+    return <StockBlockedNotice names={unavailableNames} />;
+  }
+
   if (lines.length === 0) {
     return (
       <div className="rounded-[var(--radius-panel)] border-2 border-dashed border-brand-charcoal/25 bg-paper-2/40 px-6 py-16 text-center">
@@ -102,6 +118,11 @@ export function CheckoutForm({
       className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
       noValidate
     >
+        {blockedByStock ? (
+          <div className="lg:col-span-2">
+            <StockBlockedNotice names={unavailableNames} compact />
+          </div>
+        ) : null}
         <input type="hidden" name="itemsJson" value={itemsJson} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <input type="hidden" name="channel" value={channel} />
@@ -370,7 +391,7 @@ export function CheckoutForm({
             type="submit"
             size="lg"
             className="mt-4 w-full"
-            disabled={pending}
+            disabled={pending || blockedByStock}
             loading={pending}
           >
             {pending
@@ -388,6 +409,35 @@ export function CheckoutForm({
         </aside>
     </form>
     </>
+  );
+}
+
+function StockBlockedNotice({
+  names,
+  compact = false,
+}: {
+  names: string[];
+  compact?: boolean;
+}) {
+  const list = names.join(", ");
+  return (
+    <div
+      role="alert"
+      className={`rounded-2xl border-2 border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900 ${compact ? "" : "py-6 text-center"}`}
+    >
+      <p className="font-semibold">
+        {names.length === 1
+          ? `${list} is out of stock.`
+          : `These items are out of stock: ${list}.`}
+      </p>
+      <p className="mt-1">
+        Remove {names.length === 1 ? "it" : "them"} from your cart to place your
+        order.{" "}
+        <Link href="/cart" className="font-semibold underline underline-offset-4">
+          Go to cart
+        </Link>
+      </p>
+    </div>
   );
 }
 

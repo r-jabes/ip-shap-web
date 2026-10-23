@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidateCatalogueStock } from "@/lib/catalogue/cache";
 import { notifyNewOrder } from "@/lib/notifications/notify";
 import {
   createOrderDurable,
@@ -86,6 +87,9 @@ export async function placeOrderAction(
       fieldErrors: fieldErrorsFromMessage(message),
     };
   }
+
+  // Stock was just reserved: drop cached catalogue copies so server-rendered pages catch up.
+  revalidateCatalogueStock();
 
   // Order is committed — email failures must not undo it.
   try {

@@ -8,37 +8,56 @@ import { QuantityStepper } from "@/components/ui/QuantityStepper";
 export function AddToCartForm({
   productId,
   productName,
-  disabled,
+  maxQuantity,
 }: {
   productId: string;
   productName: string;
-  disabled?: boolean;
+  /** Most units that can be ordered right now. 0 means out of stock. */
+  maxQuantity: number;
 }) {
-  const { addItem } = useCart();
+  const { addItem, lines } = useCart();
   const [quantity, setQuantity] = useState(1);
+
+  const inCart =
+    lines.find((line) => line.productId === productId)?.quantity ?? 0;
+  const outOfStock = maxQuantity === 0;
+  // What is still available after what the shopper already has in their cart.
+  const room = Math.max(0, maxQuantity - inCart);
+  const allInCart = !outOfStock && room === 0;
+  const selected = Math.min(quantity, Math.max(1, room));
 
   return (
     <form
       className="flex flex-wrap items-stretch gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        addItem(productId, quantity);
+        if (room > 0) addItem(productId, selected);
       }}
     >
       <QuantityStepper
-        value={quantity}
+        value={selected}
         label={`Quantity of ${productName}`}
         onChange={setQuantity}
-        disabled={disabled}
+        max={Math.max(1, room)}
+        disabled={outOfStock || allInCart}
       />
       <Button
         type="submit"
         size="lg"
-        disabled={disabled}
+        disabled={outOfStock || allInCart}
         className="min-w-[10rem] flex-1"
       >
-        Add to cart
+        {outOfStock
+          ? "Out of stock"
+          : allInCart
+            ? "All available units in cart"
+            : "Add to cart"}
       </Button>
+      {inCart > 0 && !outOfStock ? (
+        <p className="basis-full text-sm text-ink-muted">
+          You have {inCart} in your cart.
+        </p>
+      ) : null}
     </form>
   );
 }

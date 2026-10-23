@@ -1,25 +1,16 @@
 import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
 import { formatRwf } from "@/lib/money";
+import {
+  EMAIL_BRAND,
+  EMAIL_LOGO_CID,
+  brandedFromAddress,
+  escapeHtml,
+} from "@/lib/notifications/templates/email-shell";
 import type { StoredOrder } from "@/lib/orders/store";
 
-/** Inline brand tokens — email clients ignore CSS variables. */
-export const EMAIL_BRAND = {
-  charcoal: "#20201e",
-  warmWhite: "#f5f1e8",
-  burntOrange: "#f07836",
-  muted: "#5c5a54",
-  paper: "#e8e2d6",
-  white: "#ffffff",
-} as const;
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+export { EMAIL_BRAND, brandedFromAddress };
+/** @deprecated Use EMAIL_LOGO_CID from email-shell. */
+export const ORDER_EMAIL_LOGO_CID = EMAIL_LOGO_CID;
 
 function channelLabel(channel: StoredOrder["channel"]): string {
   switch (channel) {
@@ -54,9 +45,6 @@ export type NewOrderEmailContent = {
  * Branded staff alert for a newly placed order.
  * HTML is table-based for Outlook / Gmail / Apple Mail compatibility.
  */
-/** Content-ID used when the logo is attached inline (cid:…). */
-export const ORDER_EMAIL_LOGO_CID = "ipshap-logo";
-
 export function buildNewOrderStaffEmail(input: {
   order: StoredOrder;
   adminUrl: string;
@@ -235,11 +223,4 @@ export function buildNewOrderStaffEmail(input: {
     text: textLines.join("\n"),
     html,
   };
-}
-
-/** Ensure From shows a brand display name when only a bare address is configured. */
-export function brandedFromAddress(from: string): string {
-  const trimmed = from.trim();
-  if (trimmed.includes("<") && trimmed.includes(">")) return trimmed;
-  return `${SHORT_BRAND} Orders <${trimmed}>`;
 }

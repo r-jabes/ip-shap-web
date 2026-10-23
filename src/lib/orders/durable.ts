@@ -39,6 +39,15 @@ import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import { adminGetProduct } from "@/lib/admin/store";
 import { getProductById } from "@/lib/catalogue";
+import {
+  assertValidPaymentAmount,
+  describeManualPayment,
+  type ManualPaymentInput,
+} from "@/lib/orders/manual-payment";
+import {
+  insufficientStockMessage,
+  unavailableMessage,
+} from "@/lib/orders/stock-messages";
 
 function isDurableOrdersEnabled(): boolean {
   return hasSupabaseServiceConfig();
@@ -196,10 +205,13 @@ async function createOrderInDatabase(
       throw new Error("Invalid quantity.");
     }
     const product = await loadProductForOrder(line.productId);
-    if (!product || !isPubliclyOrderable(product)) {
+    if (!product) {
       throw new Error(
-        "A cart item is unavailable (unpublished or out of stock). Update your cart.",
+        "An item in your cart is no longer available. Remove it from your cart and try again.",
       );
+    }
+    if (!isPubliclyOrderable(product)) {
+      throw new Error(unavailableMessage(product.name));
     }
     const unit = product.price.amount;
     const lineTotal = unit * line.quantity;
@@ -223,9 +235,7 @@ async function createOrderInDatabase(
     }
     const onHand = product.stockQuantity as number;
     if (onHand < qty) {
-      throw new Error(
-        `Insufficient stock for ${product.name}. Available: ${Math.max(0, onHand)}.`,
-      );
+      throw new Error(insufficientStockMessage(product.name, onHand));
     }
   }
 
@@ -558,15 +568,13 @@ export async function cancelOrderDurable(
 
 export async function markManualPaymentDurable(
   orderId: string,
-  input: { reference: string; reason: string; actorLabel: string },
+  input: ManualPaymentInput,
 ): Promise<StoredOrder> {
   if (!isDurableOrdersEnabled()) return markManualPayment(orderId, input);
 
   const order = await fetchOrderBundle(orderId);
   if (!order) throw new Error("Order not found");
-  if (!input.reference.trim() || !input.reason.trim()) {
-    throw new Error("Payment reference and reason are required.");
-  }
+  assertValidPaymentAmount(input.amount);
   if (order.paymentStatus === "paid") {
     throw new Error("Payment already marked paid.");
   }
@@ -576,6 +584,7 @@ export async function markManualPaymentDurable(
     .from("orders")
     .update({
       payment_status: "paid",
+      amount_paid_rwf: input.amount,
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId);
@@ -588,7 +597,7 @@ export async function markManualPaymentDurable(
     from_payment: order.paymentStatus,
     to_payment: "paid",
     actor_label: input.actorLabel,
-    reason: `Manual payment recorded (${input.reference}): ${input.reason} · ${input.actorLabel}`,
+    reason: describeManualPayment(input),
   });
 
   return (await fetchOrderBundle(orderId))!;

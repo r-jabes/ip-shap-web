@@ -10,11 +10,14 @@ import { AdminPagination } from "@/components/admin/AdminPagination";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Field";
 import { formatDemoPrice } from "@/domain/catalogue";
+import { FulfilmentModal } from "@/components/admin/OrderModals";
+import {
+  FulfilmentBadge,
+  PaymentBadge,
+} from "@/components/admin/OrderStatusBadge";
 import {
   filterAndSortOrders,
-  formatFulfilmentLabel,
   formatOrderPlacedAt,
-  formatPaymentLabel,
   ORDER_FULFILMENT_FILTERS,
   ORDER_PAYMENT_FILTERS,
   ORDER_SORT_OPTIONS,
@@ -24,6 +27,24 @@ import {
 } from "@/lib/admin/orders-query";
 import { paginateItems, parseAdminPage } from "@/lib/admin/pagination";
 import { listOrdersDurable } from "@/lib/orders/durable";
+import type { StoredOrder } from "@/lib/orders/store";
+import { nextFulfilmentStatuses } from "@/lib/orders/transitions";
+
+/** Change an order's status straight from the list, jumping to any valid step. */
+function QuickStatusButton({ order }: { order: StoredOrder }) {
+  const options = nextFulfilmentStatuses(order.fulfilmentStatus);
+  if (options.length === 0) return null;
+  return (
+    <FulfilmentModal
+      orderId={order.id}
+      reference={order.reference}
+      current={order.fulfilmentStatus}
+      options={options}
+      triggerLabel="Change status"
+      triggerVariant="secondary"
+    />
+  );
+}
 
 export default async function AdminOrdersPage({
   searchParams,
@@ -159,14 +180,15 @@ export default async function AdminOrdersPage({
                 {formatDemoPrice(order.total)}
               </p>
             </div>
-            <p className="mt-2 text-sm">
-              {formatFulfilmentLabel(order.fulfilmentStatus)} ·{" "}
-              {formatPaymentLabel(order.paymentStatus)}
-            </p>
-            <p className="mt-1 text-xs text-ink-muted">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <FulfilmentBadge status={order.fulfilmentStatus} />
+              <PaymentBadge status={order.paymentStatus} withPrefix />
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">
               {formatOrderPlacedAt(order.createdAt)}
             </p>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap gap-2">
+              <QuickStatusButton order={order} />
               <Link
                 href={`/admin/orders/${order.id}`}
                 className="inline-flex h-9 items-center rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-3.5 text-sm font-semibold shadow-[2px_2px_0_0_var(--brand-charcoal)]"
@@ -204,19 +226,24 @@ export default async function AdminOrdersPage({
                 </span>
               </AdminTd>
               <AdminTd>
-                {formatFulfilmentLabel(order.fulfilmentStatus)}
+                <FulfilmentBadge status={order.fulfilmentStatus} />
               </AdminTd>
-              <AdminTd>{formatPaymentLabel(order.paymentStatus)}</AdminTd>
+              <AdminTd>
+                <PaymentBadge status={order.paymentStatus} />
+              </AdminTd>
               <AdminTd className="tabular">
                 {formatDemoPrice(order.total)}
               </AdminTd>
               <AdminTd>
-                <Link
-                  href={`/admin/orders/${order.id}`}
-                  className="inline-flex h-9 items-center rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-3.5 text-sm font-semibold shadow-[2px_2px_0_0_var(--brand-charcoal)]"
-                >
-                  Open
-                </Link>
+                <div className="flex items-center gap-2">
+                  <QuickStatusButton order={order} />
+                  <Link
+                    href={`/admin/orders/${order.id}`}
+                    className="inline-flex h-9 items-center rounded-full border-2 border-brand-charcoal bg-brand-warm-white px-3.5 text-sm font-semibold shadow-[2px_2px_0_0_var(--brand-charcoal)]"
+                  >
+                    Open
+                  </Link>
+                </div>
               </AdminTd>
             </tr>
           ))}

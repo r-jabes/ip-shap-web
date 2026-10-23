@@ -1,5 +1,10 @@
 import { z } from "zod";
 import type { CartLine, DemoProduct } from "@/domain/catalogue";
+import {
+  MAX_ORDER_LINE_QUANTITY,
+  describeStock,
+  type StockInfo,
+} from "@/lib/stock/storefront";
 
 /**
  * Pure cart helpers (no React, no storage side effects) so the rules are unit-testable.
@@ -12,7 +17,7 @@ import type { CartLine, DemoProduct } from "@/domain/catalogue";
 /** Bump when the stored shape changes; old keys are discarded on load. */
 export const CART_STORAGE_KEY = "ip-shap-cart-v2";
 export const LEGACY_CART_KEYS = ["ip-shap-demo-cart"] as const;
-export const MAX_LINE_QUANTITY = 99;
+export const MAX_LINE_QUANTITY = MAX_ORDER_LINE_QUANTITY;
 
 const storedLineSchema = z.object({
   productId: z.string().min(1).max(64),
@@ -22,8 +27,12 @@ const storedCartSchema = z.array(z.unknown());
 
 export type CartItem = {
   productId: string;
+  /** Never above what is in stock (unless the line is unavailable, where it is kept for display). */
   quantity: number;
   product: DemoProduct;
+  stock: StockInfo;
+  /** True when the product cannot be ordered right now (out of stock). */
+  unavailable: boolean;
 };
 
 export function clampQuantity(quantity: number): number {
@@ -72,22 +81,50 @@ export function resolveCart(
       removed.push(line);
       continue;
     }
+    const stock = describeStock(product);
+    const wanted = clampQuantity(line.quantity);
     items.push({
       productId: line.productId,
-      quantity: clampQuantity(line.quantity),
+      quantity: stock.max > 0 ? Math.min(wanted, stock.max) : wanted,
       product,
+      stock,
+      unavailable: stock.max === 0,
     });
   }
   return { items, removed };
 }
 
+/** Units that can actually be ordered (unavailable lines are excluded). */
 export function cartItemCount(items: CartItem[]): number {
-  return items.reduce((sum, item) => sum + item.quantity, 0);
+  return items.reduce(
+    (sum, item) => (item.unavailable ? sum : sum + item.quantity),
+    0,
+  );
+}
+
+/** Distinct products in the cart. This is what the header badge shows. */
+export function cartProductCount(items: CartItem[]): number {
+  return items.length;
 }
 
 export function cartSubtotal(items: CartItem[]): number {
   return items.reduce(
-    (sum, item) => sum + item.product.price.amount * item.quantity,
+    (sum, item) =>
+      item.unavailable ? sum : sum + item.product.price.amount * item.quantity,
     0,
   );
+}
+
+export function cartHasUnavailable(items: CartItem[]): boolean {
+  return items.some((item) => item.unavailable);
+}
+
+/**
+ * Standard storefront wording: products and units are different things.
+ * "1 product" when each product is added once, "1 product · 19 units" otherwise.
+ */
+export function cartSummaryLabel(products: number, units: number): string {
+  const productText = `${products} ${products === 1 ? "product" : "products"}`;
+  if (units === products || units === 0) return productText;
+  return `${productText} · ${units} ${units === 1 ? "unit" : "units"}`;
 }

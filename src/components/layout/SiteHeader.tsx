@@ -15,6 +15,7 @@ import {
   SearchIcon,
   WhatsAppIcon,
 } from "@/components/ui/icons";
+import { cartSummaryLabel } from "@/lib/cart";
 import type { NavData } from "@/lib/navigation";
 import { chatHref } from "@/lib/site-config";
 
@@ -25,13 +26,14 @@ const links = [
 ];
 
 export function SiteHeader({ nav }: { nav: NavData }) {
-  const { itemCount, openCart, feedback } = useCart();
+  const { itemCount, productCount, openCart, feedback } = useCart();
   const { openSearch, openMenu } = useChrome();
   const pathname = usePathname();
   const [pulse, setPulse] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const previousCount = useRef(itemCount);
 
+  // Pulse on any change to what is in the cart (units, not just the product count).
   useEffect(() => {
     if (itemCount === previousCount.current) return;
     previousCount.current = itemCount;
@@ -121,7 +123,11 @@ export function SiteHeader({ nav }: { nav: NavData }) {
             type="button"
             onClick={openCart}
             aria-haspopup="dialog"
-            aria-label={`Open cart, ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+            aria-label={
+              productCount > 0
+                ? `Open cart, ${cartSummaryLabel(productCount, itemCount)}`
+                : "Open cart, empty"
+            }
             className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-charcoal bg-brand-charcoal text-brand-warm-white transition-[transform,background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-brand-dark-neutral active:scale-95 motion-reduce:transition-none ${
               pulse ? "cart-target--catch" : ""
             }`}
@@ -130,14 +136,14 @@ export function SiteHeader({ nav }: { nav: NavData }) {
               <span aria-hidden="true" className="cart-fly-dot" />
             ) : null}
             <BagIcon size={20} />
-            {itemCount > 0 ? (
+            {productCount > 0 ? (
               <span
                 aria-hidden="true"
                 className={`absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-brand-warm-white bg-brand-burnt-orange px-1 text-[0.7rem] leading-none font-bold text-brand-charcoal tabular ${
                   pulse ? "cart-count--pulse" : ""
                 }`}
               >
-                {itemCount > 99 ? "99+" : itemCount}
+                {productCount > 99 ? "99+" : productCount}
               </span>
             ) : null}
           </button>

@@ -79,7 +79,7 @@ describe("sendNewOrderStaffEmail", () => {
       text: string;
       attachments?: Array<{ content_id?: string }>;
     };
-    expect(body.from).toBe("IP SHAP Orders <orders@example.com>");
+    expect(body.from).toBe("IP SHAP <orders@example.com>");
     expect(body.subject).toContain("IP SHAP · New order");
     expect(body.html).toContain("THE IP SHAP BUSINESS LTD");
     expect(body.html).toContain("cid:ipshap-logo");

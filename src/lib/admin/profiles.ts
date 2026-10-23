@@ -5,8 +5,13 @@ import {
   memberStatus,
   type MemberStatus,
 } from "@/lib/admin/team-rules";
-import { getPublicEnv } from "@/lib/env";
-import { getSupabaseAnonClient } from "@/lib/supabase/anon";
+import {
+  generateAuthActionLink,
+  inviteAcceptRedirectUrl,
+} from "@/lib/admin/auth-links";
+import {
+  sendInviteEmail,
+} from "@/lib/notifications/email";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type AdminProfileRow = {
@@ -38,8 +43,7 @@ export type ProfileResult =
 
 /** Where invite emails send people. Must be in the Supabase Auth redirect allow-list. */
 export function inviteRedirectUrl(): string {
-  const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  return `${appUrl}/admin/accept-invite`;
+  return inviteAcceptRedirectUrl();
 }
 
 export async function fetchActiveAdminProfile(
@@ -144,20 +148,17 @@ export async function inviteAdminByEmail(input: {
     return { ok: false, error: "Enter a valid email address." };
   }
 
-  // Invites are emailed by Supabase Auth (its SMTP), not by Resend.
-  // Resend is only used for new-order staff alerts.
-  const { data: invited, error: inviteError } =
-    await client.auth.admin.inviteUserByEmail(email, {
-      redirectTo: inviteRedirectUrl(),
-    });
-
-  let userId = invited?.user?.id;
+  // Create a one-time link without sending Supabase's default email; we send
+  // a branded Resend message (same look as order alerts) instead.
+  let link = await generateAuthActionLink({
+    type: "invite",
+    email,
+    redirectTo: inviteRedirectUrl(),
+  });
   let alreadyHadAccount = false;
 
-  if (inviteError || !userId) {
-    // They may already have an Auth account (previous invite, password reset, etc.).
-    // In that case Supabase will not send another invite email — we attach access
-    // and email them a password link so they still hear from us.
+  if (!link.ok) {
+    // Existing Auth users cannot get a fresh "invite" link — use recovery.
     const authUsers = await loadAuthUsers(client);
     const existing = Array.from(authUsers.values()).find(
       (user) => user.email?.toLowerCase() === email,
@@ -165,15 +166,24 @@ export async function inviteAdminByEmail(input: {
     if (!existing) {
       console.error(
         JSON.stringify({
-          type: "admin_invite_supabase_error",
-          message: inviteError?.message ?? "Invite failed.",
+          type: "admin_invite_link_error",
+          message: link.error,
         }),
       );
-      return { ok: false, error: inviteError?.message ?? "Invite failed." };
+      return { ok: false, error: link.error };
     }
-    userId = existing.id;
     alreadyHadAccount = true;
+    link = await generateAuthActionLink({
+      type: "recovery",
+      email,
+      redirectTo: inviteRedirectUrl(),
+    });
+    if (!link.ok) {
+      return { ok: false, error: link.error };
+    }
   }
+
+  const userId = link.userId;
 
   const { data: existingProfile } = await client
     .from("admin_profiles")
@@ -197,40 +207,41 @@ export async function inviteAdminByEmail(input: {
   });
   if (!saved.ok) return saved;
 
-  if (alreadyHadAccount) {
-    const anon = getSupabaseAnonClient();
-    const { error: recoveryError } = anon
-      ? await anon.auth.resetPasswordForEmail(email, {
-          redirectTo: inviteRedirectUrl(),
-        })
-      : { error: { message: "Anon client not configured" } };
-    if (recoveryError) {
-      console.error(
-        JSON.stringify({
-          type: "admin_invite_recovery_email_error",
-          message: recoveryError.message,
-        }),
-      );
+  const emailed = await sendInviteEmail({
+    to: email,
+    actionUrl: link.actionUrl,
+    recipientName: input.displayName,
+    alreadyHadAccount,
+  });
+  if (!emailed.ok) {
+    console.error(
+      JSON.stringify({
+        type: "admin_invite_email_error",
+        message: emailed.error,
+        skipped: emailed.skipped ?? null,
+      }),
+    );
+    if (emailed.skipped === "not_configured") {
       return {
-        ok: true,
-        userId,
-        message:
-          "Added to the team, but we could not email them. Ask them to use “Forgot password” on the sign-in page.",
+        ok: false,
+        error:
+          "Invite email is not configured. Set EMAIL_FROM and RESEND_API_KEY (same as order emails).",
       };
     }
     return {
       ok: true,
       userId,
       message:
-        "They already had an account, so we emailed a link to set their password (sent by Supabase, not Resend).",
+        "Added to the team, but the invite email failed to send. Use “Resend invite” or ask them to use Forgot password.",
     };
   }
 
   return {
     ok: true,
     userId,
-    message:
-      "Invite sent. The email comes from Supabase Auth (check spam) — it will not appear in Resend.",
+    message: alreadyHadAccount
+      ? "They already had an account — we emailed a branded link to set their password."
+      : "Invite sent (branded email via Resend).",
   };
 }
 
@@ -251,10 +262,28 @@ export async function resendInvite(input: {
     return { ok: false, error: "This person has already accepted the invite." };
   }
 
-  const { error } = await client.auth.admin.inviteUserByEmail(user.email, {
+  const link = await generateAuthActionLink({
+    type: "invite",
+    email: user.email,
     redirectTo: inviteRedirectUrl(),
   });
-  if (error) return { ok: false, error: error.message };
+  if (!link.ok) return { ok: false, error: link.error };
+
+  const emailed = await sendInviteEmail({
+    to: user.email,
+    actionUrl: link.actionUrl,
+    recipientName: null,
+  });
+  if (!emailed.ok) {
+    if (emailed.skipped === "not_configured") {
+      return {
+        ok: false,
+        error:
+          "Invite email is not configured. Set EMAIL_FROM and RESEND_API_KEY.",
+      };
+    }
+    return { ok: false, error: emailed.error };
+  }
 
   await client.from("audit_events").insert({
     actor_user_id: input.actorUserId,
@@ -263,7 +292,7 @@ export async function resendInvite(input: {
     entity_id: input.userId,
     metadata: {},
   });
-  return { ok: true, userId: input.userId };
+  return { ok: true, userId: input.userId, message: "Invite sent again." };
 }
 
 /** Change a member's name, role or active state. Applies team-safety rules. */

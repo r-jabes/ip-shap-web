@@ -2,6 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
+import { StockNote } from "@/components/ui/StockNote";
+import { cartSummaryLabel } from "@/lib/cart";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
@@ -13,9 +16,25 @@ import { formatDemoPrice } from "@/domain/catalogue";
 import { primaryCatalogueImage } from "@/lib/product-image";
 
 export default function CartPage() {
-  const { items, subtotal, hydrated, setQuantity, removeItem, clearCart } =
-    useCart();
-  const count = items.reduce((sum, line) => sum + line.quantity, 0);
+  const {
+    items,
+    subtotal,
+    hydrated,
+    setQuantity,
+    removeItem,
+    clearCart,
+    itemCount,
+    productCount,
+    hasUnavailable,
+    notice,
+    dismissNotice,
+    refreshStock,
+  } = useCart();
+
+  // Make sure the quantities shown here are current.
+  useEffect(() => {
+    if (hydrated) void refreshStock();
+  }, [hydrated, refreshStock]);
 
   return (
     <Container className="py-10 lg:py-14">
@@ -51,10 +70,25 @@ export default function CartPage() {
         <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(17rem,0.75fr)] lg:items-start lg:gap-12">
           <div>
             <p className="text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
-              {count} {count === 1 ? "item" : "items"}
+              {cartSummaryLabel(productCount, itemCount)}
             </p>
+            {notice ? (
+              <div
+                role="status"
+                className="mt-3 flex items-start justify-between gap-3 rounded-2xl bg-paper-2 px-4 py-3 text-sm"
+              >
+                <p>{notice}</p>
+                <button
+                  type="button"
+                  onClick={dismissNotice}
+                  className="shrink-0 font-semibold underline underline-offset-4"
+                >
+                  Dismiss
+                </button>
+              </div>
+            ) : null}
             <ul className="mt-4 divide-y-2 divide-brand-charcoal/10 border-y-2 border-brand-charcoal/10">
-              {items.map(({ product, quantity }) => {
+              {items.map(({ product, quantity, stock, unavailable }) => {
                 const image = primaryCatalogueImage(product.images);
                 return (
                   <li
@@ -92,6 +126,7 @@ export default function CartPage() {
                           <p className="mt-1 text-sm text-ink-muted tabular">
                             {formatDemoPrice(product.price)} each
                           </p>
+                          <StockNote stock={stock} className="mt-1" />
                         </div>
                         <IconButton
                           label={`Remove ${product.name}`}
@@ -104,15 +139,27 @@ export default function CartPage() {
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
                         <QuantityStepper
                           value={quantity}
+                          max={Math.max(1, stock.max)}
+                          disabled={unavailable}
                           label={`Quantity of ${product.name}`}
                           onChange={(next) => setQuantity(product.id, next)}
                         />
-                        <p className="font-display text-xl tabular text-brand-burnt-orange">
-                          {formatDemoPrice({
-                            amount: product.price.amount * quantity,
-                            currency: "RWF",
-                          })}
-                        </p>
+                        {unavailable ? (
+                          <button
+                            type="button"
+                            onClick={() => removeItem(product.id)}
+                            className="text-sm font-semibold underline underline-offset-4"
+                          >
+                            Remove from cart
+                          </button>
+                        ) : (
+                          <p className="font-display text-xl tabular text-brand-burnt-orange">
+                            {formatDemoPrice({
+                              amount: product.price.amount * quantity,
+                              currency: "RWF",
+                            })}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </li>
@@ -133,9 +180,20 @@ export default function CartPage() {
               Delivery fee and timing are agreed with you when we confirm the
               order. Nothing is charged on this page.
             </p>
-            <Button href="/checkout" size="lg" className="mt-6 w-full">
-              Proceed to checkout
-            </Button>
+            {hasUnavailable ? (
+              <>
+                <p role="alert" className="mt-4 text-sm font-semibold text-red-700">
+                  Remove the out-of-stock items to continue.
+                </p>
+                <Button size="lg" className="mt-4 w-full" disabled>
+                  Proceed to checkout
+                </Button>
+              </>
+            ) : (
+              <Button href="/checkout" size="lg" className="mt-6 w-full">
+                Proceed to checkout
+              </Button>
+            )}
             <Button href="/shop" variant="ghost" size="md" className="mt-3 w-full">
               Keep shopping
             </Button>

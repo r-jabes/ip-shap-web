@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { CartProvider, useCart } from "@/components/cart/CartProvider";
+import { CatalogueProvider } from "@/components/catalogue/CatalogueProvider";
 import { CART_STORAGE_KEY } from "@/lib/cart";
 import { listProducts } from "@/lib/catalogue";
 
@@ -77,5 +78,61 @@ describe("CartProvider", () => {
 
     act(() => screen.getByText("max").click());
     expect(screen.getByTestId("count")).toHaveTextContent("99");
+  });
+
+  it("never lets a shopper put more in the cart than is in stock", async () => {
+    const [base] = listProducts();
+    const limited = { ...base, availability: "in_stock" as const, stockQuantity: 3 };
+    render(
+      <CatalogueProvider products={[limited]} categories={[]} brands={[]}>
+        <CartProvider>
+          <Probe />
+        </CartProvider>
+      </CatalogueProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("hydrated")).toHaveTextContent("true"),
+    );
+
+    act(() => screen.getByText("add").click()); // 2
+    act(() => screen.getByText("add").click()); // would be 4, capped at 3
+    expect(screen.getByTestId("count")).toHaveTextContent("3");
+    act(() => screen.getByText("max").click());
+    expect(screen.getByTestId("count")).toHaveTextContent("3");
+  });
+
+  it("stays empty after clearing even when the catalogue is re-supplied by the server", async () => {
+    const [base] = listProducts();
+    const tree = (products: typeof base[]) => (
+      <CatalogueProvider products={products} categories={[]} brands={[]}>
+        <CartProvider>
+          <Clearer />
+          <Probe />
+        </CartProvider>
+      </CatalogueProvider>
+    );
+    function Clearer() {
+      const { clearCart } = useCart();
+      return (
+        <button type="button" onClick={clearCart}>
+          clear
+        </button>
+      );
+    }
+
+    const { rerender } = render(tree([base]));
+    await waitFor(() =>
+      expect(screen.getByTestId("hydrated")).toHaveTextContent("true"),
+    );
+    act(() => screen.getByText("add").click());
+    expect(screen.getByTestId("count")).toHaveTextContent("2");
+
+    // A server refresh hands the provider a brand-new catalogue array in the same commit as a clear.
+    act(() => {
+      screen.getByText("clear").click();
+      rerender(tree([{ ...base }]));
+    });
+    expect(screen.getByTestId("count")).toHaveTextContent("0");
+    expect(window.localStorage.getItem(CART_STORAGE_KEY)).toBe("[]");
   });
 });

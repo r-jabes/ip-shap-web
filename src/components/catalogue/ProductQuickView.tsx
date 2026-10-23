@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import type { DemoProduct } from "@/domain/catalogue";
-import { useCart } from "@/components/cart/CartProvider";
+import { useCart, useLiveProduct } from "@/components/cart/CartProvider";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Overlay } from "@/components/ui/Overlay";
 import { PriceTag } from "@/components/ui/PriceTag";
+import { StockNote } from "@/components/ui/StockNote";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
+import { describeStock } from "@/lib/stock/storefront";
 import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
 export function ProductQuickView({
   product,
@@ -19,13 +21,28 @@ export function ProductQuickView({
   open: boolean;
   onClose: () => void;
 }) {
+  if (!product) return null;
+  return <QuickViewBody product={product} open={open} onClose={onClose} />;
+}
+
+function QuickViewBody({
+  product: catalogueProduct,
+  open,
+  onClose,
+}: {
+  product: DemoProduct;
+  open: boolean;
+  onClose: () => void;
+}) {
   const { addItem } = useCart();
   const catalogue = useCatalogueOptional();
-  if (!product) return null;
+  // Fetch current stock only while the quick view is open.
+  const product = useLiveProduct(catalogueProduct, { refresh: open });
+  const stock = describeStock(product);
 
   const image = primaryCatalogueImage(product.images);
   const categoryName = catalogue?.categoryName(product.categorySlug);
-  const unavailable = product.availability === "out_of_stock";
+  const unavailable = stock.max === 0;
   const onSale = !!product.compareAtPrice;
 
   return (
@@ -68,6 +85,7 @@ export function ProductQuickView({
             compareAt={product.compareAtPrice}
             size="lg"
           />
+          <StockNote stock={stock} className="-mt-2 text-sm" />
           <p className="line-clamp-4 text-sm text-ink-muted">
             {product.description}
           </p>
@@ -82,7 +100,7 @@ export function ProductQuickView({
                 onClose();
               }}
             >
-              Add to cart
+              {unavailable ? "Out of stock" : "Add to cart"}
             </Button>
             <Button
               href={`/product/${product.slug}`}

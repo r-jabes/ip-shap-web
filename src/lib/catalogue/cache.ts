@@ -42,6 +42,18 @@ export async function getCachedFeaturedProducts(
   )();
 }
 
+/**
+ * Call after orders reserve or restore stock. Only drops the cached catalogue data; storefront
+ * clients also read live stock from `/api/stock`, so this just keeps server-rendered pages honest.
+ */
+export function revalidateCatalogueStock() {
+  try {
+    revalidateTag(CATALOGUE_CACHE_TAG);
+  } catch {
+    // Not in a request context (tests, scripts): nothing to revalidate.
+  }
+}
+
 /** Call after catalogue writes that affect the public storefront. */
 export function revalidateCatalogue() {
   revalidateTag(CATALOGUE_CACHE_TAG);

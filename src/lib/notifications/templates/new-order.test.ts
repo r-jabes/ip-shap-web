@@ -65,7 +65,7 @@ describe("buildNewOrderStaffEmail", () => {
 
   it("prefixes bare From addresses with the brand display name", () => {
     expect(brandedFromAddress("orders@example.com")).toBe(
-      "IP SHAP Orders <orders@example.com>",
+      "IP SHAP <orders@example.com>",
     );
     expect(brandedFromAddress("IP SHAP <orders@example.com>")).toBe(
       "IP SHAP <orders@example.com>",

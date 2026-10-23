@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/Button";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { formatDemoPrice } from "@/domain/catalogue";
 import { formatAdminDateTime } from "@/lib/admin/format";
+import { formatFulfilmentLabel } from "@/lib/admin/orders-query";
 import {
-  formatFulfilmentLabel,
-  formatPaymentLabel,
-} from "@/lib/admin/orders-query";
+  FulfilmentBadge,
+  PaymentBadge,
+} from "@/components/admin/OrderStatusBadge";
+import { OrderProgress } from "@/components/admin/OrderProgress";
 import { nextFulfilmentStatuses } from "@/lib/orders/transitions";
 import {
   customerTelHref,
@@ -52,6 +54,69 @@ export default async function AdminOrderDetailPage({
       />
 
       <AdminPanel>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <FulfilmentBadge
+              status={order.fulfilmentStatus}
+              size="lg"
+              withPrefix
+            />
+            <PaymentBadge status={order.paymentStatus} size="lg" withPrefix />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <FulfilmentModal
+              orderId={order.id}
+              reference={order.reference}
+              current={order.fulfilmentStatus}
+              options={nextFulfilmentStatuses(order.fulfilmentStatus)}
+            />
+            <PaymentModal
+              orderId={order.id}
+              reference={order.reference}
+              total={order.total.amount}
+              alreadyPaid={order.paymentStatus === "paid"}
+            />
+          </div>
+        </div>
+        <div className="mt-5">
+          <OrderProgress status={order.fulfilmentStatus} />
+        </div>
+      </AdminPanel>
+
+      <ul className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        {(
+          [
+            ["Total", formatDemoPrice(order.total)],
+            [
+              "Amount received",
+              order.amountPaid
+                ? formatDemoPrice(order.amountPaid)
+                : order.paymentStatus === "paid"
+                  ? "Not recorded"
+                  : "Nothing yet",
+            ],
+            [
+              "Delivery fee",
+              order.deliveryFee
+                ? formatDemoPrice(order.deliveryFee)
+                : "To be confirmed",
+            ],
+            ["Placed", formatAdminDateTime(order.createdAt)],
+          ] as const
+        ).map(([label, value]) => (
+          <li
+            key={label}
+            className="rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 bg-white/50 px-4 py-3"
+          >
+            <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
+              {label}
+            </p>
+            <p className="mt-1.5 font-semibold text-brand-charcoal">{value}</p>
+          </li>
+        ))}
+      </ul>
+
+      <AdminPanel>
         <h2 className="font-display text-xl">Message customer</h2>
         <p className="mt-1 text-sm text-ink-muted">
           Opens the customer&apos;s own phone number, not the shop contact
@@ -79,32 +144,6 @@ export default async function AdminOrderDetailPage({
         </div>
       </AdminPanel>
 
-      <ul className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        {(
-          [
-            ["Order status", formatFulfilmentLabel(order.fulfilmentStatus)],
-            ["Payment", formatPaymentLabel(order.paymentStatus)],
-            ["Total", formatDemoPrice(order.total)],
-            [
-              "Delivery fee",
-              order.deliveryFee
-                ? formatDemoPrice(order.deliveryFee)
-                : "To be confirmed",
-            ],
-          ] as const
-        ).map(([label, value]) => (
-          <li
-            key={label}
-            className="rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 bg-white/50 px-4 py-3"
-          >
-            <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
-              {label}
-            </p>
-            <p className="mt-1.5 font-semibold text-brand-charcoal">{value}</p>
-          </li>
-        ))}
-      </ul>
-
       <AdminPanel>
         <h2 className="font-display text-xl">Items</h2>
         <ul className="mt-4 space-y-2 text-sm">
@@ -124,19 +163,6 @@ export default async function AdminOrderDetailPage({
         </ul>
       </AdminPanel>
 
-      <div className="flex flex-wrap gap-2">
-        <FulfilmentModal
-          orderId={order.id}
-          options={nextFulfilmentStatuses(order.fulfilmentStatus).map(
-            (status) => ({ value: status, label: formatFulfilmentLabel(status) }),
-          )}
-        />
-        <PaymentModal
-          orderId={order.id}
-          alreadyPaid={order.paymentStatus === "paid"}
-        />
-      </div>
-
       <AdminPanel>
         <h2 className="font-display text-xl">History</h2>
         <ul className="mt-4 space-y-2 text-sm text-ink-muted">
@@ -145,8 +171,10 @@ export default async function AdminOrderDetailPage({
               <span className="tabular text-brand-charcoal">
                 {formatAdminDateTime(entry.at)}
               </span>
-              : {entry.from ? formatFulfilmentLabel(entry.from) : "Placed"} →{" "}
-              {formatFulfilmentLabel(entry.to)} — {entry.reason}
+              :{" "}
+              {entry.from === entry.to
+                ? entry.reason
+                : `${entry.from ? formatFulfilmentLabel(entry.from) : "Placed"} → ${formatFulfilmentLabel(entry.to)} — ${entry.reason}`}
             </li>
           ))}
         </ul>

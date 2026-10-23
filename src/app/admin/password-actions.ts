@@ -1,10 +1,14 @@
 "use server";
 
 import { headers } from "next/headers";
-import { getPublicEnv } from "@/lib/env";
+import {
+  generateAuthActionLink,
+  passwordResetRedirectUrl,
+} from "@/lib/admin/auth-links";
+import { fetchActiveAdminProfile } from "@/lib/admin/profiles";
+import { sendPasswordResetEmail } from "@/lib/notifications/email";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
-import { getSupabaseAnonClient } from "@/lib/supabase/anon";
-import { hasSupabaseAnonConfig } from "@/lib/supabase/config";
+import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
 
 const GENERIC_RESET_SENT =
   "If an account exists for that email, you will receive reset instructions shortly.";
@@ -28,31 +32,37 @@ export async function requestAdminPasswordResetAction(
     return { error: "Enter a valid email address." };
   }
 
-  if (!hasSupabaseAnonConfig()) {
+  if (!hasSupabaseServiceConfig()) {
     return {
       error: "Password reset is temporarily unavailable. Please try again later.",
     };
   }
 
-  const client = getSupabaseAnonClient();
-  if (!client) {
-    return {
-      error: "Password reset is temporarily unavailable. Please try again later.",
-    };
-  }
-
-  const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const { error } = await client.auth.resetPasswordForEmail(email, {
-    redirectTo: `${appUrl}/admin/reset-password`,
+  // Build a recovery link only when Auth already has this email (errors otherwise).
+  // Only send when they also have an active admin profile.
+  const link = await generateAuthActionLink({
+    type: "recovery",
+    email,
+    redirectTo: passwordResetRedirectUrl(),
   });
 
-  if (error) {
-    console.error(
-      JSON.stringify({
-        type: "admin_password_reset_error",
-        message: error.message,
-      }),
-    );
+  if (link.ok) {
+    const profile = await fetchActiveAdminProfile(link.userId);
+    if (profile) {
+      const emailed = await sendPasswordResetEmail({
+        to: email,
+        actionUrl: link.actionUrl,
+      });
+      if (!emailed.ok) {
+        console.error(
+          JSON.stringify({
+            type: "admin_password_reset_email_error",
+            message: emailed.error,
+            skipped: emailed.skipped ?? null,
+          }),
+        );
+      }
+    }
   }
 
   // Always generic — do not reveal whether the email exists.
