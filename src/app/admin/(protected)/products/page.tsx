@@ -174,9 +174,11 @@ export default async function AdminProductsPage({
             <Button href="/admin/export/products" variant="ghost" size="sm">
               Download (CSV)
             </Button>
-            <Button href="/admin/import" variant="ghost" size="sm">
-              Import from spreadsheet
-            </Button>
+            {session && roleHasPermission(session.role, "import:run") ? (
+              <Button href="/admin/import" variant="ghost" size="sm">
+                Import from spreadsheet
+              </Button>
+            ) : null}
             <ProductModal {...modalProps} defaultOpen={params.add === "1"} />
           </>
         }

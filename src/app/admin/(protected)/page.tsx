@@ -11,10 +11,12 @@ import {
 import { Button } from "@/components/ui/Button";
 import { loadAdminDashboard } from "@/lib/admin/dashboard";
 import { describeAuditAction, formatAdminDateTime } from "@/lib/admin/format";
+import { roleHasPermission } from "@/lib/admin/roles";
+import { getAdminSession } from "@/lib/admin/session";
 
 export default async function AdminDashboardPage() {
-  const { counts, adjustments, audits, lowStock, attention } =
-    await loadAdminDashboard();
+  const [{ counts, adjustments, audits, lowStock, attention }, session] =
+    await Promise.all([loadAdminDashboard(), getAdminSession()]);
 
   return (
     <div className="space-y-10">
@@ -32,9 +34,11 @@ export default async function AdminDashboardPage() {
             <Button href="/admin/stock?add=1" variant="ghost" size="sm">
               Update stock
             </Button>
-            <Button href="/admin/import" variant="ghost" size="sm">
-              Import
-            </Button>
+            {session && roleHasPermission(session.role, "import:run") ? (
+              <Button href="/admin/import" variant="ghost" size="sm">
+                Import
+              </Button>
+            ) : null}
           </>
         }
       />
