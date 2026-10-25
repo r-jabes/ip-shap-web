@@ -4,6 +4,7 @@ import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { Container } from "@/components/ui/Container";
 import { getServerEnv } from "@/lib/env";
 import { listActiveDeliveryZones } from "@/lib/orders/delivery";
+import { turnstileSiteKey } from "@/lib/security/turnstile";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -23,14 +24,16 @@ export default function CheckoutPage() {
         Checkout
       </h1>
       <p className="mt-3 max-w-2xl text-ink-muted">
-        Guest checkout — no account needed. We create your order, then you
-        finish with us on WhatsApp. Nothing is charged on this page.
+        Guest checkout — no account needed. We create your order on this site,
+        then confirm availability, delivery and payment with you. Nothing is
+        charged on this page.
       </p>
       <div className="mt-10">
         <CheckoutFormClient
           zones={listActiveDeliveryZones()}
           onlinePaymentEnabled={env.ONLINE_PAYMENT_ENABLED}
           whatsappConfigured={Boolean(env.WHATSAPP_BUSINESS_E164)}
+          turnstileSiteKey={turnstileSiteKey()}
         />
       </div>
     </Container>

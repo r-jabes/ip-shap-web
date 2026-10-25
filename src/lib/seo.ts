@@ -98,7 +98,7 @@ export type ProductJsonLd = {
   name: string;
   description: string;
   sku: string;
-  brand: { "@type": "Brand"; name: string };
+  brand?: { "@type": "Brand"; name: string };
   image?: string[];
   offers: {
     "@type": "Offer";
@@ -120,10 +120,9 @@ export function productJsonLd(product: CatalogueProduct): ProductJsonLd {
     name: product.name,
     description: product.description,
     sku: product.id,
-    brand: {
-      "@type": "Brand",
-      name: product.brandName,
-    },
+    ...(product.brandName
+      ? { brand: { "@type": "Brand", name: product.brandName } }
+      : {}),
     ...(image ? { image: [absoluteUrl(image.src)] } : {}),
     offers: {
       "@type": "Offer",
@@ -162,6 +161,36 @@ export function breadcrumbJsonLd(
       name: crumb.name,
       item: absoluteUrl(crumb.path),
     })),
+  };
+}
+
+/** Organization / LiquorStore JSON-LD for the homepage. */
+export function organizationJsonLd(input?: {
+  telephone?: string | null;
+  email?: string | null;
+  address?: string | null;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "LiquorStore",
+    name: SHORT_BRAND,
+    legalName: LEGAL_NAME,
+    url: absoluteUrl("/"),
+    priceRange: "RWF",
+    areaServed: "RW",
+    ...(input?.telephone
+      ? { telephone: input.telephone.startsWith("+") ? input.telephone : `+${input.telephone}` }
+      : {}),
+    ...(input?.email ? { email: input.email } : {}),
+    ...(input?.address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: input.address,
+            addressCountry: "RW",
+          },
+        }
+      : {}),
   };
 }
 

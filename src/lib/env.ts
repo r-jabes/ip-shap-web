@@ -52,6 +52,21 @@ const serverEnvSchema = z.object({
   PAYMENT_PROVIDER: z.enum(["unselected", "sandbox"]).default("unselected"),
   /** HMAC secret for sandbox webhook verification (server only). */
   PAYMENT_WEBHOOK_SECRET: z.string().min(16).optional(),
+  /** Comma-separated staff emails for new-order alerts (P5). */
+  ORDER_NOTIFY_EMAILS: z.string().optional(),
+  /** From address for Resend transactional mail (P5). Plain email or `Name <email>`. */
+  EMAIL_FROM: z.string().min(3).optional(),
+  /** Resend API key — server only (P5). */
+  RESEND_API_KEY: z.string().min(1).optional(),
+  /** Cloudflare Turnstile secret — when set, public forms must pass a token (P8). */
+  TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  /** Server Sentry DSN (P8). Prefer this over the public DSN on the server. */
+  SENTRY_DSN: z.string().url().optional(),
+  /**
+   * Shared secret for the scheduled maintenance job (`/api/cron/maintenance`). Vercel Cron sends
+   * it automatically as `Authorization: Bearer <value>`. At least 16 characters.
+   */
+  CRON_SECRET: z.string().min(16).optional(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -79,6 +94,12 @@ function readServerEnv(): ServerEnv {
     ONLINE_PAYMENT_ENABLED: process.env.ONLINE_PAYMENT_ENABLED ?? "false",
     PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER ?? "unselected",
     PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET,
+    ORDER_NOTIFY_EMAILS: process.env.ORDER_NOTIFY_EMAILS,
+    EMAIL_FROM: process.env.EMAIL_FROM,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    CRON_SECRET: process.env.CRON_SECRET,
     NODE_ENV: process.env.NODE_ENV,
   });
 }
@@ -112,6 +133,13 @@ export function resetEnvCacheForTests() {
   cachedServerEnv = undefined;
 }
 
+/**
+ * Demo fixtures are for local/UI work only.
+ * Production builds never load fixtures — even if DEMO_MODE was mis-set to true.
+ */
 export function isDemoMode(): boolean {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
   return getPublicEnv().NEXT_PUBLIC_DEMO_MODE;
 }

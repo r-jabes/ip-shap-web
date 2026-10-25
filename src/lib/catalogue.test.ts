@@ -109,4 +109,21 @@ describe("listProducts", () => {
     expect(last.items).toHaveLength(CATALOGUE_PAGE_SIZE);
     expect(paginateProducts(sixty, 99).page).toBe(5);
   });
+
+  it("fail-closes sync catalogue when demo mode is off", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
+    vi.stubEnv("NEXT_PUBLIC_DEMO_MODE", "false");
+    const {
+      listProducts,
+      getCategories,
+      getBrands,
+      getProductBySlug,
+      getFeaturedProducts,
+    } = await import("./catalogue");
+    expect(listProducts()).toEqual([]);
+    expect(getCategories()).toEqual([]);
+    expect(getBrands()).toEqual([]);
+    expect(getProductBySlug("product-001-rozzita-chocolate")).toBeUndefined();
+    expect(getFeaturedProducts()).toEqual([]);
+  });
 });

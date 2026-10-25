@@ -1,8 +1,19 @@
 import { randomUUID } from "node:crypto";
-import type { DemoProduct, ProductAvailability } from "@/domain/catalogue";
-import { DEMO_PRODUCTS } from "@/fixtures/demo/catalogue";
+import type {
+  Brand,
+  Category,
+  DemoProduct,
+  ProductAvailability,
+} from "@/domain/catalogue";
+import {
+  DEMO_BRANDS,
+  DEMO_CATEGORIES,
+  DEMO_PRODUCTS,
+} from "@/fixtures/demo/catalogue";
+import { applyDiscount } from "@/lib/admin/discount";
 import type { AdminSession } from "@/lib/admin/session";
 import { moneyRwf } from "@/lib/money";
+import { computeProductCounts, isLowStockProduct } from "@/lib/admin/product-counts";
 
 export type StockAdjustmentRecord = {
   id: string;
@@ -28,6 +39,8 @@ export type AuditEvent = {
 
 type AdminStore = {
   products: DemoProduct[];
+  categories: Category[];
+  brands: Brand[];
   adjustments: StockAdjustmentRecord[];
   audits: AuditEvent[];
 };
@@ -45,7 +58,11 @@ function getStore(): AdminStore {
           product.availability === "unknown"
             ? null
             : (product.stockQuantity ?? 0),
+        isFeatured: product.isFeatured ?? false,
+        featuredSort: product.featuredSort ?? 0,
       })),
+      categories: structuredClone(DEMO_CATEGORIES),
+      brands: structuredClone(DEMO_BRANDS),
       adjustments: [],
       audits: [],
     };
@@ -82,18 +99,14 @@ export function adminGetProduct(id: string): DemoProduct | undefined {
 }
 
 export function adminDashboardCounts() {
-  const products = getStore().products;
   return {
-    totalProducts: products.length,
-    published: products.filter((p) => p.status === "published").length,
-    draft: products.filter((p) => p.status === "draft" || p.status === "demo")
-      .length,
-    archived: products.filter((p) => p.status === "archived").length,
-    unknownStock: products.filter((p) => p.availability === "unknown").length,
-    outOfStock: products.filter((p) => p.availability === "out_of_stock")
-      .length,
+    ...computeProductCounts(getStore().products),
     recentAdjustments: getStore().adjustments.length,
   };
+}
+
+export function adminListLowStockProducts() {
+  return adminListProducts().filter(isLowStockProduct);
 }
 
 export type AdminProductInput = {
@@ -101,8 +114,12 @@ export type AdminProductInput = {
   slug: string;
   name: string;
   description: string;
+  /** Regular price. The price customers pay is derived from this and `discountPercent`. */
   priceAmount: number;
+  /** 0 = no discount. */
+  discountPercent?: number;
   categorySlug?: string;
+  /** Empty string means the product has no brand. */
   brandSlug: string;
   brandName: string;
   status: DemoProduct["status"];
@@ -111,14 +128,64 @@ export type AdminProductInput = {
   sku?: string;
   barcode?: string;
   stockQuantity: number | null;
+  isFeatured?: boolean;
+  featuredSort?: number;
 };
+
+export function adminListCategoriesMemory(): Category[] {
+  return [...getStore().categories].sort((a, b) =>
+    a.name.localeCompare(b.name, "en"),
+  );
+}
+
+export function adminListBrandsMemory(): Brand[] {
+  return [...getStore().brands].sort((a, b) =>
+    a.name.localeCompare(b.name, "en"),
+  );
+}
+
+export function adminUpsertCategoryMemory(
+  actor: AdminSession,
+  input: { slug: string; name: string; description: string },
+): Category {
+  const store = getStore();
+  const index = store.categories.findIndex((row) => row.slug === input.slug);
+  const next: Category = {
+    slug: input.slug,
+    name: input.name,
+    description: input.description,
+  };
+  if (index >= 0) store.categories[index] = next;
+  else store.categories.push(next);
+  writeAudit(actor, "category.upsert", "category", input.slug, {
+    name: input.name,
+  });
+  return next;
+}
+
+export function adminUpsertBrandMemory(
+  actor: AdminSession,
+  input: { slug: string; name: string },
+): Brand {
+  const store = getStore();
+  const index = store.brands.findIndex((row) => row.slug === input.slug);
+  const next: Brand = { slug: input.slug, name: input.name };
+  if (index >= 0) store.brands[index] = next;
+  else store.brands.push(next);
+  writeAudit(actor, "brand.upsert", "brand", input.slug, { name: input.name });
+  return next;
+}
 
 export function adminUpsertProduct(
   actor: AdminSession,
   input: AdminProductInput,
 ): DemoProduct {
   const store = getStore();
-  const price = moneyRwf(input.priceAmount);
+  const discounted = applyDiscount(input.priceAmount, input.discountPercent ?? 0);
+  const price = moneyRwf(discounted.price);
+  const compareAtPrice = discounted.compareAt
+    ? moneyRwf(discounted.compareAt)
+    : undefined;
   const slugTaken = store.products.some(
     (product) => product.slug === input.slug && product.id !== input.id,
   );
@@ -138,6 +205,7 @@ export function adminUpsertProduct(
       name: input.name,
       description: input.description,
       price,
+      compareAtPrice,
       categorySlug: input.categorySlug,
       brandSlug: input.brandSlug,
       brandName: input.brandName,
@@ -147,6 +215,8 @@ export function adminUpsertProduct(
       sku: input.sku,
       barcode: input.barcode,
       stockQuantity: input.stockQuantity,
+      isFeatured: input.isFeatured ?? previous.isFeatured ?? false,
+      featuredSort: input.featuredSort ?? previous.featuredSort ?? 0,
       demoLabel:
         input.status === "demo" || input.isProvisional
           ? "Provisional"
@@ -166,6 +236,7 @@ export function adminUpsertProduct(
     name: input.name,
     description: input.description,
     price,
+    compareAtPrice,
     categorySlug: input.categorySlug,
     brandSlug: input.brandSlug,
     brandName: input.brandName,
@@ -175,6 +246,8 @@ export function adminUpsertProduct(
     sku: input.sku,
     barcode: input.barcode,
     stockQuantity: input.stockQuantity,
+    isFeatured: input.isFeatured ?? false,
+    featuredSort: input.featuredSort ?? 0,
     demoLabel:
       input.status === "demo" || input.isProvisional ? "Provisional" : "Admin",
     images: [],
@@ -186,12 +259,68 @@ export function adminUpsertProduct(
   return created;
 }
 
+export function adminSetDiscount(
+  actor: AdminSession,
+  id: string,
+  percent: number,
+): DemoProduct {
+  const product = adminGetProduct(id);
+  if (!product) throw new Error("Product not found");
+  const regular = product.compareAtPrice?.amount ?? product.price.amount;
+  const next = applyDiscount(regular, percent);
+  product.price = moneyRwf(next.price);
+  product.compareAtPrice = next.compareAt ? moneyRwf(next.compareAt) : undefined;
+  writeAudit(actor, "product.discount", "product", id, { percent });
+  return product;
+}
+
+export function adminSetFeatured(
+  actor: AdminSession,
+  id: string,
+  isFeatured: boolean,
+  featuredSort: number,
+): DemoProduct {
+  const product = adminGetProduct(id);
+  if (!product) throw new Error("Product not found");
+  product.isFeatured = isFeatured;
+  product.featuredSort = featuredSort;
+  writeAudit(actor, "product.featured", "product", id, {
+    isFeatured,
+    featuredSort,
+  });
+  return product;
+}
+
 export function adminArchiveProduct(actor: AdminSession, id: string) {
   const product = adminGetProduct(id);
   if (!product) throw new Error("Product not found");
   product.status = "archived";
   writeAudit(actor, "product.archive", "product", id, { slug: product.slug });
   return product;
+}
+
+export type BulkStatus = "published" | "draft" | "archived";
+
+/** Sets the same status on several products in one go (used by the Products bulk actions). */
+export function adminSetStatusBulk(
+  actor: AdminSession,
+  ids: string[],
+  status: BulkStatus,
+): number {
+  let changed = 0;
+  for (const id of ids) {
+    const product = adminGetProduct(id);
+    if (!product || product.status === status) continue;
+    product.status = status;
+    changed += 1;
+  }
+  if (changed > 0) {
+    writeAudit(actor, "product.bulk_status", "product", undefined, {
+      status,
+      count: changed,
+    });
+  }
+  return changed;
 }
 
 export function adminAdjustStock(

@@ -15,12 +15,14 @@ import {
   SITE,
   whatsappLink,
 } from "@/lib/site-config";
+import { turnstileSiteKey } from "@/lib/security/turnstile";
 
 export const metadata: Metadata = { title: "Contact" };
 
 export default function ContactPage() {
   const whatsapp = whatsappLink("Hello, I would like to ask about an order.");
   const map = mapsLink();
+  const botSiteKey = turnstileSiteKey();
 
   const channels: Array<{
     key: string;
@@ -33,7 +35,7 @@ export default function ContactPage() {
   if (SITE.phoneDigits) {
     channels.push({
       key: "phone",
-      label: "Phone",
+      label: "Call",
       value: formatPhoneDisplay(SITE.phoneDigits),
       href: `tel:+${SITE.phoneDigits}`,
       icon: <PhoneIcon size={22} />,
@@ -42,7 +44,7 @@ export default function ContactPage() {
   if (SITE.email) {
     channels.push({
       key: "email",
-      label: "Email",
+      label: "Business email",
       value: SITE.email,
       href: `mailto:${SITE.email}`,
       icon: <MailIcon size={22} />,
@@ -89,10 +91,10 @@ export default function ContactPage() {
                 Preferred
               </span>
               <span className="font-display mt-3 block text-3xl">
-                Order on WhatsApp
+                WhatsApp
               </span>
               <span className="mt-2 block text-brand-warm-white/75">
-                {formatPhoneDisplay(SITE.whatsappDigits)}
+                Message us · {formatPhoneDisplay(SITE.whatsappDigits)}
               </span>
               <span className="mt-4 inline-block text-sm font-semibold underline decoration-brand-burnt-orange decoration-2 underline-offset-4">
                 Open chat
@@ -166,7 +168,7 @@ export default function ContactPage() {
           )}
         </div>
 
-        <ContactEnquiryForm />
+        <ContactEnquiryForm turnstileSiteKey={botSiteKey} />
       </div>
     </Container>
   );

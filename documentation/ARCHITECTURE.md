@@ -5,58 +5,58 @@
 ```text
 Browser
   └── Next.js App Router (this repo)
-        ├── Server Components / Route Handlers
-        │     └── Supabase (service role only where justified)
-        └── Client Components (interactions)
-              └── Supabase anon key + RLS
-Backend repo
-  ├── SQL migrations + RLS
-  ├── Storage policies
-  ├── Edge Functions / webhooks
-  └── contracts/ (typed payloads)
+        ├── Server Components / Server Actions / Route Handlers
+        │     └── Supabase (service role only for privileged paths)
+        └── Client Components (cart, gallery, forms, age gate)
+              └── Public config + anon key where RLS applies
+
+backend/ (companion repo)
+  ├── SQL migrations + RLS + Storage
+  └── contracts/ (Zod schemas mirrored in frontend domain types)
 ```
 
-## Boundaries
+## Boundaries in `src/`
 
-1. **Presentation** — `src/app`, `src/components`
-2. **Domain types** — `src/domain` (products, money-facing shapes)
-3. **Infrastructure helpers** — `src/lib` (env, logger, money, security, orders)
-4. **Demo fixtures** — `src/fixtures/demo/` gated by `NEXT_PUBLIC_DEMO_MODE`
-5. **Edge middleware** — request id + block sensitive path probes (not authz)
+| Area | Role |
+| ---- | ---- |
+| `app/` | Routes: storefront group, `admin/`, `api/` |
+| `components/` | UI kit, cart, checkout, home, product, admin shells |
+| `domain/` | Catalogue and money-facing types |
+| `lib/` | Env, catalogue repos, orders, security, notifications, SEO |
+| `fixtures/demo/` | Local-only demo catalogue (blocked in production builds) |
 
-Security headers/CSP are applied in `next.config.ts`. Authorisation remains in Server Actions / layouts / RLS.
+Security headers/CSP: `next.config.ts` + `lib/security/headers.ts`.  
+Authorisation: Server Actions / admin layouts + Supabase RLS — never “hide the nav” alone.
 
-Server Components are the default. Client Components are reserved for interactive UI (cart drawer, gallery controls, forms).
+Server Components are the default. Client Components are for interactivity only.
 
-## Data access strategy
+## Data access
 
-- Phase 00 does not call Supabase yet; env slots are prepared.
-- Catalogue reads will prefer RLS-safe queries with the anon/publishable key where possible.
-- Privileged writes (admin inventory, webhook reconciliation) must stay server-side or in Edge Functions.
-- Money is integer RWF end-to-end; formatting happens only at the presentation edge.
+- **Storefront catalogue:** published products via repository + cache; production builds never load demo fixtures.
+- **Checkout / orders:** server actions recompute prices, create durable rows, call `reserve_order_stock`, notify staff.
+- **Admin:** session cookie (HMAC) and/or Supabase Auth; every sensitive action checks permissions.
+- **Money:** integer RWF end-to-end; format only at the UI edge.
 
-## Routing plan (not all implemented yet)
+## Primary routes
 
-| Route                                                    | Intent                     |
-| -------------------------------------------------------- | -------------------------- |
-| `/`                                                      | Home / editorial entry     |
-| `/shop`                                                  | Catalogue                  |
-| `/product/[slug]`                                        | Product detail             |
-| `/cart`                                                  | Cart                       |
-| `/checkout`                                              | Checkout (later phases)    |
-| `/about`, `/contact`, `/delivery`, `/faq`, `/policies/*` | Content pages              |
-| `/admin/*`                                               | Operator UI (later phases) |
+| Route | Purpose |
+| ----- | ------- |
+| `/` | Home |
+| `/shop`, `/product/[slug]` | Catalogue |
+| `/cart`, `/checkout`, `/order/[reference]` | Commerce |
+| `/contact`, `/about`, `/delivery`, `/faq`, `/policies/*` | Content |
+| `/admin/*` | Operators (`noindex`) |
+| `/api/health`, `/api/search/suggest`, … | Health and small public APIs |
 
 ## Cross-repo contracts
 
-1. Author request/response schemas in `backend/contracts/`.
-2. Generate or manually copy TypeScript types into frontend domain modules when the contract version changes.
-3. Record the contract version in both changelogs.
-4. Never `import` from `../backend` in application code.
+1. Author schemas in `backend/contracts/`.
+2. Mirror types into frontend domain modules when contracts change.
+3. Never `import` from `../backend` in application code.
 
 ## Performance posture
 
-- Prefer Server Components and static/streaming rendering.
-- Lazy-load heavy client-only galleries and motion.
-- Reserve image width/height or aspect-ratio to limit CLS.
-- Respect `prefers-reduced-motion` (baseline CSS shipped in Phase 00).
+- Prefer Server Components and cached catalogue reads.
+- Paginate shop grids; modern image formats via Next Image.
+- Respect `prefers-reduced-motion`.
+- Optional Turnstile/Sentry only when env keys are set (no weight when unset).

@@ -1,5 +1,5 @@
 import { ArchFrame } from "@/components/ui/ArchFrame";
-import type { RangePhoto } from "@/lib/range-media";
+import type { FeaturedPhoto } from "@/lib/home-featured";
 
 /**
  * Product photo in the brand arch with two tight offset frames behind it
@@ -14,7 +14,7 @@ export function ProductArchStage({
   className = "",
   imageClassName = "",
 }: {
-  photo: RangePhoto;
+  photo: FeaturedPhoto;
   priority?: boolean;
   sizes: string;
   /** CSS object-position inside the arch. */

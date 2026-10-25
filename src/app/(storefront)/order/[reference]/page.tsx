@@ -4,11 +4,14 @@ import { notFound } from "next/navigation";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { ClearCartOnConfirm } from "@/components/checkout/ClearCartOnConfirm";
 import { OrderStatusTimeline } from "@/components/checkout/OrderStatusTimeline";
+import { RememberOrder } from "@/components/orders/RememberOrder";
+import { ReorderButton } from "@/components/orders/ReorderButton";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { formatRwf } from "@/lib/money";
-import { buildWhatsAppDeepLink, lookupOrder } from "@/lib/orders/store";
+import { lookupOrderDurable } from "@/lib/orders/durable";
+import { buildWhatsAppDeepLink } from "@/lib/orders/store";
 import { chatHref } from "@/lib/site-config";
 
 export const metadata: Metadata = {
@@ -27,20 +30,19 @@ export default async function OrderConfirmationPage({
   searchParams: SearchParams;
 }) {
   const { reference } = await params;
-  const { token, payment } = await searchParams;
+  const { token } = await searchParams;
   if (!token) notFound();
 
-  const order = lookupOrder(decodeURIComponent(reference), token);
+  const order = await lookupOrderDurable(decodeURIComponent(reference), token);
   if (!order) notFound();
 
+  // Contact us about this order — WhatsApp is not the checkout path.
   const whatsapp = buildWhatsAppDeepLink(order);
   const messageHref =
     whatsapp ??
     chatHref(
-      `Hello — I placed order ${order.reference} and would like to confirm it.`,
+      `Hello — I placed order ${order.reference} and would like to ask about it.`,
     );
-  const sandboxPending = payment === "sandbox_pending";
-
   return (
     <Container className="py-10 lg:py-14">
       <CheckoutSteps current="confirmed" />
@@ -54,19 +56,13 @@ export default async function OrderConfirmationPage({
         Thank you
       </h1>
       <p className="mt-3 max-w-2xl text-ink-muted">
-        Your order{" "}
+        We have received your order{" "}
         <span className="font-semibold text-brand-charcoal">
           {order.reference}
-        </span>{" "}
-        was created and is awaiting confirmation
-        {order.channel === "whatsapp_assisted"
-          ? " and payment instructions"
-          : ""}
-        . A browser redirect is never proof of payment
-        {sandboxPending
-          ? " — sandbox checkout is pending a verified webhook"
-          : ""}
-        .
+        </span>
+        . Our team will reach out to you shortly to confirm availability,
+        delivery and payment. Need it sooner? Use the Message us button below
+        and we will look at your order straight away.
       </p>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start lg:gap-12">
@@ -123,10 +119,11 @@ export default async function OrderConfirmationPage({
           </section>
 
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-charcoal p-6 text-brand-warm-white shadow-[6px_6px_0_0_var(--brand-burnt-orange)]">
-            <h2 className="font-display text-2xl">Next step</h2>
+            <h2 className="font-display text-2xl">Need it sooner?</h2>
             <p className="mt-2 text-sm text-brand-warm-white/75">
-              Message us with your reference so we can confirm availability,
-              delivery and payment.
+              We will contact you as soon as we have checked your order. If it
+              is urgent, message us with your reference and we will look at it
+              straight away.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button
@@ -137,6 +134,15 @@ export default async function OrderConfirmationPage({
               >
                 Message us
               </Button>
+              <ReorderButton
+                variant="on-dark"
+                size="lg"
+                items={order.items.map((item) => ({
+                  productId: item.productId,
+                  name: item.productName,
+                  quantity: item.quantity,
+                }))}
+              />
               <Button
                 href="/shop"
                 variant="link"
@@ -150,8 +156,9 @@ export default async function OrderConfirmationPage({
       </div>
 
       <p className="mt-10 text-xs text-ink-muted">
-        Save this page URL to look up your order later. Lookup needs your
-        private token and is rate limited.{" "}
+        We remember this order on this device. To find it later on another
+        phone or computer, use your reference and the phone number you ordered
+        with.{" "}
         <Link
           href="/order/lookup"
           className="font-semibold underline underline-offset-4"
@@ -160,7 +167,15 @@ export default async function OrderConfirmationPage({
         </Link>
       </p>
 
-      <ClearCartOnConfirm />
+      <ClearCartOnConfirm placedAt={order.createdAt} />
+      <RememberOrder
+        order={{
+          reference: order.reference,
+          token: order.lookupToken,
+          placedAt: order.createdAt,
+          totalRwf: order.total.amount,
+        }}
+      />
     </Container>
   );
 }

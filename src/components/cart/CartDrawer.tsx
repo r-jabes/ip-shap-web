@@ -9,7 +9,9 @@ import { Overlay } from "@/components/ui/Overlay";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { BagIcon, CloseIcon, TrashIcon } from "@/components/ui/icons";
 import { formatDemoPrice } from "@/domain/catalogue";
+import { cartSummaryLabel } from "@/lib/cart";
 import { primaryCatalogueImage } from "@/lib/product-image";
+import { StockNote } from "@/components/ui/StockNote";
 
 export function CartDrawer() {
   const {
@@ -19,6 +21,8 @@ export function CartDrawer() {
     setQuantity,
     removeItem,
     itemCount,
+    productCount,
+    hasUnavailable,
     subtotal,
     feedback,
     notice,
@@ -32,14 +36,14 @@ export function CartDrawer() {
       onClose={closeCart}
       side="right"
       label="Shopping cart"
-      panelClassName="flex h-dvh w-screen max-w-[28rem] flex-col bg-brand-warm-white text-brand-charcoal shadow-[var(--shadow-overlay)] sm:rounded-l-[var(--radius-panel)]"
+      panelClassName="flex h-dvh w-full max-w-[28rem] flex-col bg-brand-warm-white text-brand-charcoal shadow-[var(--shadow-overlay)] sm:rounded-l-[var(--radius-panel)]"
     >
       <div className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
         <h2 className="font-display flex items-baseline gap-3 text-2xl">
           Your cart
-          {itemCount > 0 ? (
+          {productCount > 0 ? (
             <span className="text-base font-semibold text-ink-muted tabular">
-              {itemCount} {itemCount === 1 ? "item" : "items"}
+              {cartSummaryLabel(productCount, itemCount)}
             </span>
           ) : null}
         </h2>
@@ -73,7 +77,7 @@ export function CartDrawer() {
         </p>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+      <div className="site-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
         {!hydrated ? (
           <p className="py-10 text-center text-sm text-ink-muted">
             Loading your cart…
@@ -93,7 +97,7 @@ export function CartDrawer() {
           </div>
         ) : (
           <ul className="divide-y divide-line">
-            {items.map(({ product, quantity }) => {
+            {items.map(({ product, quantity, stock, unavailable }) => {
               const image = primaryCatalogueImage(product.images);
               const lineTotal = product.price.amount * quantity;
               return (
@@ -118,9 +122,11 @@ export function CartDrawer() {
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-ink-muted uppercase">
-                          {product.brandName}
-                        </p>
+                        {product.brandName ? (
+                          <p className="text-[0.7rem] font-semibold tracking-[0.14em] text-ink-muted uppercase">
+                            {product.brandName}
+                          </p>
+                        ) : null}
                         <Link
                           href={`/product/${product.slug}`}
                           onClick={closeCart}
@@ -141,19 +147,32 @@ export function CartDrawer() {
                     <p className="mt-1 text-sm text-ink-muted tabular">
                       {formatDemoPrice(product.price)}
                     </p>
+                    <StockNote stock={stock} className="mt-1" />
                     <div className="mt-auto flex items-center justify-between gap-3 pt-3">
                       <QuantityStepper
                         size="sm"
                         value={quantity}
+                        max={Math.max(1, stock.max)}
+                        disabled={unavailable}
                         label={`Quantity of ${product.name}`}
                         onChange={(next) => setQuantity(product.id, next)}
                       />
-                      <p className="font-semibold tabular">
-                        {formatDemoPrice({
-                          amount: lineTotal,
-                          currency: "RWF",
-                        })}
-                      </p>
+                      {unavailable ? (
+                        <button
+                          type="button"
+                          onClick={() => removeItem(product.id)}
+                          className="text-sm font-semibold underline underline-offset-4"
+                        >
+                          Remove
+                        </button>
+                      ) : (
+                        <p className="font-semibold tabular">
+                          {formatDemoPrice({
+                            amount: lineTotal,
+                            currency: "RWF",
+                          })}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </li>
@@ -175,14 +194,25 @@ export function CartDrawer() {
             Delivery and availability are confirmed with you before the order is
             final.
           </p>
-          <Button
-            href="/checkout"
-            size="lg"
-            className="mt-4 w-full"
-            onClick={closeCart}
-          >
-            Checkout
-          </Button>
+          {hasUnavailable ? (
+            <>
+              <p role="alert" className="mt-3 text-sm font-semibold text-red-700">
+                Remove the out-of-stock items to continue.
+              </p>
+              <Button size="lg" className="mt-3 w-full" disabled>
+                Checkout
+              </Button>
+            </>
+          ) : (
+            <Button
+              href="/checkout"
+              size="lg"
+              className="mt-4 w-full"
+              onClick={closeCart}
+            >
+              Checkout
+            </Button>
+          )}
           <Button
             href="/cart"
             variant="link"

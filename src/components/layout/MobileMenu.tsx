@@ -94,12 +94,12 @@ export function MobileMenu({ groups }: { groups: NavGroup[] }) {
 
       <div className="border-t border-brand-warm-white/10 p-5">
         <Button
-          href={chatHref("Hello, I would like to place an order.")}
+          href={chatHref("Hello, I would like to ask a question.")}
           variant="primary"
           className="w-full"
           iconLeft={<WhatsAppIcon size={18} />}
         >
-          Order on WhatsApp
+          Contact us
         </Button>
       </div>
     </Overlay>

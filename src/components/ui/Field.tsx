@@ -27,7 +27,10 @@ export function Field({
 }) {
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold">
+      <label
+        htmlFor={id}
+        className="mb-1.5 block text-left text-sm font-semibold"
+      >
         {label}
       </label>
       {children}
@@ -35,12 +38,12 @@ export function Field({
         <p
           id={`${id}-error`}
           role="alert"
-          className="mt-1.5 text-sm text-red-800"
+          className="mt-1.5 text-left text-sm text-red-800"
         >
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 text-sm text-ink-muted">
+        <p id={`${id}-hint`} className="mt-1.5 text-left text-sm text-ink-muted">
           {hint}
         </p>
       ) : null}

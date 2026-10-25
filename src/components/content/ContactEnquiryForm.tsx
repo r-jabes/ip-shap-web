@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { verifyContactBotAction } from "@/app/(storefront)/contact/actions";
+import { TurnstileField } from "@/components/security/TurnstileField";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 import { WhatsAppIcon } from "@/components/ui/icons";
@@ -8,24 +10,47 @@ import { SITE, whatsappLink } from "@/lib/site-config";
 
 /**
  * Lightweight enquiry hand-off: opens WhatsApp when configured, otherwise mailto.
- * No server inbox yet — the message is composed for the customer’s own app.
+ * When Turnstile is configured, the token is verified server-side before opening an app.
  */
-export function ContactEnquiryForm() {
+export function ContactEnquiryForm({
+  turnstileSiteKey = null,
+}: {
+  turnstileSiteKey?: string | null;
+}) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   const whatsapp = whatsappLink();
   const viaWhatsApp = Boolean(whatsapp);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedName = name.trim();
     const trimmedMessage = message.trim();
     if (!trimmedName || !trimmedMessage) {
       setStatus("Add your name and a short message.");
       return;
+    }
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    setPending(true);
+    setStatus(null);
+    try {
+      const gate = await verifyContactBotAction({}, formData);
+      if (gate.error) {
+        setStatus(gate.error);
+        return;
+      }
+    } catch {
+      setStatus("Could not verify the form. Try again in a moment.");
+      return;
+    } finally {
+      setPending(false);
     }
 
     const body = [
@@ -103,10 +128,13 @@ export function ContactEnquiryForm() {
           onChange={(event) => setMessage(event.target.value)}
         />
       </Field>
+      <TurnstileField siteKey={turnstileSiteKey} />
       <Button
         type="submit"
         size="lg"
         className="w-full sm:w-auto"
+        disabled={pending}
+        loading={pending}
         iconLeft={viaWhatsApp ? <WhatsAppIcon size={18} /> : undefined}
       >
         {viaWhatsApp ? "Continue on WhatsApp" : "Draft message"}

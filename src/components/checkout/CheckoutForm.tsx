@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   placeOrderAction,
@@ -10,9 +10,18 @@ import type { DemoProduct } from "@/domain/catalogue";
 import { formatDemoPrice } from "@/domain/catalogue";
 import type { DeliveryZone } from "@/lib/orders/delivery";
 import { formatRwf } from "@/lib/money";
+import { TurnstileField } from "@/components/security/TurnstileField";
 import { Button } from "@/components/ui/Button";
-import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { WhatsAppIcon } from "@/components/ui/icons";
+import { InlineToast } from "@/components/ui/InlineToast";
+import {
+  CHECKOUT_DETAILS_STORAGE_KEY,
+  parseCheckoutDetails,
+  serializeCheckoutDetails,
+} from "@/lib/device/checkout-details";
+import { writeDevice } from "@/lib/device/storage";
+import { useDeviceValue } from "@/lib/device/use-device-value";
 
 type Line = { product: DemoProduct; quantity: number };
 
@@ -20,14 +29,22 @@ const initialState: CheckoutActionState = {};
 
 export function CheckoutForm({
   lines,
+  unavailableNames = [],
+  onOrderRejected,
   zones,
   onlinePaymentEnabled,
   whatsappConfigured,
+  turnstileSiteKey = null,
 }: {
   lines: Line[];
+  /** Names of cart items that are out of stock; they block checkout until removed. */
+  unavailableNames?: string[];
+  /** Called when the server rejects an order so the caller can refresh stock. */
+  onOrderRejected?: () => void;
   zones: DeliveryZone[];
   onlinePaymentEnabled: boolean;
   whatsappConfigured: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const [state, formAction, pending] = useActionState(
     placeOrderAction,
@@ -38,6 +55,73 @@ export function CheckoutForm({
   const [channel, setChannel] = useState<"whatsapp_assisted" | "online_payment">(
     "whatsapp_assisted",
   );
+  // Controlled so React 19's form reset after the action does not wipe the user's input.
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [deliveryDistrict, setDeliveryDistrict] = useState("");
+  const [deliverySector, setDeliverySector] = useState("");
+  const [deliveryCell, setDeliveryCell] = useState("");
+  const [deliveryVillage, setDeliveryVillage] = useState("");
+  const [deliveryDirections, setDeliveryDirections] = useState("");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+
+  // Details remembered on this device (never sent anywhere until the order is placed).
+  const [remember, setRemember] = useState(true);
+  const savedRaw = useDeviceValue(CHECKOUT_DETAILS_STORAGE_KEY);
+  const saved = useMemo(() => parseCheckoutDetails(savedRaw), [savedRaw]);
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || !saved) return;
+    prefilled.current = true;
+    setCustomerName(saved.customerName);
+    setCustomerPhone(saved.customerPhone);
+    setDeliveryDistrict(saved.deliveryDistrict);
+    setDeliverySector(saved.deliverySector);
+    setDeliveryCell(saved.deliveryCell);
+    setDeliveryVillage(saved.deliveryVillage);
+    setDeliveryDirections(saved.deliveryDirections);
+  }, [saved]);
+
+  function rememberDetails() {
+    if (!remember) {
+      writeDevice(CHECKOUT_DETAILS_STORAGE_KEY, null);
+      return;
+    }
+    writeDevice(
+      CHECKOUT_DETAILS_STORAGE_KEY,
+      serializeCheckoutDetails({
+        customerName,
+        customerPhone,
+        deliveryDistrict,
+        deliverySector,
+        deliveryCell,
+        deliveryVillage,
+        deliveryDirections,
+      }),
+    );
+  }
+
+  function forgetDetails() {
+    writeDevice(CHECKOUT_DETAILS_STORAGE_KEY, null);
+    setCustomerName("");
+    setCustomerPhone("");
+    setDeliveryDistrict("");
+    setDeliverySector("");
+    setDeliveryCell("");
+    setDeliveryVillage("");
+    setDeliveryDirections("");
+  }
+
+  useEffect(() => {
+    if (state.error) onOrderRejected?.();
+  }, [state, onOrderRejected]);
+
+  const toastMessage =
+    state.error ??
+    (state.fieldErrors
+      ? Object.values(state.fieldErrors)[0]
+      : undefined);
 
   const subtotal = useMemo(
     () =>
@@ -60,6 +144,12 @@ export function CheckoutForm({
     })),
   );
 
+  const blockedByStock = unavailableNames.length > 0;
+
+  if (lines.length === 0 && blockedByStock) {
+    return <StockBlockedNotice names={unavailableNames} />;
+  }
+
   if (lines.length === 0) {
     return (
       <div className="rounded-[var(--radius-panel)] border-2 border-dashed border-brand-charcoal/25 bg-paper-2/40 px-6 py-16 text-center">
@@ -75,21 +165,41 @@ export function CheckoutForm({
   }
 
   return (
-    <form
+    <>
+      <InlineToast message={toastMessage} />
+      <form
       action={formAction}
-      className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
+      onSubmit={rememberDetails}
+      className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-start lg:gap-12"
       noValidate
     >
+        {blockedByStock ? (
+          <div className="lg:col-span-2">
+            <StockBlockedNotice names={unavailableNames} compact />
+          </div>
+        ) : null}
         <input type="hidden" name="itemsJson" value={itemsJson} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <input type="hidden" name="channel" value={channel} />
 
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-8">
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
             <h2 className="font-display text-2xl">Contact</h2>
             <p className="mt-1 text-sm text-ink-muted">
               We use these details to confirm your order.
             </p>
+            {saved ? (
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-paper-2 px-4 py-2.5 text-sm">
+                <span>Filled in from the last order on this device.</span>
+                <button
+                  type="button"
+                  onClick={forgetDetails}
+                  className="min-h-8 font-semibold underline underline-offset-4"
+                >
+                  Not you? Clear my details
+                </button>
+              </p>
+            ) : null}
             <div className="mt-5 space-y-4">
               <Field
                 id="customerName"
@@ -102,6 +212,8 @@ export function CheckoutForm({
                   required
                   maxLength={200}
                   autoComplete="name"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
                   aria-invalid={fieldErrors.customerName ? true : undefined}
                   aria-describedby={
                     fieldErrors.customerName ? "customerName-error" : undefined
@@ -121,6 +233,8 @@ export function CheckoutForm({
                   maxLength={20}
                   autoComplete="tel"
                   placeholder="+2507…"
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
                   aria-invalid={fieldErrors.customerPhone ? true : undefined}
                   aria-describedby={
                     fieldErrors.customerPhone
@@ -135,8 +249,22 @@ export function CheckoutForm({
                   name="customerNotes"
                   maxLength={2000}
                   rows={3}
+                  value={customerNotes}
+                  onChange={(event) => setCustomerNotes(event.target.value)}
                 />
               </Field>
+              <Checkbox
+                checked={remember}
+                onChange={(event) => setRemember(event.target.checked)}
+                label={
+                  <>
+                    Remember my details on this device
+                    <span className="block text-xs text-ink-muted">
+                      Saved in your browser only, so next time is quicker.
+                    </span>
+                  </>
+                }
+              />
             </div>
           </section>
 
@@ -186,6 +314,10 @@ export function CheckoutForm({
                     name="deliveryDistrict"
                     maxLength={120}
                     autoComplete="address-level2"
+                    value={deliveryDistrict}
+                    onChange={(event) =>
+                      setDeliveryDistrict(event.target.value)
+                    }
                   />
                 </Field>
                 <Field id="deliverySector" label="Sector">
@@ -193,16 +325,26 @@ export function CheckoutForm({
                     id="deliverySector"
                     name="deliverySector"
                     maxLength={120}
+                    value={deliverySector}
+                    onChange={(event) => setDeliverySector(event.target.value)}
                   />
                 </Field>
                 <Field id="deliveryCell" label="Cell">
-                  <Input id="deliveryCell" name="deliveryCell" maxLength={120} />
+                  <Input
+                    id="deliveryCell"
+                    name="deliveryCell"
+                    maxLength={120}
+                    value={deliveryCell}
+                    onChange={(event) => setDeliveryCell(event.target.value)}
+                  />
                 </Field>
                 <Field id="deliveryVillage" label="Village">
                   <Input
                     id="deliveryVillage"
                     name="deliveryVillage"
                     maxLength={120}
+                    value={deliveryVillage}
+                    onChange={(event) => setDeliveryVillage(event.target.value)}
                   />
                 </Field>
               </div>
@@ -212,6 +354,10 @@ export function CheckoutForm({
                   name="deliveryDirections"
                   maxLength={500}
                   rows={2}
+                  value={deliveryDirections}
+                  onChange={(event) =>
+                    setDeliveryDirections(event.target.value)
+                  }
                 />
               </Field>
               <Field
@@ -223,6 +369,10 @@ export function CheckoutForm({
                   name="deliveryInstructions"
                   maxLength={500}
                   rows={2}
+                  value={deliveryInstructions}
+                  onChange={(event) =>
+                    setDeliveryInstructions(event.target.value)
+                  }
                 />
               </Field>
             </div>
@@ -231,20 +381,19 @@ export function CheckoutForm({
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
             <h2 className="font-display text-2xl">How to finish</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              WhatsApp-assisted is the usual path. We create the order first,
-              then you message the shop.
+              Place the order on this site. We confirm availability, delivery
+              and payment with you afterwards.
             </p>
             <div className="mt-5 grid gap-3">
               <ChannelOption
                 selected={channel === "whatsapp_assisted"}
                 onSelect={() => setChannel("whatsapp_assisted")}
-                title="WhatsApp-assisted order"
+                title="Place order"
                 description={
                   whatsappConfigured
-                    ? "Place the order here, then continue on WhatsApp. Opening WhatsApp is not payment."
-                    : "Place the order here and keep your reference to contact us. Opening WhatsApp is not payment."
+                    ? "We create your order here. You can message us from the confirmation page if you have a question — that is Contact us, not checkout."
+                    : "We create your order here and keep your reference for follow-up. Nothing is charged on this page."
                 }
-                icon
               />
               <ChannelOption
                 selected={channel === "online_payment"}
@@ -271,7 +420,7 @@ export function CheckoutForm({
           ) : null}
         </div>
 
-        <aside className="h-fit rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-6 shadow-[6px_6px_0_0_var(--brand-charcoal)] lg:sticky lg:top-[calc(var(--header-h)+1.25rem)]">
+        <aside className="h-fit min-w-0 rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-5 shadow-[4px_4px_0_0_var(--brand-charcoal)] sm:p-6 sm:shadow-[6px_6px_0_0_var(--brand-charcoal)] lg:sticky lg:top-[calc(var(--header-h)+1.25rem)]">
           <h2 className="font-display text-2xl">Order summary</h2>
           <ul className="mt-5 space-y-3 border-b-2 border-brand-charcoal/10 pb-4 text-sm">
             {lines.map(({ product, quantity }) => (
@@ -314,17 +463,15 @@ export function CheckoutForm({
               </dd>
             </div>
           </dl>
+          <div className="mt-6 max-w-full overflow-x-auto">
+            <TurnstileField siteKey={turnstileSiteKey} />
+          </div>
           <Button
             type="submit"
             size="lg"
-            className="mt-6 w-full"
-            disabled={pending}
+            className="mt-4 w-full"
+            disabled={pending || blockedByStock}
             loading={pending}
-            iconLeft={
-              channel === "whatsapp_assisted" ? (
-                <WhatsAppIcon size={18} />
-              ) : undefined
-            }
           >
             {pending
               ? "Placing order…"
@@ -340,6 +487,36 @@ export function CheckoutForm({
           </p>
         </aside>
     </form>
+    </>
+  );
+}
+
+function StockBlockedNotice({
+  names,
+  compact = false,
+}: {
+  names: string[];
+  compact?: boolean;
+}) {
+  const list = names.join(", ");
+  return (
+    <div
+      role="alert"
+      className={`rounded-2xl border-2 border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900 ${compact ? "" : "py-6 text-center"}`}
+    >
+      <p className="font-semibold">
+        {names.length === 1
+          ? `${list} is out of stock.`
+          : `These items are out of stock: ${list}.`}
+      </p>
+      <p className="mt-1">
+        Remove {names.length === 1 ? "it" : "them"} from your cart to place your
+        order.{" "}
+        <Link href="/cart" className="font-semibold underline underline-offset-4">
+          Go to cart
+        </Link>
+      </p>
+    </div>
   );
 }
 

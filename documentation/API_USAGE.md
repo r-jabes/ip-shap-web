@@ -1,33 +1,39 @@
-# Frontend API usage guide
+# Frontend API usage
 
-## Status (Phase 00)
-
-No live catalogue or order API calls are implemented yet. Environment slots for Supabase are prepared.
-
-## Intended patterns
+## Patterns
 
 ### Public catalogue reads
 
-- Use the Supabase JS client with the anon key from the browser or Server Components
-- Rely on RLS so only `published` (or explicitly allowed demo) rows are visible
+- Prefer Server Components and the catalogue repository (cached published products).
+- Browser anon key + RLS when a client-side read is required.
+- Production builds never load `fixtures/demo`.
 
 ### Privileged operations
 
-- Admin mutations and webhook-driven updates use server-only credentials or Edge Functions in `backend/`
-- Next.js Route Handlers may proxy privileged operations when documented
+- Orders, admin mutations, and uploads use server-only credentials (service role) inside Server Actions / Route Handlers.
+- Validate all inputs with Zod at the boundary.
 
 ### Contract sync
 
-1. Read versioned schemas from `backend/contracts/`
-2. Update frontend domain types / validators to match
-3. Note the contract version in both changelogs
+1. Read versioned schemas from `backend/contracts/`.
+2. Update frontend domain types / validators to match.
+3. Note the contract version in both changelogs when behaviour changes.
 
-### WhatsApp-assisted orders (later)
+### Orders
 
-1. Create the order server-side first
-2. Only then present a WhatsApp deep link
-3. Never treat “opened WhatsApp” as payment or order confirmation
+1. Create the order server-side first (durable when service role is set).
+2. WhatsApp is **Contact us** only — never the checkout submission path.
+3. Never treat “opened WhatsApp” as payment or confirmation.
+4. Staff email via Resend is best-effort; order commit must not depend on it.
 
-### Online payments (later)
+### Search
 
-Do not select or hard-code a provider until Rwanda merchant eligibility, methods, settlement, fees, currency and current API docs are verified.
+- `GET /api/search/suggest` — rate limited; uses backend `suggest_catalogue` RPC when available.
+
+### Health
+
+- `GET /api/health` — liveness for uptime monitors.
+
+### Online payments
+
+Keep `ONLINE_PAYMENT_ENABLED=false` until a Rwanda-capable provider is verified. Sandbox webhook exists for tests only.

@@ -1,18 +1,21 @@
 "use client";
 
 import type { DemoProduct } from "@/domain/catalogue";
+import { useLiveProduct } from "@/components/cart/CartProvider";
 import { AddToCartForm } from "@/components/product/AddToCartForm";
+import { NotifyMeForm } from "@/components/product/NotifyMeForm";
 import { ProductDetails } from "@/components/product/ProductDetails";
+import { SaveButton } from "@/components/saved/SaveButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { PriceTag } from "@/components/ui/PriceTag";
+import { StockNote } from "@/components/ui/StockNote";
 import { WhatsAppIcon } from "@/components/ui/icons";
 import { chatHref } from "@/lib/site-config";
-import { sampleCompareAtPrice } from "@/lib/sample-pricing";
-
+import { describeStock } from "@/lib/stock/storefront";
 export function ProductBuyBox({
-  product,
+  product: catalogueProduct,
   categoryName,
   siblings,
 }: {
@@ -20,9 +23,12 @@ export function ProductBuyBox({
   categoryName?: string;
   siblings: DemoProduct[];
 }) {
-  const unavailable = product.availability === "out_of_stock";
-  const whatsappMessage = `Hello — I would like to order ${product.name}.`;
-  const onSale = !!sampleCompareAtPrice(product.price);
+  // Current stock, not the cached catalogue copy this page was rendered from.
+  const product = useLiveProduct(catalogueProduct, { refresh: true });
+  const stock = describeStock(product);
+  const unavailable = stock.max === 0;
+  const whatsappMessage = `Hello — I have a question about ${product.name}.`;
+  const onSale = !!product.compareAtPrice;
 
   return (
     <div className="relative z-0 min-w-0 bg-brand-warm-white">
@@ -31,18 +37,24 @@ export function ProductBuyBox({
         {onSale ? <Badge tone="accent">Sale</Badge> : null}
       </div>
 
-      <p className="mt-4 text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
-        {product.brandName}
-      </p>
+      {product.brandName ? (
+        <p className="mt-4 text-xs font-semibold tracking-[0.14em] text-ink-muted uppercase">
+          {product.brandName}
+        </p>
+      ) : null}
       <h1
-        className="font-display mt-2 text-balance text-brand-charcoal"
+        className={`font-display text-balance text-brand-charcoal ${product.brandName ? "mt-2" : "mt-4"}`}
         style={{ fontSize: "clamp(1.85rem, 1.3rem + 1.6vw, 2.75rem)" }}
       >
         {product.name}
       </h1>
 
       <div className="mt-4">
-        <PriceTag price={product.price} size="lg" showSampleSale />
+        <PriceTag
+          price={product.price}
+          compareAt={product.compareAtPrice}
+          size="lg"
+        />
       </div>
 
       <p className="mt-5 max-w-2xl text-sm text-ink-muted sm:text-base">
@@ -72,11 +84,13 @@ export function ProductBuyBox({
       ) : null}
 
       <div className="relative z-[1] mt-8 max-w-xl space-y-3 bg-brand-warm-white">
+        <StockNote stock={stock} className="text-sm" />
         <AddToCartForm
           productId={product.id}
           productName={product.name}
-          disabled={unavailable}
+          maxQuantity={stock.max}
         />
+        <SaveButton productId={product.id} productName={product.name} variant="button" />
         <Button
           href={chatHref(whatsappMessage)}
           variant="secondary"
@@ -84,19 +98,22 @@ export function ProductBuyBox({
           className="w-full"
           iconLeft={<WhatsAppIcon size={18} />}
         >
-          Order on WhatsApp
+          Ask about this bottle
         </Button>
         {unavailable ? (
-          <p className="text-sm text-ink-muted">
-            This one is out of stock right now.{" "}
-            <a
-              href={chatHref(`Hello — when is ${product.name} back in stock?`)}
-              className="font-semibold underline underline-offset-4"
-            >
-              Ask us when it is back
-            </a>
-            .
-          </p>
+          <div className="space-y-2">
+            <NotifyMeForm productId={product.id} productName={product.name} />
+            <p className="text-sm text-ink-muted">
+              Prefer to chat?{" "}
+              <a
+                href={chatHref(`Hello — when is ${product.name} back in stock?`)}
+                className="font-semibold underline underline-offset-4"
+              >
+                Ask us when it is back
+              </a>
+              .
+            </p>
+          </div>
         ) : null}
       </div>
 
@@ -110,7 +127,7 @@ export function ProductBuyBox({
 /** Prefer the flavour/label word after the brand name when present. */
 function shortLabel(product: DemoProduct): string {
   const brand = product.brandName.trim();
-  if (product.name.toLowerCase().startsWith(brand.toLowerCase())) {
+  if (brand && product.name.toLowerCase().startsWith(brand.toLowerCase())) {
     const rest = product.name.slice(brand.length).trim();
     if (rest) return rest;
   }

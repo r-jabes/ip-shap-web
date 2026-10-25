@@ -3,25 +3,32 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { DemoProduct } from "@/domain/catalogue";
-import { useCart } from "@/components/cart/CartProvider";
+import { useCart, useLiveProduct } from "@/components/cart/CartProvider";
 import { ProductQuickView } from "@/components/catalogue/ProductQuickView";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
+import { SaveButton } from "@/components/saved/SaveButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PriceTag } from "@/components/ui/PriceTag";
-import { getCategories } from "@/lib/catalogue";
+import { StockNote } from "@/components/ui/StockNote";
+import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
-import { sampleCompareAtPrice } from "@/lib/sample-pricing";
+import { describeStock } from "@/lib/stock/storefront";
 
-export function ProductCard({ product }: { product: DemoProduct }) {
+export function ProductCard({
+  product: catalogueProduct,
+}: {
+  product: DemoProduct;
+}) {
   const { addItem } = useCart();
+  const product = useLiveProduct(catalogueProduct);
+  const stock = describeStock(product);
+  const catalogue = useCatalogueOptional();
   const [quickOpen, setQuickOpen] = useState(false);
   const image = primaryCatalogueImage(product.images);
-  const categoryName = getCategories().find(
-    (category) => category.slug === product.categorySlug,
-  )?.name;
-  const unavailable = product.availability === "out_of_stock";
-  const onSale = !!sampleCompareAtPrice(product.price);
+  const categoryName = catalogue?.categoryName(product.categorySlug);
+  const unavailable = stock.max === 0;
+  const onSale = !!product.compareAtPrice;
 
   return (
     <article className="group flex h-full flex-col">
@@ -32,7 +39,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
           objectFit="cover"
           sizes={sizesForRole("catalogue_primary")}
           className="rounded-none"
-          imageClassName="origin-center transition-transform duration-[var(--motion-editorial)] ease-[var(--ease-out)] group-hover:scale-[1.04] group-hover:-translate-y-1 group-focus-within:scale-[1.04] group-focus-within:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-hover:translate-y-0 motion-reduce:group-focus-within:scale-100 motion-reduce:group-focus-within:translate-y-0"
+          imageClassName={`${unavailable ? "opacity-60 grayscale " : ""}origin-center transition-transform duration-[var(--motion-editorial)] ease-[var(--ease-out)] group-hover:scale-[1.04] group-hover:-translate-y-1 group-focus-within:scale-[1.04] group-focus-within:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-hover:translate-y-0 motion-reduce:group-focus-within:scale-100 motion-reduce:group-focus-within:translate-y-0`}
         />
         <Link
           href={`/product/${product.slug}`}
@@ -68,7 +75,7 @@ export function ProductCard({ product }: { product: DemoProduct }) {
               addItem(product.id, 1);
             }}
           >
-            Add
+            {unavailable ? "Out of stock" : "Add"}
           </Button>
           <Button
             type="button"
@@ -88,24 +95,39 @@ export function ProductCard({ product }: { product: DemoProduct }) {
       </div>
 
       <div className="mt-3 flex flex-1 flex-col gap-1">
-        <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
-          {product.brandName}
-        </p>
-        <h3 className="font-display text-lg leading-snug sm:text-xl">
-          <Link
-            href={`/product/${product.slug}`}
-            className="underline-offset-4 hover:underline"
-          >
-            {product.name}
-          </Link>
-        </h3>
+        {product.brandName ? (
+          <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
+            {product.brandName}
+          </p>
+        ) : null}
+        <div className="flex items-start justify-between gap-1">
+          <h3 className="font-display text-lg leading-snug sm:text-xl">
+            <Link
+              href={`/product/${product.slug}`}
+              className="underline-offset-4 hover:underline"
+            >
+              {product.name}
+            </Link>
+          </h3>
+          <SaveButton
+            productId={product.id}
+            productName={product.name}
+            className="-mt-1.5 -mr-2"
+          />
+        </div>
         <div className="mt-auto pt-2">
-          <PriceTag price={product.price} size="sm" showSampleSale />
+          <PriceTag
+            price={product.price}
+            compareAt={product.compareAtPrice}
+            size="sm"
+          />
+          <StockNote stock={stock} className="mt-1" />
         </div>
       </div>
 
+      {/* The catalogue copy, not the live-stock one: the quick view applies live stock itself. */}
       <ProductQuickView
-        product={product}
+        product={catalogueProduct}
         open={quickOpen}
         onClose={() => setQuickOpen(false)}
       />

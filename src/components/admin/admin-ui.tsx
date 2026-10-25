@@ -12,8 +12,8 @@ export function AdminPageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div className="max-w-2xl">
+    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+      <div className="min-w-0 max-w-2xl">
         <p className="text-xs font-semibold tracking-[0.16em] text-ink-muted uppercase">
           Admin
         </p>
@@ -78,11 +78,57 @@ export function AdminStatus({ children }: { children: ReactNode }) {
   );
 }
 
-export function AdminTable({ children }: { children: ReactNode }) {
+/**
+ * Desktop table. Pass `mobile` (a list of <AdminCard>) to swap the table for stacked
+ * cards on small screens instead of sideways scrolling.
+ */
+export function AdminTable({
+  children,
+  mobile,
+}: {
+  children: ReactNode;
+  mobile?: ReactNode;
+}) {
   return (
-    <div className="overflow-x-auto rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15">
-      <table className="min-w-full text-left text-sm">{children}</table>
-    </div>
+    <>
+      {mobile ? <ul className="space-y-3 md:hidden">{mobile}</ul> : null}
+      <div
+        className={`site-scroll overflow-x-auto rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 ${mobile ? "hidden md:block" : ""}`}
+      >
+        <table className="min-w-full text-left text-sm">{children}</table>
+      </div>
+    </>
+  );
+}
+
+export function AdminCard({ children }: { children: ReactNode }) {
+  return (
+    <li className="rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 bg-white/50 p-4">
+      {children}
+    </li>
+  );
+}
+
+const PILL_TONES = {
+  neutral: "border-brand-charcoal/25 bg-paper-2 text-brand-charcoal",
+  good: "border-brand-burnt-orange/50 bg-brand-burnt-orange/15 text-brand-charcoal",
+  warn: "border-amber-600/50 bg-amber-100 text-amber-900",
+  muted: "border-brand-charcoal/20 bg-brand-charcoal/5 text-ink-muted",
+} as const;
+
+export function AdminPill({
+  tone = "neutral",
+  children,
+}: {
+  tone?: keyof typeof PILL_TONES;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide whitespace-nowrap ${PILL_TONES[tone]}`}
+    >
+      {children}
+    </span>
   );
 }
 

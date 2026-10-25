@@ -8,20 +8,28 @@ import {
   DEMO_CATEGORIES,
   DEMO_PRODUCTS,
 } from "@/fixtures/demo/catalogue";
+import {
+  filterAndSortProducts,
+  isStorefrontVisible,
+} from "@/lib/catalogue/filter";
+import { getCatalogueRepository } from "@/lib/catalogue/get-repository";
 import { isDemoMode } from "@/lib/env";
 import { primaryCatalogueImage } from "@/lib/product-image";
 import { availabilityLabel } from "@/lib/shop-query";
 
+/**
+ * Sync storefront helpers.
+ * Demo mode → fixtures. Production path → empty until pages call the async
+ * repository (`getCatalogueRepository`). Fail closed: never leak fixtures when
+ * `NEXT_PUBLIC_DEMO_MODE=false`.
+ */
+
 export function getCategories() {
-  return DEMO_CATEGORIES;
+  return isDemoMode() ? DEMO_CATEGORIES : [];
 }
 
 export function getBrands() {
-  return DEMO_BRANDS;
-}
-
-function isStorefrontVisible(product: DemoProduct): boolean {
-  return product.status === "published" || product.status === "demo";
+  return isDemoMode() ? DEMO_BRANDS : [];
 }
 
 export function getProductBySlug(slug: string): DemoProduct | undefined {
@@ -60,98 +68,22 @@ export function paginateProducts<T>(
   };
 }
 
-function categorySlugsOf(filters: CatalogueFilters): string[] {
-  if (filters.categorySlugs?.length) return filters.categorySlugs;
-  return filters.categorySlug ? [filters.categorySlug] : [];
-}
-
-function brandSlugsOf(filters: CatalogueFilters): string[] {
-  if (filters.brandSlugs?.length) return filters.brandSlugs;
-  return filters.brandSlug ? [filters.brandSlug] : [];
-}
-
 function filterWithoutSort(filters: CatalogueFilters = {}): DemoProduct[] {
   if (!isDemoMode()) {
     return [];
   }
-
-  // Storefront never lists draft/archived products.
-  let items = DEMO_PRODUCTS.filter(
-    (product) => product.status === "published" || product.status === "demo",
-  );
-
-  const categories = categorySlugsOf(filters);
-  if (categories.length) {
-    items = items.filter(
-      (product) =>
-        !!product.categorySlug && categories.includes(product.categorySlug),
-    );
-  }
-
-  const brands = brandSlugsOf(filters);
-  if (brands.length) {
-    items = items.filter((product) => brands.includes(product.brandSlug));
-  }
-
-  if (filters.availability && filters.availability !== "all") {
-    if (filters.availability === "in_stock") {
-      items = items.filter(
-        (product) =>
-          product.availability === "in_stock" ||
-          product.availability === "low_stock",
-      );
-    } else if (filters.availability === "unknown") {
-      items = items.filter((product) => product.availability === "unknown");
-    }
-  }
-
-  if (filters.q) {
-    const query = filters.q.trim().toLowerCase();
-    items = items.filter((product) => {
-      const haystack = [
-        product.name,
-        product.brandName,
-        product.description,
-        product.categorySlug ?? "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }
-
-  if (typeof filters.minPrice === "number") {
-    items = items.filter(
-      (product) => product.price.amount >= filters.minPrice!,
-    );
-  }
-
-  if (typeof filters.maxPrice === "number") {
-    items = items.filter(
-      (product) => product.price.amount <= filters.maxPrice!,
-    );
-  }
-
-  return items;
+  // Facets ignore sort; force a stable order for deterministic counts.
+  return filterAndSortProducts(DEMO_PRODUCTS, {
+    ...filters,
+    sort: "name_asc",
+  });
 }
 
 export function listProducts(filters: CatalogueFilters = {}): DemoProduct[] {
-  const items = filterWithoutSort(filters);
-
-  switch (filters.sort) {
-    case "price_asc":
-      items.sort((a, b) => a.price.amount - b.price.amount);
-      break;
-    case "price_desc":
-      items.sort((a, b) => b.price.amount - a.price.amount);
-      break;
-    case "name_asc":
-    default:
-      items.sort((a, b) => a.name.localeCompare(b.name));
-      break;
+  if (!isDemoMode()) {
+    return [];
   }
-
-  return items;
+  return filterAndSortProducts(DEMO_PRODUCTS, filters);
 }
 
 export type FacetOption = {
@@ -243,6 +175,7 @@ function primarySrc(product: DemoProduct): string | undefined {
 
 /** Same brand, other bottles — used as flavour/label chips on the product page. */
 export function getBrandSiblings(product: DemoProduct): DemoProduct[] {
+  if (!product.brandSlug) return [];
   return listProducts({ brandSlugs: [product.brandSlug] }).filter(
     (row) => row.id !== product.id,
   );
@@ -276,3 +209,36 @@ export function getRelatedProducts(
 
   return [...sameRange, ...fillers];
 }
+
+/** Async durable catalogue — use from Server Components / actions (P6+). */
+export async function listProductsDurable(
+  filters: CatalogueFilters = {},
+): Promise<DemoProduct[]> {
+  return getCatalogueRepository().listProducts(filters);
+}
+
+export async function getProductBySlugDurable(
+  slug: string,
+): Promise<DemoProduct | undefined> {
+  return getCatalogueRepository().getProductBySlug(slug);
+}
+
+export async function getProductByIdDurable(
+  id: string,
+): Promise<DemoProduct | undefined> {
+  return getCatalogueRepository().getProductById(id);
+}
+
+export async function getCategoriesDurable() {
+  return getCatalogueRepository().listCategories();
+}
+
+export async function getBrandsDurable() {
+  return getCatalogueRepository().listBrands();
+}
+
+export async function getFeaturedProductsDurable(limit = 4) {
+  return getCatalogueRepository().getFeaturedProducts(limit);
+}
+
+export { getCatalogueRepository };

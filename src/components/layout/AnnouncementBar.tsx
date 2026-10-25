@@ -10,7 +10,8 @@ export function AnnouncementBar() {
           className="hidden h-2 w-2 rotate-45 bg-brand-burnt-orange sm:inline-block"
         />
         <span>
-          Add your drinks to the cart, then send your order on WhatsApp.
+          Add drinks to your cart, check out on this site, then we confirm with
+          you.
         </span>
         <Link
           href="/faq"

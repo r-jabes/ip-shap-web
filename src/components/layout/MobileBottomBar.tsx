@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useChrome } from "@/components/layout/ChromeProvider";
 import {
   GridIcon,
+  HeartIcon,
   HomeIcon,
   SearchIcon,
   WhatsAppIcon,
@@ -12,7 +13,7 @@ import {
 import { chatHref } from "@/lib/site-config";
 
 const itemClass =
-  "flex h-full flex-1 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-semibold transition-colors duration-[var(--motion-fast)] active:bg-paper-2";
+  "flex h-full min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-0.5 text-[0.7rem] font-semibold transition-colors duration-[var(--motion-fast)] active:bg-paper-2";
 
 /** Thumb-reach navigation for phones. Hidden from `lg` up; the page reserves space for it. */
 export function MobileBottomBar() {
@@ -51,8 +52,16 @@ export function MobileBottomBar() {
         <SearchIcon size={22} />
         Search
       </button>
+      <Link
+        href="/saved"
+        aria-current={pathname === "/saved" ? "page" : undefined}
+        className={`${itemClass} ${pathname === "/saved" ? "text-brand-charcoal" : "text-ink-muted"}`}
+      >
+        <HeartIcon size={22} />
+        Saved
+      </Link>
       <a
-        href={chatHref("Hello, I would like to place an order.")}
+        href={chatHref("Hello, I would like to ask a question.")}
         {...(chatHref().startsWith("http")
           ? { target: "_blank", rel: "noopener noreferrer" }
           : {})}

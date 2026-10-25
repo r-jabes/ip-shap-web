@@ -21,7 +21,7 @@ export default function AboutPage() {
         {
           index: "02",
           heading: "How to order",
-          body: "Add bottles to your cart, check out, and send the order on WhatsApp. We confirm availability and delivery with you directly.",
+          body: "Add bottles to your cart and check out on this site. We confirm availability and delivery with you afterwards.",
         },
         {
           index: "03",

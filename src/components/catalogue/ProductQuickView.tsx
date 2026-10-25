@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import type { DemoProduct } from "@/domain/catalogue";
-import { useCart } from "@/components/cart/CartProvider";
+import { useCart, useLiveProduct } from "@/components/cart/CartProvider";
 import { ProductImageFrame } from "@/components/media/ProductImageFrame";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Overlay } from "@/components/ui/Overlay";
 import { PriceTag } from "@/components/ui/PriceTag";
+import { StockNote } from "@/components/ui/StockNote";
 import { primaryCatalogueImage, sizesForRole } from "@/lib/product-image";
-import { getCategories } from "@/lib/catalogue";
-import { sampleCompareAtPrice } from "@/lib/sample-pricing";
-
+import { describeStock } from "@/lib/stock/storefront";
+import { useCatalogueOptional } from "@/components/catalogue/CatalogueProvider";
 export function ProductQuickView({
   product,
   open,
@@ -21,15 +21,29 @@ export function ProductQuickView({
   open: boolean;
   onClose: () => void;
 }) {
-  const { addItem } = useCart();
   if (!product) return null;
+  return <QuickViewBody product={product} open={open} onClose={onClose} />;
+}
+
+function QuickViewBody({
+  product: catalogueProduct,
+  open,
+  onClose,
+}: {
+  product: DemoProduct;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { addItem } = useCart();
+  const catalogue = useCatalogueOptional();
+  // Fetch current stock only while the quick view is open.
+  const product = useLiveProduct(catalogueProduct, { refresh: open });
+  const stock = describeStock(product);
 
   const image = primaryCatalogueImage(product.images);
-  const categoryName = getCategories().find(
-    (category) => category.slug === product.categorySlug,
-  )?.name;
-  const unavailable = product.availability === "out_of_stock";
-  const onSale = !!sampleCompareAtPrice(product.price);
+  const categoryName = catalogue?.categoryName(product.categorySlug);
+  const unavailable = stock.max === 0;
+  const onSale = !!product.compareAtPrice;
 
   return (
     <Overlay
@@ -53,20 +67,27 @@ export function ProductQuickView({
             />
           </div>
         </div>
-        <div className="flex max-h-[min(92dvh,40rem)] flex-col gap-4 overflow-y-auto p-5 sm:p-6">
+        <div className="site-scroll flex max-h-[min(92dvh,40rem)] flex-col gap-4 overflow-y-auto p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2">
             {categoryName ? <Badge tone="outline">{categoryName}</Badge> : null}
             {onSale ? <Badge tone="accent">Sale</Badge> : null}
           </div>
           <div>
-            <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
-              {product.brandName}
-            </p>
+            {product.brandName ? (
+              <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted uppercase">
+                {product.brandName}
+              </p>
+            ) : null}
             <h2 className="font-display mt-1 text-2xl leading-snug">
               {product.name}
             </h2>
           </div>
-          <PriceTag price={product.price} size="lg" showSampleSale />
+          <PriceTag
+            price={product.price}
+            compareAt={product.compareAtPrice}
+            size="lg"
+          />
+          <StockNote stock={stock} className="-mt-2 text-sm" />
           <p className="line-clamp-4 text-sm text-ink-muted">
             {product.description}
           </p>
@@ -81,7 +102,7 @@ export function ProductQuickView({
                 onClose();
               }}
             >
-              Add to cart
+              {unavailable ? "Out of stock" : "Add to cart"}
             </Button>
             <Button
               href={`/product/${product.slug}`}

@@ -1,7 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { cache } from "react";
+import { fetchActiveAdminProfile } from "@/lib/admin/profiles";
 import type { AdminRole } from "@/lib/admin/roles";
 import { getServerEnv } from "@/lib/env";
+import { hasSupabaseServiceConfig } from "@/lib/supabase/config";
 
 export const ADMIN_SESSION_COOKIE = "ip_shap_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 8; // 8 hours
@@ -43,20 +46,42 @@ export function decodeSession(
       Buffer.from(payloadB64, "base64url").toString("utf8"),
     ) as AdminSession;
     if (!session.exp || session.exp * 1000 < Date.now()) return null;
-    if (session.role !== "owner" && session.role !== "staff") return null;
+    if (
+      session.role !== "owner" &&
+      session.role !== "manager" &&
+      session.role !== "staff"
+    ) {
+      return null;
+    }
     return session;
   } catch {
     return null;
   }
 }
 
+/** One live profile lookup per request, even when layout + page both ask. */
+const loadLiveProfile = cache(async (userId: string) =>
+  fetchActiveAdminProfile(userId),
+);
+
+/**
+ * Signed cookie proves who the person is; the database decides whether they still have
+ * access and which role they hold, so deactivating or demoting someone takes effect immediately.
+ */
 export async function getAdminSession(): Promise<AdminSession | null> {
   const secret = sessionSecret();
   if (!secret) return null;
   const jar = await cookies();
   const token = jar.get(ADMIN_SESSION_COOKIE)?.value;
   if (!token) return null;
-  return decodeSession(token, secret);
+  const session = decodeSession(token, secret);
+  if (!session) return null;
+  if (session.sub.startsWith("bootstrap:") || !hasSupabaseServiceConfig()) {
+    return session;
+  }
+  const profile = await loadLiveProfile(session.sub);
+  if (!profile) return null;
+  return { ...session, role: profile.role };
 }
 
 export async function setAdminSessionCookie(

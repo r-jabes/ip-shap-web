@@ -2,15 +2,20 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { consumeRateLimit } from "@/lib/admin/rate-limit";
-import { notifyOrderEvent } from "@/lib/notifications/log";
+import { revalidateCatalogueStock } from "@/lib/catalogue/cache";
+import { isDocumentId } from "@/lib/document-id";
+import { notifyNewOrder } from "@/lib/notifications/notify";
+import type { FulfilmentStatus, PaymentStatus } from "@/lib/orders/transitions";
 import {
-  createOrder,
-  lookupOrder,
+  createOrderDurable,
+  lookupOrderByPhoneDurable,
+  lookupOrderDurable,
   toOrderSummary,
-  type CheckoutChannel,
-} from "@/lib/orders/store";
+} from "@/lib/orders/durable";
+import type { CheckoutChannel } from "@/lib/orders/store";
 import { initiateOrderPayment } from "@/lib/payments/initiate";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export type CheckoutActionState = {
   error?: string;
@@ -24,9 +29,22 @@ export async function placeOrderAction(
   const headerStore = await headers();
   const ip =
     headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const limit = consumeRateLimit(`checkout:${ip}`, 20, 15 * 60 * 1000);
+  const limit = await consumeRateLimit(`checkout:${ip}`, 20, 15 * 60 * 1000);
   if (!limit.ok) {
     return { error: "Too many attempts. Please wait and try again." };
+  }
+
+  const turnstile = await verifyTurnstileToken(
+    String(formData.get("cf-turnstile-response") ?? ""),
+    ip,
+  );
+  if (!turnstile.ok) {
+    return {
+      error:
+        turnstile.reason === "missing_token"
+          ? "Please complete the bot check and try again."
+          : "Bot check failed. Refresh the page and try again.",
+    };
   }
 
   const channel = String(formData.get("channel") ?? "") as CheckoutChannel;
@@ -45,7 +63,7 @@ export async function placeOrderAction(
 
   let order;
   try {
-    order = createOrder({
+    order = await createOrderDurable({
       channel,
       items,
       customerName: String(formData.get("customerName") ?? ""),
@@ -73,12 +91,21 @@ export async function placeOrderAction(
     };
   }
 
-  notifyOrderEvent({
-    templateId: "order_awaiting_confirmation",
-    orderReference: order.reference,
-    idempotencyKey: `order-created-${order.id}`,
-    variables: { channel: order.channel },
-  });
+  // Stock was just reserved: drop cached catalogue copies so server-rendered pages catch up.
+  revalidateCatalogueStock();
+
+  // Order is committed — email failures must not undo it.
+  try {
+    await notifyNewOrder(order);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "notification_error",
+        orderReference: order.reference,
+        error: error instanceof Error ? error.message : "unknown",
+      }),
+    );
+  }
 
   const summary = toOrderSummary(order);
   let confirmPath = `/order/${encodeURIComponent(summary.reference)}?token=${encodeURIComponent(summary.lookupToken)}`;
@@ -87,7 +114,6 @@ export async function placeOrderAction(
     try {
       const payment = initiateOrderPayment(order);
       if (payment?.redirectUrl) {
-        // Sandbox redirect only — never treat as paid until webhook verifies.
         order.paymentStatus = "pending";
         confirmPath = payment.redirectUrl.replace(/^https?:\/\/[^/]+/, "");
       }
@@ -102,26 +128,112 @@ export async function placeOrderAction(
   redirect(confirmPath);
 }
 
+const LOOKUP_NOT_FOUND =
+  "We could not find an order with those details. Check the reference and try again, or message us and we will help.";
+
 export async function lookupOrderAction(formData: FormData): Promise<void> {
   const headerStore = await headers();
   const ip =
     headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const limit = consumeRateLimit(`order-lookup:${ip}`, 30, 15 * 60 * 1000);
+  const limit = await consumeRateLimit(`order-lookup:${ip}`, 30, 15 * 60 * 1000);
   if (!limit.ok) {
     redirect(
       `/order/lookup?error=${encodeURIComponent("Too many attempts. Please wait and try again.")}`,
     );
   }
 
-  const reference = String(formData.get("reference") ?? "").trim();
+  const reference = String(formData.get("reference") ?? "").trim().toUpperCase();
   const token = String(formData.get("token") ?? "").trim();
-  const order = lookupOrder(reference, token);
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!reference) {
+    redirect(
+      `/order/lookup?error=${encodeURIComponent("Enter your order reference.")}`,
+    );
+  }
+  if (!isDocumentId(reference, "order")) {
+    redirect(
+      `/order/lookup?error=${encodeURIComponent("That does not look like an order reference. It starts with IPS- and is about 20 characters long.")}`,
+    );
+  }
+  if (!token && !phone) {
+    redirect(
+      `/order/lookup?error=${encodeURIComponent("Enter the phone number you ordered with, or your private token.")}`,
+    );
+  }
+
+  let order;
+  if (token) {
+    order = await lookupOrderDurable(reference, token);
+  } else {
+    // Phone guesses are limited per reference as well, so one order cannot be brute-forced.
+    const perReference = await consumeRateLimit(
+      `order-lookup-phone:${reference}`,
+      8,
+      15 * 60 * 1000,
+    );
+    if (!perReference.ok) {
+      redirect(
+        `/order/lookup?error=${encodeURIComponent("Too many attempts for this order. Please wait a few minutes or message us.")}`,
+      );
+    }
+    order = await lookupOrderByPhoneDurable(reference, phone);
+  }
   if (!order) {
-    redirect(`/order/lookup?error=${encodeURIComponent("Order not found.")}`);
+    redirect(`/order/lookup?error=${encodeURIComponent(LOOKUP_NOT_FOUND)}`);
   }
   redirect(
     `/order/${encodeURIComponent(order.reference)}?token=${encodeURIComponent(order.lookupToken)}`,
   );
+}
+
+export type RememberedOrderStatus = {
+  reference: string;
+  /** False when the order no longer exists (the device can forget it). */
+  found: boolean;
+  fulfilmentStatus?: FulfilmentStatus;
+  paymentStatus?: PaymentStatus;
+  items?: Array<{ productId: string; name: string; quantity: number }>;
+};
+
+/**
+ * Current status for the few orders this device remembers. Each one must present its own private
+ * token, so this reveals nothing the shopper could not already see on the confirmation page.
+ */
+export async function rememberedOrderStatusesAction(
+  entries: Array<{ reference: string; token: string }>,
+): Promise<RememberedOrderStatus[]> {
+  const headerStore = await headers();
+  const ip =
+    headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const limit = await consumeRateLimit(`order-status:${ip}`, 30, 15 * 60 * 1000);
+  if (!limit.ok) return [];
+
+  const results: RememberedOrderStatus[] = [];
+  for (const entry of entries.slice(0, 5)) {
+    const reference = String(entry.reference ?? "");
+    const token = String(entry.token ?? "");
+    try {
+      const order = await lookupOrderDurable(reference, token);
+      results.push(
+        order
+          ? {
+              reference,
+              found: true,
+              fulfilmentStatus: order.fulfilmentStatus,
+              paymentStatus: order.paymentStatus,
+              items: order.items.map((item) => ({
+                productId: item.productId,
+                name: item.productName,
+                quantity: item.quantity,
+              })),
+            }
+          : { reference, found: false },
+      );
+    } catch {
+      // A temporary problem must not make the device forget the order: report nothing for it.
+    }
+  }
+  return results;
 }
 
 function fieldErrorsFromMessage(message: string): Record<string, string> {

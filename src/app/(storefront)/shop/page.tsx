@@ -6,29 +6,47 @@ import {
   ProductGridSkeleton,
 } from "@/components/catalogue/ProductGrid";
 import { ShopFilters } from "@/components/catalogue/ShopFilters";
+import { ShopNoResults } from "@/components/catalogue/ShopNoResults";
 import { ShopPagination } from "@/components/catalogue/ShopPagination";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { Container } from "@/components/ui/Container";
-import {
-  getBrands,
-  getCategories,
-  getFilterFacets,
-  listProducts,
-  paginateProducts,
-} from "@/lib/catalogue";
+import { getCachedCategories } from "@/lib/catalogue/cache";
+import { getShopListing } from "@/lib/catalogue/storefront";
+import { shopMetadata } from "@/lib/seo";
 import {
   buildShopHref,
   parseShopSearchParams,
   shopQueryToFilters,
 } from "@/lib/shop-query";
 
-export const metadata: Metadata = {
-  title: "Shop",
-  description:
-    "Browse whisky, vodka, gin and wine from THE IP SHAP BUSINESS LTD in Rwanda.",
-};
+/** Revalidate when catalogue cache tag is busted; also soft TTL. */
+export const revalidate = 3600;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const query = parseShopSearchParams(params);
+  const categories = await getCachedCategories();
+  const activeCategory =
+    query.categories.length === 1
+      ? categories.find((category) => category.slug === query.categories[0])
+      : undefined;
+  return shopMetadata({
+    category: activeCategory,
+    q: query.q,
+    hasExtraFilters:
+      query.brands.length > 0 ||
+      query.availability !== "all" ||
+      typeof query.minPrice === "number" ||
+      typeof query.maxPrice === "number" ||
+      query.categories.length > 1,
+  });
+}
 
 export default async function ShopPage({
   searchParams,
@@ -38,16 +56,15 @@ export default async function ShopPage({
   const params = await searchParams;
   const query = parseShopSearchParams(params);
   const filters = shopQueryToFilters(query);
-  const allProducts = listProducts(filters);
   const {
-    items: products,
+    products,
     page,
     totalPages,
     total,
-  } = paginateProducts(allProducts, query.page);
-  const facets = getFilterFacets(filters);
-  const categories = getCategories();
-  const brands = getBrands();
+    facets,
+    categories,
+    brands,
+  } = await getShopListing(filters, query.page);
 
   const categoryNames = Object.fromEntries(
     categories.map((category) => [category.slug, category.name]),
@@ -83,7 +100,7 @@ export default async function ShopPage({
         </h1>
         <p className="mt-2 text-sm text-ink-muted sm:text-base">
           {activeCategory?.description ??
-            "Spirits and wine, ready to order. Pick what you like and send your order on WhatsApp."}
+            "Spirits and wine, ready to order. Pick what you like and check out on this site."}
         </p>
       </header>
 
@@ -132,7 +149,24 @@ export default async function ShopPage({
           </div>
 
           <Suspense fallback={<ProductGridSkeleton />}>
-            <ProductGrid products={products} />
+            <ProductGrid
+              products={products}
+              emptyState={
+                <ShopNoResults
+                  searchText={query.q || undefined}
+                  hasFilters={
+                    query.categories.length > 0 ||
+                    query.brands.length > 0 ||
+                    query.availability !== "all" ||
+                    typeof query.minPrice === "number" ||
+                    typeof query.maxPrice === "number"
+                  }
+                  suggestions={categories
+                    .filter((category) => !query.categories.includes(category.slug))
+                    .slice(0, 8)}
+                />
+              }
+            />
           </Suspense>
 
           <ShopPagination

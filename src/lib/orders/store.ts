@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { createDocumentId } from "@/lib/document-id";
 import type { DemoProduct } from "@/domain/catalogue";
 import { adminGetProduct, adminListProducts } from "@/lib/admin/store";
 import { getProductById, listProducts } from "@/lib/catalogue";
@@ -7,10 +8,24 @@ import { moneyRwf, type MoneyRwf } from "@/lib/money";
 import { getDeliveryZone } from "@/lib/orders/delivery";
 import { isValidCheckoutPhone, normalizePhone } from "@/lib/orders/phone";
 import {
+  assertValidPaymentAmount,
+  describeManualPayment,
+  type ManualPaymentInput,
+} from "@/lib/orders/manual-payment";
+import {
+  insufficientStockMessage,
+  unavailableMessage,
+} from "@/lib/orders/stock-messages";
+import {
   assertFulfilmentTransition,
   type FulfilmentStatus,
   type PaymentStatus,
 } from "@/lib/orders/transitions";
+import {
+  availabilityAfterDecrement,
+  availabilityAfterRestore,
+  isCountedStock,
+} from "@/lib/stock/engine";
 
 export type CheckoutChannel = "whatsapp_assisted" | "online_payment";
 
@@ -34,6 +49,8 @@ export type StoredOrder = {
   subtotal: MoneyRwf;
   deliveryFee: MoneyRwf | null;
   total: MoneyRwf;
+  /** Amount staff recorded as received (may differ from `total`, e.g. a discount). Null until recorded. */
+  amountPaid?: MoneyRwf | null;
   items: OrderItemSnapshot[];
   customerName: string;
   customerPhone: string;
@@ -47,6 +64,8 @@ export type StoredOrder = {
   deliveryZoneId?: string;
   idempotencyKey: string;
   stockReserved: boolean;
+  /** True after place-order decremented on-hand inventory (not confirm/payment). */
+  stockCommitted: boolean;
   reservationExpiresAt: string | null;
   statusHistory: Array<{
     from: FulfilmentStatus | null;
@@ -76,8 +95,6 @@ export type CreateOrderInput = {
 
 type OrderStore = {
   orders: StoredOrder[];
-  /** Outstanding reserved units by product id */
-  reservations: Map<string, number>;
   /** Provider webhook event ids already applied */
   processedWebhookIds: Set<string>;
 };
@@ -90,7 +107,6 @@ function getStore(): OrderStore {
   if (!globalThis.__ipShapOrderStore) {
     globalThis.__ipShapOrderStore = {
       orders: [],
-      reservations: new Map(),
       processedWebhookIds: new Set(),
     };
   }
@@ -108,12 +124,9 @@ function isPubliclyOrderable(product: DemoProduct): boolean {
   );
 }
 
-function makeReference(now = new Date()): string {
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  const suffix = randomBytes(2).toString("hex").toUpperCase();
-  return `IPS-${y}${m}${d}-${suffix}`;
+/** Public order ref — opaque CSPRNG id (no date/serial). See document-id.ts. */
+function makeReference(): string {
+  return createDocumentId("order");
 }
 
 function makeLookupToken(): string {
@@ -132,16 +145,82 @@ export function buildWhatsAppDeepLink(order: StoredOrder): string | undefined {
   const phone = whatsappE164()?.replace(/\D/g, "");
   if (!phone) return undefined;
   const text = encodeURIComponent(
-    `Hello IP SHAP, I placed order ${order.reference}. Total: ${order.total.amount} RWF.`,
+    `Hello IP SHAP, I have a question about order ${order.reference}. Total: ${order.total.amount} RWF.`,
   );
   return `https://wa.me/${phone}?text=${text}`;
 }
 
-/** Available units = on-hand qty minus open reservations (unknown qty → null). */
+/** On-hand units for counted stock (unknown ≠ counted). */
 function remainingStock(product: DemoProduct): number | null {
-  if (typeof product.stockQuantity !== "number") return null;
-  const reserved = getStore().reservations.get(product.id) ?? 0;
-  return product.stockQuantity - reserved;
+  if (
+    !isCountedStock({
+      availability: product.availability,
+      quantity: product.stockQuantity,
+    })
+  ) {
+    return null;
+  }
+  return product.stockQuantity as number;
+}
+
+/** Decrement on-hand at place-order (idempotent via stockCommitted). */
+function reserveOrderStock(order: StoredOrder): void {
+  if (order.stockCommitted) return;
+
+  for (const item of order.items) {
+    const product = resolveProduct(item.productId);
+    if (!product) continue;
+    if (
+      !isCountedStock({
+        availability: product.availability,
+        quantity: product.stockQuantity,
+      })
+    ) {
+      continue;
+    }
+    const onHand = product.stockQuantity as number;
+    if (onHand < item.quantity) {
+      throw new Error(
+        `Insufficient stock for ${product.name} (have ${onHand}, need ${item.quantity}).`,
+      );
+    }
+    const nextQty = onHand - item.quantity;
+    product.stockQuantity = nextQty;
+    product.availability = availabilityAfterDecrement(
+      product.availability,
+      nextQty,
+    );
+  }
+
+  order.stockReserved = true;
+  order.stockCommitted = true;
+}
+
+function restoreReservedStock(order: StoredOrder) {
+  if (!order.stockCommitted) return;
+  for (const item of order.items) {
+    const product = resolveProduct(item.productId);
+    if (!product) continue;
+    if (
+      !isCountedStock({
+        availability: product.availability,
+        quantity: product.stockQuantity,
+      }) &&
+      product.availability === "unknown"
+    ) {
+      continue;
+    }
+    if (typeof product.stockQuantity !== "number") continue;
+    const nextQty = product.stockQuantity + item.quantity;
+    product.stockQuantity = nextQty;
+    product.availability = availabilityAfterRestore(
+      product.availability,
+      nextQty,
+    );
+  }
+  order.stockCommitted = false;
+  order.stockReserved = false;
+  order.reservationExpiresAt = null;
 }
 
 export function createOrder(input: CreateOrderInput): StoredOrder {
@@ -178,8 +257,9 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
 
   const snapshots: OrderItemSnapshot[] = [];
   let subtotalAmount = 0;
-  const reservationPlan: Array<{ productId: string; quantity: number }> = [];
+  let hasCountedStockLines = false;
 
+  // Validate lines first (no mutations) so a mid-cart failure cannot leave partial decrements.
   for (const line of input.items) {
     if (
       !Number.isInteger(line.quantity) ||
@@ -189,20 +269,13 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
       throw new Error("Invalid quantity.");
     }
     const product = resolveProduct(line.productId);
-    if (!product || !isPubliclyOrderable(product)) {
+    if (!product) {
       throw new Error(
-        "A cart item is unavailable (unpublished or out of stock). Update your cart.",
+        "An item in your cart is no longer available. Remove it from your cart and try again.",
       );
     }
-
-    const remaining = remainingStock(product);
-    if (remaining !== null && remaining < line.quantity) {
-      throw new Error(
-        `Insufficient stock for ${product.name}. Available: ${Math.max(0, remaining)}.`,
-      );
-    }
-    if (remaining !== null) {
-      reservationPlan.push({ productId: product.id, quantity: line.quantity });
+    if (!isPubliclyOrderable(product)) {
+      throw new Error(unavailableMessage(product.name));
     }
 
     const unit = product.price.amount;
@@ -219,13 +292,26 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     });
   }
 
+  // Aggregate demand per product, then check + decrement once (place-order reserve).
+  const demandByProduct = new Map<string, number>();
+  for (const snap of snapshots) {
+    demandByProduct.set(
+      snap.productId,
+      (demandByProduct.get(snap.productId) ?? 0) + snap.quantity,
+    );
+  }
+  for (const [productId, qty] of demandByProduct) {
+    const product = resolveProduct(productId)!;
+    const remaining = remainingStock(product);
+    if (remaining === null) continue;
+    if (remaining < qty) {
+      throw new Error(insufficientStockMessage(product.name, remaining));
+    }
+    hasCountedStockLines = true;
+  }
+
   const deliveryFeeAmount = zone?.feeRwf ?? null;
   const totalAmount = subtotalAmount + (deliveryFeeAmount ?? 0);
-
-  for (const plan of reservationPlan) {
-    const current = store.reservations.get(plan.productId) ?? 0;
-    store.reservations.set(plan.productId, current + plan.quantity);
-  }
 
   const now = new Date();
   const reservationExpiresAt = new Date(
@@ -234,7 +320,7 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
 
   const order: StoredOrder = {
     id: randomUUID(),
-    reference: makeReference(now),
+    reference: makeReference(),
     lookupToken: makeLookupToken(),
     channel: input.channel,
     fulfilmentStatus: "awaiting_confirmation",
@@ -244,6 +330,7 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     deliveryFee:
       deliveryFeeAmount === null ? null : moneyRwf(deliveryFeeAmount),
     total: moneyRwf(totalAmount),
+    amountPaid: null,
     items: snapshots,
     customerName: input.customerName.trim(),
     customerPhone: normalizePhone(input.customerPhone),
@@ -256,9 +343,9 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     customerNotes: input.customerNotes?.trim() || undefined,
     deliveryZoneId: zone?.id,
     idempotencyKey: input.idempotencyKey,
-    stockReserved: reservationPlan.length > 0,
-    reservationExpiresAt:
-      reservationPlan.length > 0 ? reservationExpiresAt : null,
+    stockReserved: false,
+    stockCommitted: false,
+    reservationExpiresAt: hasCountedStockLines ? reservationExpiresAt : null,
     statusHistory: [
       {
         from: null,
@@ -270,6 +357,11 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
   };
+
+  // Stock is reserved (on-hand decremented) at place — not on confirm/payment.
+  if (hasCountedStockLines) {
+    reserveOrderStock(order);
+  }
 
   store.orders.unshift(order);
   return order;
@@ -292,17 +384,7 @@ export function cancelOrder(orderId: string, reason: string): StoredOrder {
   assertFulfilmentTransition(order.fulfilmentStatus, "cancelled");
   if (order.fulfilmentStatus === "cancelled") return order;
 
-  if (order.stockReserved) {
-    for (const item of order.items) {
-      const reserved = store.reservations.get(item.productId) ?? 0;
-      store.reservations.set(
-        item.productId,
-        Math.max(0, reserved - item.quantity),
-      );
-    }
-    order.stockReserved = false;
-    order.reservationExpiresAt = null;
-  }
+  restoreReservedStock(order);
 
   order.statusHistory.push({
     from: order.fulfilmentStatus,
@@ -370,6 +452,8 @@ export function transitionFulfilment(
     return cancelOrder(orderId, reason);
   }
 
+  // Confirm/payment do not touch stock — inventory was reserved at place-order.
+
   order.statusHistory.push({
     from: order.fulfilmentStatus,
     to,
@@ -382,26 +466,26 @@ export function transitionFulfilment(
 }
 
 /**
- * Manual payment recording — requires reference + reason (staff must verify offline).
+ * Manual payment recording by staff after they have checked the money themselves.
+ * The amount is required (it may differ from the total); reference and note are optional.
  * Does not accept browser redirects as proof.
  */
 export function markManualPayment(
   orderId: string,
-  input: { reference: string; reason: string; actorLabel: string },
+  input: ManualPaymentInput,
 ): StoredOrder {
   const order = getOrderById(orderId);
   if (!order) throw new Error("Order not found");
-  if (!input.reference.trim() || !input.reason.trim()) {
-    throw new Error("Payment reference and reason are required.");
-  }
+  assertValidPaymentAmount(input.amount);
   if (order.paymentStatus === "paid") {
     throw new Error("Payment already marked paid.");
   }
   order.paymentStatus = "paid";
+  order.amountPaid = moneyRwf(input.amount);
   order.statusHistory.push({
     from: order.fulfilmentStatus,
     to: order.fulfilmentStatus,
-    reason: `Manual payment recorded (${input.reference}): ${input.reason} · ${input.actorLabel}`,
+    reason: describeManualPayment(input),
     at: new Date().toISOString(),
   });
   order.updatedAt = new Date().toISOString();

@@ -29,16 +29,21 @@ Documented in `ENVIRONMENT.md` / `OPERATIONS.md`. Production should migrate to S
 - [x] Open-redirect helper for internal paths (`safeInternalPath`)
 - [x] Rate limits on admin login, checkout, order lookup (in-memory / single instance)
 - [x] Payment webhook signature + payload size cap
-- [ ] Upload endpoints validate type, size and re-encode images (backend contracts ready)
+- [x] Upload endpoints validate type, size and re-encode images (P3 admin path)
 - [ ] Age / alcohol sale restrictions reviewed by qualified local counsel before launch
-- [ ] CSP nonces (remove `'unsafe-inline'` / `'unsafe-eval'`) before hardened prod
+- [ ] CSP nonces (remove `'unsafe-inline'` / `'unsafe-eval'`) — **waiver:** Next App Router still needs inline hydration; see `HARDENING.md`
+- [x] Turnstile on checkout + contact when `TURNSTILE_SECRET_KEY` is set
+- [x] Sentry client/server/edge when DSN set; `/api/health` uptime probe
 - [ ] Re-run `npm audit` before each release; avoid `audit fix --force` that jumps Next majors without a planned upgrade
+- [ ] Sign [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md) before production cutover
 
-## Dependency notes (2026-10-19)
+## Dependency notes (2026-10-21)
 
-`npm audit --omit=dev` reported Next-bundled PostCSS advisories and `sharp`/libvips issues. Prefer a planned Next.js patch upgrade over `--force` to Next 16. Track until cleared.
+`npm audit --omit=dev` may still report Next-bundled PostCSS advisories and related highs. Prefer a planned Next.js **patch** upgrade over `--force` to Next 16. Track until cleared; CI `audit:prod` still fails only on **critical**.
 
-## Threat model (storefront summary)
+## Threat model
+
+Full P0 one-pager: [`THREAT_MODEL.md`](./THREAT_MODEL.md). Platform accounts: [`PLATFORM_BOOTSTRAP.md`](./PLATFORM_BOOTSTRAP.md).
 
 | Surface      | Risk            | Control                                     |
 | ------------ | --------------- | ------------------------------------------- |
@@ -48,6 +53,11 @@ Documented in `ENVIRONMENT.md` / `OPERATIONS.md`. Production should migrate to S
 | Webhooks     | Forged paid     | HMAC verify; idempotent event ids           |
 | Redirects    | Open redirect   | `safeInternalPath`                          |
 | Logs         | Secret leak     | Redacting logger                            |
+
+## CI dependency audit (P0)
+
+- `npm run audit:prod` — fails on **critical** production advisories (required in CI).
+- High/moderate from Next-bundled PostCSS: tracked below; do **not** `audit fix --force` to Next 16 without a planned upgrade phase.
 
 ## Alcohol / legal note
 

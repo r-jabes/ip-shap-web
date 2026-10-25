@@ -9,12 +9,15 @@ import { useChrome } from "@/components/layout/ChromeProvider";
 import { MegaMenu } from "@/components/layout/MegaMenu";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
+import { useSavedIds } from "@/lib/device/use-saved";
 import {
   BagIcon,
+  HeartIcon,
   MenuIcon,
   SearchIcon,
   WhatsAppIcon,
 } from "@/components/ui/icons";
+import { cartSummaryLabel } from "@/lib/cart";
 import type { NavData } from "@/lib/navigation";
 import { chatHref } from "@/lib/site-config";
 
@@ -25,13 +28,16 @@ const links = [
 ];
 
 export function SiteHeader({ nav }: { nav: NavData }) {
-  const { itemCount, openCart, feedback } = useCart();
+  const { itemCount, productCount, openCart, feedback } = useCart();
   const { openSearch, openMenu } = useChrome();
+  const { ids: savedIds } = useSavedIds();
+  const savedCount = savedIds.length;
   const pathname = usePathname();
   const [pulse, setPulse] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const previousCount = useRef(itemCount);
 
+  // Pulse on any change to what is in the cart (units, not just the product count).
   useEffect(() => {
     if (itemCount === previousCount.current) return;
     previousCount.current = itemCount;
@@ -108,20 +114,43 @@ export function SiteHeader({ nav }: { nav: NavData }) {
 
           <div className="hidden xl:block">
             <Button
-              href={chatHref("Hello, I would like to place an order.")}
+              href={chatHref("Hello, I would like to ask a question.")}
               size="sm"
               variant="ghost"
               iconLeft={<WhatsAppIcon size={17} />}
             >
-              Order on WhatsApp
+              Contact us
             </Button>
           </div>
+
+          <Link
+            href="/saved"
+            aria-label={
+              savedCount > 0 ? `Saved drinks, ${savedCount}` : "Saved drinks"
+            }
+            aria-current={pathname === "/saved" ? "page" : undefined}
+            className="relative hidden h-11 w-11 items-center justify-center rounded-full transition-colors duration-[var(--motion-fast)] hover:bg-paper-2 sm:inline-flex"
+          >
+            <HeartIcon size={21} />
+            {savedCount > 0 ? (
+              <span
+                aria-hidden="true"
+                className="absolute top-0.5 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-burnt-orange px-1 text-[0.65rem] leading-none font-bold text-brand-charcoal tabular"
+              >
+                {savedCount > 99 ? "99+" : savedCount}
+              </span>
+            ) : null}
+          </Link>
 
           <button
             type="button"
             onClick={openCart}
             aria-haspopup="dialog"
-            aria-label={`Open cart, ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+            aria-label={
+              productCount > 0
+                ? `Open cart, ${cartSummaryLabel(productCount, itemCount)}`
+                : "Open cart, empty"
+            }
             className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-charcoal bg-brand-charcoal text-brand-warm-white transition-[transform,background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-brand-dark-neutral active:scale-95 motion-reduce:transition-none ${
               pulse ? "cart-target--catch" : ""
             }`}
@@ -130,14 +159,14 @@ export function SiteHeader({ nav }: { nav: NavData }) {
               <span aria-hidden="true" className="cart-fly-dot" />
             ) : null}
             <BagIcon size={20} />
-            {itemCount > 0 ? (
+            {productCount > 0 ? (
               <span
                 aria-hidden="true"
                 className={`absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-brand-warm-white bg-brand-burnt-orange px-1 text-[0.7rem] leading-none font-bold text-brand-charcoal tabular ${
                   pulse ? "cart-count--pulse" : ""
                 }`}
               >
-                {itemCount > 99 ? "99+" : itemCount}
+                {productCount > 99 ? "99+" : productCount}
               </span>
             ) : null}
           </button>

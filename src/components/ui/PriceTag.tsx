@@ -1,29 +1,33 @@
 import { formatDemoPrice } from "@/domain/catalogue";
 import type { MoneyRwf } from "@/lib/money";
-import {
-  sampleCompareAtPrice,
-  sampleDiscountPercent,
-} from "@/lib/sample-pricing";
 import { Badge } from "@/components/ui/Badge";
 
-/** Formats integer RWF with tabular numerals. Supports sample sale presentation. */
+/** Whole-number percent off, never below 1 when a discount exists. */
+export function discountPercent(price: MoneyRwf, compareAt: MoneyRwf): number {
+  if (compareAt.amount <= price.amount) return 0;
+  return Math.max(
+    1,
+    Math.round(((compareAt.amount - price.amount) / compareAt.amount) * 100),
+  );
+}
+
+/** Formats integer RWF with tabular numerals. Shows the regular price struck through when discounted. */
 export function PriceTag({
   price,
+  compareAt,
   from = false,
   size = "md",
   className = "",
-  /** When true, may show a sample compare-at / % off for design review. */
-  showSampleSale = false,
 }: {
   price: MoneyRwf;
+  /** Regular price while a discount is active. */
+  compareAt?: MoneyRwf;
   from?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;
-  showSampleSale?: boolean;
 }) {
-  const compareAt = showSampleSale ? sampleCompareAtPrice(price) : undefined;
   const onSale = !!compareAt && compareAt.amount > price.amount;
-  const percent = onSale ? sampleDiscountPercent(price, compareAt) : 0;
+  const percent = onSale ? discountPercent(price, compareAt) : 0;
 
   const priceSize =
     size === "lg" ? "text-3xl" : size === "sm" ? "text-base" : "text-xl";
@@ -44,7 +48,7 @@ export function PriceTag({
       >
         {formatDemoPrice(price)}
       </span>
-      {onSale ? (
+      {onSale && compareAt ? (
         <>
           <span
             className={`tabular text-ink-muted line-through decoration-brand-charcoal/50 ${wasSize}`}

@@ -6,26 +6,87 @@ import { HomeHowItWorks } from "@/components/home/HomeHowItWorks";
 import { HomeRangeTicker } from "@/components/home/HomeRangeTicker";
 import { HomeTrustFaq } from "@/components/home/HomeTrustFaq";
 import { HomeWhatsAppBand } from "@/components/home/HomeWhatsAppBand";
+import { JsonLd } from "@/components/seo/JsonLd";
+import type { Category } from "@/domain/catalogue";
 import { SHORT_BRAND } from "@/lib/brand";
-import { getHomeFeaturedSlides } from "@/lib/home-featured";
+import { getCachedCategories } from "@/lib/catalogue/cache";
+import {
+  getCategoryCounts,
+  getHomeCollectionsDurable,
+} from "@/lib/catalogue/storefront";
+import {
+  getHomeFeaturedSlidesDurable,
+  type HomeFeaturedSlide,
+} from "@/lib/home-featured";
+import { getHomeCollections, type HomeCollectionTile } from "@/lib/range-media";
+import { organizationJsonLd } from "@/lib/seo";
+import { SITE } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: {
     absolute: `${SHORT_BRAND} | Wines & spirits in Rwanda`,
   },
   description:
-    "Browse whisky, wine, sparkling, vodka and gin from THE IP SHAP BUSINESS LTD. Add bottles to your cart and send your order on WhatsApp.",
+    "Browse whisky, wine, sparkling, vodka and gin from THE IP SHAP BUSINESS LTD. Add bottles to your cart and check out on this site.",
 };
 
-export default function HomePage() {
-  const featured = getHomeFeaturedSlides();
+export const revalidate = 3600;
+
+async function loadHomeCatalogue(): Promise<{
+  featured: HomeFeaturedSlide[];
+  collections: HomeCollectionTile[];
+  categories: Category[];
+  counts: Record<string, number>;
+}> {
+  try {
+    const [featured, collections, categories, counts] = await Promise.all([
+      getHomeFeaturedSlidesDurable(),
+      getHomeCollectionsDurable(),
+      getCachedCategories(),
+      getCategoryCounts(),
+    ]);
+    return { featured, collections, categories, counts };
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        type: "home_catalogue_error",
+        error: error instanceof Error ? error.message : "unknown",
+      }),
+    );
+    // Always render marketing sections even if Supabase/catalogue fails.
+    return {
+      featured: [] as HomeFeaturedSlide[],
+      collections: getHomeCollections(),
+      categories: [] as Category[],
+      counts: {} as Record<string, number>,
+    };
+  }
+}
+
+export default async function HomePage() {
+  const { featured, collections, categories, counts } =
+    await loadHomeCatalogue();
+
+  const tickerItems = categories.map((category, i) => ({
+    index: String(i + 1).padStart(2, "0"),
+    name: category.name,
+    count: counts[category.slug] ?? 0,
+    href: `/shop?category=${category.slug}`,
+  }));
 
   return (
     <>
+      <JsonLd
+        data={organizationJsonLd({
+          telephone: SITE.phoneDigits,
+          email: SITE.email,
+          address: SITE.address,
+        })}
+      />
       <HomeHero />
-      <HomeRangeTicker />
-      <HomeCollections />
-      <HomeFeatured slides={featured} />
+      <HomeRangeTicker items={tickerItems} />
+      <HomeCollections tiles={collections} />
+      {featured.length > 0 ? <HomeFeatured slides={featured} /> : null}
       <HomeHowItWorks />
       <HomeWhatsAppBand />
       <HomeTrustFaq />

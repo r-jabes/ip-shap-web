@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { slugify, uniqueSlug } from "@/lib/slug";
 
 export const BULK_IMPORT_HEADERS = [
   "slug",
@@ -69,12 +70,53 @@ export type BulkImportReport = {
   results: BulkImportRowResult[];
 };
 
+/** Only these columns must be in the file; every other column is optional. */
+const REQUIRED_HEADERS = ["name", "price_rwf"] as const;
+
+const FIELD_LABELS: Record<string, string> = Object.fromEntries([
+  ["slug", "Web address name"],
+  ["name", "Name"],
+  ["description", "Description"],
+  ["price_rwf", "Price (RWF)"],
+  ["status", "Status"],
+  ["availability", "Availability"],
+  ["category_slug", "Category"],
+  ["brand_slug", "Brand web address name"],
+  ["brand_name", "Brand name"],
+  ["sku", "SKU"],
+  ["barcode", "Barcode"],
+  ["stock_quantity", "Quantity on hand"],
+  ["is_provisional", "Needs review"],
+]);
+
+/** Turns a validation failure into short sentences an admin can act on. */
+function describeRowError(error: unknown): string[] {
+  if (error instanceof z.ZodError) {
+    return error.issues.map((issue) => {
+      const key = String(issue.path[0] ?? "");
+      const label = FIELD_LABELS[key] ?? "Row";
+      if (key === "name") return `${label} is required.`;
+      if (key === "slug") {
+        return `${label} can only use lowercase letters, numbers and hyphens, like house-red.`;
+      }
+      if (key === "price_rwf") {
+        return `${label} must be a whole number of francs, like 15000.`;
+      }
+      if (key === "status" || key === "availability") {
+        return `${label} is not one of the allowed values.`;
+      }
+      return `${label}: ${issue.message}`;
+    });
+  }
+  return [error instanceof Error ? error.message : "This row could not be read."];
+}
+
 function parseBoolean(value: string | undefined): boolean {
   if (!value || value.trim() === "") return false;
   const v = value.trim().toLowerCase();
   if (["true", "1", "yes", "y"].includes(v)) return true;
   if (["false", "0", "no", "n"].includes(v)) return false;
-  throw new Error(`Invalid boolean: ${value}`);
+  throw new Error(`Needs review must be true or false (found "${value}").`);
 }
 
 function parseOptionalInt(
@@ -83,7 +125,11 @@ function parseOptionalInt(
   if (value === undefined || value.trim() === "") return undefined;
   if (value.trim().toLowerCase() === "null") return null;
   const n = Number(value);
-  if (!Number.isInteger(n)) throw new Error(`Expected integer, got: ${value}`);
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error(
+      `Quantity on hand must be a whole number, or blank (found "${value}").`,
+    );
+  }
   return n;
 }
 
@@ -145,7 +191,8 @@ export function validateBulkImportCsv(
   options: { dryRun: boolean; existingSlugs?: Set<string> },
 ): BulkImportReport {
   const existing = options.existingSlugs ?? new Set<string>();
-  const matrix = parseCsv(csvText);
+  // Spreadsheet apps often save a hidden byte-order mark at the very start of a CSV file.
+  const matrix = parseCsv(csvText.replace(/^\uFEFF/, ""));
   if (matrix.length === 0) {
     return {
       dryRun: options.dryRun,
@@ -153,12 +200,19 @@ export function validateBulkImportCsv(
       validRows: 0,
       invalidRows: 0,
       duplicateSlugs: [],
-      results: [{ rowNumber: 0, ok: false, errors: ["CSV is empty"], raw: {} }],
+      results: [
+        {
+          rowNumber: 0,
+          ok: false,
+          errors: ["The file is empty. Add a header row and at least one product."],
+          raw: {},
+        },
+      ],
     };
   }
 
-  const header = matrix[0]!.map((h) => h.trim());
-  const missing = BULK_IMPORT_HEADERS.filter((h) => !header.includes(h));
+  const header = matrix[0]!.map((h) => h.trim().toLowerCase());
+  const missing = REQUIRED_HEADERS.filter((h) => !header.includes(h));
   if (missing.length > 0) {
     return {
       dryRun: options.dryRun,
@@ -170,7 +224,9 @@ export function validateBulkImportCsv(
         {
           rowNumber: 1,
           ok: false,
-          errors: [`Missing required headers: ${missing.join(", ")}`],
+          errors: [
+            `The first row must name the columns. Missing required column${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}.`,
+          ],
           raw: Object.fromEntries(header.map((h) => [h, ""])),
         },
       ],
@@ -189,26 +245,37 @@ export function validateBulkImportCsv(
     const line = matrix[r]!;
     const raw: Record<string, string> = {};
     for (const key of BULK_IMPORT_HEADERS) {
-      raw[key] = (line[index[key]!] ?? "").trim();
+      // Optional columns may be left out of the file entirely.
+      const column = index[key];
+      raw[key] = (column === undefined ? "" : (line[column] ?? "")).trim();
     }
 
     const errors: string[] = [];
     let data: BulkImportRow | undefined;
     try {
+      if (!raw.name) throw new Error("Name is required.");
+      if (!raw.price_rwf) throw new Error("Price (RWF) is required.");
       const price = Number(raw.price_rwf);
-      if (!Number.isInteger(price)) {
-        throw new Error("price_rwf must be an integer");
+      if (!Number.isInteger(price) || price < 0) {
+        throw new Error(
+          `Price (RWF) must be a whole number of francs, like 15000 (found "${raw.price_rwf}").`,
+        );
       }
       const stock = parseOptionalInt(raw.stock_quantity);
+      // Blank web address names are generated from the name, unique within this file only
+      // (so preview and apply always agree; matching an existing product still updates it).
+      const slug =
+        raw.slug || (raw.name ? uniqueSlug(raw.name, seen, "product") : "");
       data = bulkImportRowSchema.parse({
-        slug: raw.slug,
+        slug,
         name: raw.name,
         description: raw.description || "",
         price_rwf: price,
         status: raw.status || "draft",
         availability: raw.availability || "unknown",
         category_slug: raw.category_slug || undefined,
-        brand_slug: raw.brand_slug || undefined,
+        brand_slug:
+          raw.brand_slug || (raw.brand_name ? slugify(raw.brand_name) : "") || undefined,
         brand_name: raw.brand_name || undefined,
         sku: raw.sku || undefined,
         barcode: raw.barcode || undefined,
@@ -216,7 +283,7 @@ export function validateBulkImportCsv(
         is_provisional: parseBoolean(raw.is_provisional),
       });
     } catch (error) {
-      errors.push(error instanceof Error ? error.message : "Invalid row");
+      errors.push(...describeRowError(error));
     }
 
     if (!data) {
@@ -243,6 +310,147 @@ export function validateBulkImportCsv(
   };
 }
 
+export type BulkImportFieldGuide = {
+  key: (typeof BULK_IMPORT_HEADERS)[number];
+  label: string;
+  required: boolean;
+  allowed: string;
+};
+
+/** Operator-facing field meanings for the import UI (not written into the CSV). */
+export const BULK_IMPORT_FIELD_GUIDE: readonly BulkImportFieldGuide[] = [
+  {
+    key: "slug",
+    label: "Web address name",
+    required: false,
+    allowed:
+      "Leave blank and it is created from the name. To set your own: lowercase letters, numbers and hyphens, like house-red.",
+  },
+  {
+    key: "name",
+    label: "Name",
+    required: true,
+    allowed: "The product name shoppers see.",
+  },
+  {
+    key: "description",
+    label: "Description",
+    required: false,
+    allowed: "A short description. Wrap it in quotes if it contains commas.",
+  },
+  {
+    key: "price_rwf",
+    label: "Price (RWF)",
+    required: true,
+    allowed:
+      "Whole francs only, no decimals or commas, like 15000. Importing a price replaces the regular price and removes any discount.",
+  },
+  {
+    key: "status",
+    label: "Status",
+    required: false,
+    allowed:
+      "draft (hidden), published (live) or archived. Blank means draft.",
+  },
+  {
+    key: "availability",
+    label: "Availability",
+    required: false,
+    allowed:
+      "unknown (not tracked), in_stock, low_stock or out_of_stock. Blank means unknown.",
+  },
+  {
+    key: "category_slug",
+    label: "Category",
+    required: false,
+    allowed:
+      "The web address name of an existing category, like red-wine. See the Categories page.",
+  },
+  {
+    key: "brand_slug",
+    label: "Brand web address name",
+    required: false,
+    allowed:
+      "Leave blank and it is created from the brand name.",
+  },
+  {
+    key: "brand_name",
+    label: "Brand name",
+    required: false,
+    allowed: "The brand as shoppers see it, like Johnnie Walker.",
+  },
+  {
+    key: "sku",
+    label: "SKU",
+    required: false,
+    allowed: "Your own product code, if you use one.",
+  },
+  {
+    key: "barcode",
+    label: "Barcode",
+    required: false,
+    allowed: "The barcode number, if you scan products.",
+  },
+  {
+    key: "stock_quantity",
+    label: "Quantity on hand",
+    required: false,
+    allowed: "A whole number, or leave blank if you do not count stock.",
+  },
+  {
+    key: "is_provisional",
+    label: "Needs review",
+    required: false,
+    allowed:
+      "true or false. Tick true as a reminder to check the price or details later. Shoppers do not see it. Blank means false.",
+  },
+] as const;
+
+function csvEscape(value: string): string {
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/**
+ * Downloadable sample template: header + example rows.
+ * Omitted status in real files still defaults to draft — samples use draft explicitly.
+ */
 export function bulkImportTemplateCsv(): string {
-  return `${BULK_IMPORT_HEADERS.join(",")}\n`;
+  const header = BULK_IMPORT_HEADERS.join(",");
+  const samples: string[][] = [
+    [
+      "house-red",
+      "House Red",
+      "Smooth everyday red — replace with your copy.",
+      "15000",
+      "draft",
+      "in_stock",
+      "wine",
+      "ip-shap-house",
+      "IP SHAP",
+      "SKU-RED-001",
+      "",
+      "24",
+      "false",
+    ],
+    [
+      "",
+      "House White",
+      "Crisp white for the table.",
+      "14000",
+      "draft",
+      "unknown",
+      "wine",
+      "ip-shap-house",
+      "IP SHAP",
+      "",
+      "",
+      "null",
+      "false",
+    ],
+  ];
+  const lines = samples.map((row) => row.map(csvEscape).join(","));
+  return `${header}\n${lines.join("\n")}\n`;
 }

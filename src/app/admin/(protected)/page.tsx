@@ -1,61 +1,123 @@
+import Link from "next/link";
 import {
   AdminPageHeader,
   AdminPanel,
   AdminStat,
 } from "@/components/admin/admin-ui";
-import { Button } from "@/components/ui/Button";
 import {
-  adminDashboardCounts,
-  adminListAdjustments,
-  adminListAudits,
-} from "@/lib/admin/store";
+  formatAvailabilityLabel,
+  formatStockSummary,
+} from "@/components/admin/AdminStatusBadge";
+import { Button } from "@/components/ui/Button";
+import { loadAdminDashboard } from "@/lib/admin/dashboard";
+import { describeAuditAction, formatAdminDateTime } from "@/lib/admin/format";
+import { roleHasPermission } from "@/lib/admin/roles";
+import { getAdminSession } from "@/lib/admin/session";
 
-export default function AdminDashboardPage() {
-  const counts = adminDashboardCounts();
-  const adjustments = adminListAdjustments(5);
-  const audits = adminListAudits(8);
+export default async function AdminDashboardPage() {
+  const [{ counts, adjustments, audits, lowStock, attention }, session] =
+    await Promise.all([loadAdminDashboard(), getAdminSession()]);
 
   return (
     <div className="space-y-10">
       <AdminPageHeader
-        title="Operations dashboard"
-        description="Counts are backed by the live admin store. No invented analytics."
+        title="Dashboard"
+        description="A quick look at your catalogue and stock."
         actions={
           <>
-            <Button href="/admin/orders" variant="secondary" size="sm">
+            <Button href="/admin/products?add=1" variant="primary" size="sm">
+              Add product
+            </Button>
+            <Button href="/admin/orders" variant="ghost" size="sm">
               Orders
             </Button>
-            <Button href="/admin/products/new" variant="primary" size="sm">
-              New product
+            <Button href="/admin/stock?add=1" variant="ghost" size="sm">
+              Update stock
             </Button>
-            <Button href="/admin/stock" variant="ghost" size="sm">
-              Adjust stock
-            </Button>
-            <Button href="/admin/import" variant="ghost" size="sm">
-              Bulk import
-            </Button>
+            {session && roleHasPermission(session.role, "import:run") ? (
+              <Button href="/admin/import" variant="ghost" size="sm">
+                Import
+              </Button>
+            ) : null}
           </>
         }
       />
 
+      <AdminPanel>
+        <h2 className="font-display text-xl">Needs your attention</h2>
+        {attention.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-muted">
+            All clear — nothing needs doing right now.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2 text-sm">
+            {attention.map((item) => (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
+                  className="flex items-start gap-3 rounded-[var(--radius-frame)] border-2 border-brand-charcoal/15 bg-white/50 px-4 py-3 transition-colors hover:border-brand-charcoal"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`mt-1.5 size-2.5 shrink-0 rounded-full ${
+                      item.tone === "urgent"
+                        ? "bg-brand-burnt-orange"
+                        : "bg-brand-charcoal/40"
+                    }`}
+                  />
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </AdminPanel>
+
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(
           [
-            ["Total products", counts.totalProducts],
+            ["Products", counts.totalProducts],
             ["Published", counts.published],
-            ["Draft / demo", counts.draft],
+            ["Drafts", counts.draft],
             ["Archived", counts.archived],
-            ["Unknown stock", counts.unknownStock],
-            ["Out of stock", counts.outOfStock],
+            ["Stock not tracked", counts.unknownStock],
+            ["Running low", counts.lowStock],
+            ["Sold out", counts.outOfStock],
           ] as const
         ).map(([label, value]) => (
           <AdminStat key={label} label={label} value={value} />
         ))}
       </ul>
 
+      <AdminPanel>
+        <h2 className="font-display text-xl">Running low</h2>
+        {lowStock.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-muted">
+            No products are running low right now.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2 text-sm">
+            {lowStock.map((product) => (
+              <li
+                key={product.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 border-t border-brand-charcoal/10 pt-2 first:border-t-0 first:pt-0"
+              >
+                <span className="font-medium">{product.name}</span>
+                <span className="tabular text-ink-muted">
+                  {formatAvailabilityLabel(product.availability)}
+                  {typeof product.stockQuantity === "number"
+                    ? ` · ${formatStockSummary(product.availability, product.stockQuantity)} left`
+                    : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </AdminPanel>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminPanel>
-          <h2 className="font-display text-xl">Recent stock adjustments</h2>
+          <h2 className="font-display text-xl">Recent stock changes</h2>
           {adjustments.length === 0 ? (
             <p className="mt-3 text-sm text-ink-muted">None yet.</p>
           ) : (
@@ -65,15 +127,16 @@ export default function AdminDashboardPage() {
                   key={row.id}
                   className="border-t border-brand-charcoal/10 pt-3 first:border-t-0 first:pt-0"
                 >
-                  <span className="text-ink-muted tabular">{row.createdAt}</span>
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {row.actorEmail}
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  <span className="tabular">
-                    {row.previousQuantity} → {row.newQuantity}
-                  </span>
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {row.reason}
+                  <p className="font-medium">
+                    {row.productName}
+                    <span className="ml-2 font-normal text-ink-muted tabular">
+                      {row.previousQuantity ?? "—"} → {row.newQuantity ?? "—"}
+                    </span>
+                  </p>
+                  <p className="text-ink-muted">
+                    {row.reason} · {row.actorEmail} ·{" "}
+                    {formatAdminDateTime(row.createdAt)}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -81,9 +144,9 @@ export default function AdminDashboardPage() {
         </AdminPanel>
 
         <AdminPanel>
-          <h2 className="font-display text-xl">Audit trail</h2>
+          <h2 className="font-display text-xl">Recent activity</h2>
           {audits.length === 0 ? (
-            <p className="mt-3 text-sm text-ink-muted">No events yet.</p>
+            <p className="mt-3 text-sm text-ink-muted">Nothing yet.</p>
           ) : (
             <ul className="mt-4 space-y-3 text-sm">
               {audits.map((event) => (
@@ -91,16 +154,13 @@ export default function AdminDashboardPage() {
                   key={event.id}
                   className="border-t border-brand-charcoal/10 pt-3 first:border-t-0 first:pt-0"
                 >
-                  <span className="text-ink-muted tabular">
-                    {event.createdAt}
-                  </span>
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {event.actorEmail ?? "system"}
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {event.action}
-                  <span className="mx-1.5 text-ink-muted">·</span>
-                  {event.entityType}
-                  {event.entityId ? `:${event.entityId.slice(0, 8)}` : ""}
+                  <p className="font-medium">
+                    {describeAuditAction(event.action)}
+                  </p>
+                  <p className="text-ink-muted">
+                    {event.actorEmail ?? "System"} ·{" "}
+                    {formatAdminDateTime(event.createdAt)}
+                  </p>
                 </li>
               ))}
             </ul>

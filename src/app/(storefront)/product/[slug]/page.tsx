@@ -4,21 +4,32 @@ import { ProductBuyBox } from "@/components/product/ProductBuyBox";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductRelated } from "@/components/product/ProductRelated";
 import { ProductStickyBar } from "@/components/product/ProductStickyBar";
+import { RecentlyViewed } from "@/components/saved/RecentlyViewed";
+import { RecordView } from "@/components/saved/RecordView";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { getProductBySlugDurable } from "@/lib/catalogue";
+import { getCachedCategories } from "@/lib/catalogue/cache";
 import {
-  getBrandSiblings,
-  getCategories,
-  getProductBySlug,
-  getRelatedProducts,
-  listProducts,
-} from "@/lib/catalogue";
+  getAllProductSlugs,
+  getProductSiblings,
+  getRelatedForProduct,
+} from "@/lib/catalogue/storefront";
+import {
+  breadcrumbJsonLd,
+  productJsonLd,
+  productMetadata,
+} from "@/lib/seo";
 
 type Params = Promise<{ slug: string }>;
 
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
-  return listProducts().map((product) => ({ slug: product.slug }));
+  const slugs = await getAllProductSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -27,25 +38,36 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugDurable(slug);
   if (!product) return { title: "Product" };
-  return {
-    title: product.name,
-    description: product.description,
-  };
+  return productMetadata(product);
 }
 
 export default async function ProductPage({ params }: { params: Params }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlugDurable(slug);
   if (!product) notFound();
 
-  const category = getCategories().find((c) => c.slug === product.categorySlug);
-  const siblings = getBrandSiblings(product);
-  const related = getRelatedProducts(product, 4);
+  const [categories, siblings, related] = await Promise.all([
+    getCachedCategories(),
+    getProductSiblings(product),
+    getRelatedForProduct(product, 4),
+  ]);
+  const category = categories.find((c) => c.slug === product.categorySlug);
+
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop" },
+    ...(category
+      ? [{ name: category.name, path: `/shop?category=${category.slug}` }]
+      : []),
+    { name: product.name, path: `/product/${product.slug}` },
+  ];
 
   return (
     <>
+      <JsonLd data={productJsonLd(product)} />
+      <JsonLd data={breadcrumbJsonLd(crumbs)} />
       <Container className="py-8 pb-[calc(var(--bottom-bar-h)+5.5rem)] lg:py-12 lg:pb-16">
         <Breadcrumbs
           items={[
@@ -91,7 +113,9 @@ export default async function ProductPage({ params }: { params: Params }) {
           categoryName={category?.name}
           categorySlug={category?.slug}
         />
+        <RecentlyViewed currentProductId={product.id} />
       </Container>
+      <RecordView productId={product.id} />
       <ProductStickyBar product={product} />
     </>
   );

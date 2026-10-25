@@ -18,7 +18,7 @@ npm run typecheck
 npm run build
 ```
 
-## Phase 08 coverage additions
+## Hardening / money-flow coverage
 
 - Money multiply/overflow invariants (random integer loops)
 - Rate-limit bucket exhaustion
