@@ -63,23 +63,45 @@ export async function placeOrderAction(
 
   let order;
   try {
+    const fulfillmentRaw = String(formData.get("fulfillmentMethod") ?? "");
+    const fulfillmentMethod =
+      fulfillmentRaw === "pickup" ? "pickup" : "delivery";
+
     order = await createOrderDurable({
       channel,
+      fulfillmentMethod,
       items,
       customerName: String(formData.get("customerName") ?? ""),
       customerPhone: String(formData.get("customerPhone") ?? ""),
       customerNotes: String(formData.get("customerNotes") ?? "") || undefined,
       deliveryDistrict:
-        String(formData.get("deliveryDistrict") ?? "") || undefined,
-      deliverySector: String(formData.get("deliverySector") ?? "") || undefined,
-      deliveryCell: String(formData.get("deliveryCell") ?? "") || undefined,
+        fulfillmentMethod === "pickup"
+          ? undefined
+          : String(formData.get("deliveryDistrict") ?? "") || undefined,
+      deliverySector:
+        fulfillmentMethod === "pickup"
+          ? undefined
+          : String(formData.get("deliverySector") ?? "") || undefined,
+      deliveryCell:
+        fulfillmentMethod === "pickup"
+          ? undefined
+          : String(formData.get("deliveryCell") ?? "") || undefined,
       deliveryVillage:
-        String(formData.get("deliveryVillage") ?? "") || undefined,
+        fulfillmentMethod === "pickup"
+          ? undefined
+          : String(formData.get("deliveryVillage") ?? "") || undefined,
       deliveryDirections:
-        String(formData.get("deliveryDirections") ?? "") || undefined,
+        fulfillmentMethod === "pickup"
+          ? undefined
+          : String(formData.get("deliveryDirections") ?? "") || undefined,
       deliveryInstructions:
-        String(formData.get("deliveryInstructions") ?? "") || undefined,
-      deliveryZoneId: String(formData.get("deliveryZoneId") ?? "") || undefined,
+        fulfillmentMethod === "pickup"
+          ? undefined
+          : String(formData.get("deliveryInstructions") ?? "") || undefined,
+      deliveryZoneId:
+        fulfillmentMethod === "pickup"
+          ? undefined
+          : String(formData.get("deliveryZoneId") ?? "") || undefined,
       idempotencyKey,
     });
   } catch (error) {

@@ -29,6 +29,7 @@ const links = [
     label: "Team",
     permission: "admins:manage" as const,
   },
+  { href: "/admin/account", label: "Account" },
 ] as const;
 
 function isActive(pathname: string, href: string, exact?: boolean) {

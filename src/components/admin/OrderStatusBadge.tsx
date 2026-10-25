@@ -35,6 +35,14 @@ const FULFILMENT_TONES: Record<FulfilmentStatus, Tone> = {
     pill: "border-emerald-500 bg-emerald-100 text-emerald-950",
     dot: "bg-emerald-600",
   },
+  ready_for_pickup: {
+    pill: "border-violet-400 bg-violet-100 text-violet-950",
+    dot: "bg-violet-500",
+  },
+  picked_up: {
+    pill: "border-emerald-500 bg-emerald-100 text-emerald-950",
+    dot: "bg-emerald-600",
+  },
   cancelled: {
     pill: "border-red-400 bg-red-100 text-red-950",
     dot: "bg-red-600",

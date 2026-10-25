@@ -1,23 +1,24 @@
-import type { FulfilmentStatus } from "@/lib/orders/transitions";
+import type {
+  FulfilmentStatus,
+  FulfillmentMethod,
+} from "@/lib/orders/transitions";
+import { fulfilmentFlowFor } from "@/lib/orders/transitions";
+import { customerStatusLabel } from "@/lib/orders/customer-status";
 
-const STEPS: Array<{ id: FulfilmentStatus; label: string }> = [
-  { id: "awaiting_confirmation", label: "Awaiting confirmation" },
-  { id: "confirmed", label: "Confirmed" },
-  { id: "processing", label: "Preparing" },
-  { id: "ready_for_dispatch", label: "Ready" },
-  { id: "out_for_delivery", label: "Out for delivery" },
-  { id: "delivered", label: "Delivered" },
-];
-
-function stepIndex(status: FulfilmentStatus): number {
-  return STEPS.findIndex((step) => step.id === status);
+function stepIndex(
+  status: FulfilmentStatus,
+  method: FulfillmentMethod,
+): number {
+  return fulfilmentFlowFor(method).findIndex((step) => step === status);
 }
 
 /** Compact fulfilment timeline for the confirmation page. */
 export function OrderStatusTimeline({
   status,
+  method = "delivery",
 }: {
   status: FulfilmentStatus;
+  method?: FulfillmentMethod;
 }) {
   if (status === "cancelled") {
     return (
@@ -37,15 +38,16 @@ export function OrderStatusTimeline({
     );
   }
 
-  const current = Math.max(0, stepIndex(status));
+  const steps = fulfilmentFlowFor(method);
+  const current = Math.max(0, stepIndex(status, method));
 
   return (
     <ol className="space-y-0" aria-label="Order status">
-      {STEPS.map((step, index) => {
+      {steps.map((step, index) => {
         const done = index < current;
         const active = index === current;
         return (
-          <li key={step.id} className="flex gap-4">
+          <li key={step} className="flex gap-4">
             <div className="flex w-6 flex-col items-center">
               <span
                 className={`mt-1 flex h-3 w-3 shrink-0 rounded-full border-2 ${
@@ -57,7 +59,7 @@ export function OrderStatusTimeline({
                 }`}
                 aria-hidden="true"
               />
-              {index < STEPS.length - 1 ? (
+              {index < steps.length - 1 ? (
                 <span
                   aria-hidden="true"
                   className={`my-1 w-px flex-1 min-h-6 ${
@@ -76,7 +78,7 @@ export function OrderStatusTimeline({
               }`}
               aria-current={active ? "step" : undefined}
             >
-              {step.label}
+              {customerStatusLabel(step)}
               {active ? (
                 <span className="mt-0.5 block text-xs font-normal tracking-[0.08em] text-brand-burnt-orange uppercase">
                   Current

@@ -31,7 +31,10 @@ import {
   type StoredOrder,
 } from "@/lib/orders/store";
 import { secureTokenEquals } from "@/lib/orders/token";
-import type { FulfilmentStatus } from "@/lib/orders/transitions";
+import type {
+  FulfilmentStatus,
+  FulfillmentMethod,
+} from "@/lib/orders/transitions";
 import { assertFulfilmentTransition } from "@/lib/orders/transitions";
 import {
   availabilityAfterDecrement,
@@ -187,8 +190,12 @@ async function createOrderInDatabase(
     throw new Error("Cart is empty.");
   }
 
-  const zone = getDeliveryZone(input.deliveryZoneId);
-  if (input.deliveryZoneId && !zone) {
+  const method: FulfillmentMethod =
+    input.fulfillmentMethod === "pickup" ? "pickup" : "delivery";
+
+  const zone =
+    method === "pickup" ? undefined : getDeliveryZone(input.deliveryZoneId);
+  if (method === "delivery" && input.deliveryZoneId && !zone) {
     throw new Error("Selected delivery zone is not available.");
   }
 
@@ -245,7 +252,7 @@ async function createOrderInDatabase(
     }
   }
 
-  const deliveryFeeAmount = zone?.feeRwf ?? null;
+  const deliveryFeeAmount = method === "pickup" ? null : (zone?.feeRwf ?? null);
   const totalAmount = subtotalAmount + (deliveryFeeAmount ?? 0);
   const now = new Date();
   const hasCounted = [...demandByProduct.values()].some(({ product }) =>
@@ -262,28 +269,41 @@ async function createOrderInDatabase(
 
   const knownIds = await productIdsInDatabase(plans.map((p) => p.product.id));
 
+  const paymentStatus =
+    method === "pickup" || input.channel === "online_payment"
+      ? "unpaid"
+      : "not_applicable";
+
   const { data: inserted, error: insertError } = await client
     .from("orders")
     .insert({
       reference,
       lookup_token: lookupToken,
       channel: input.channel,
+      fulfillment_method: method,
       fulfilment_status: "awaiting_confirmation",
-      payment_status:
-        input.channel === "online_payment" ? "unpaid" : "not_applicable",
+      payment_status: paymentStatus,
       subtotal_rwf: subtotalAmount,
       delivery_fee_rwf: deliveryFeeAmount,
       total_rwf: totalAmount,
       customer_name: input.customerName.trim(),
       customer_phone: normalizePhone(input.customerPhone),
-      delivery_district: input.deliveryDistrict?.trim() || null,
-      delivery_sector: input.deliverySector?.trim() || null,
-      delivery_cell: input.deliveryCell?.trim() || null,
-      delivery_village: input.deliveryVillage?.trim() || null,
-      delivery_directions: input.deliveryDirections?.trim() || null,
-      delivery_instructions: input.deliveryInstructions?.trim() || null,
+      delivery_district:
+        method === "pickup" ? null : input.deliveryDistrict?.trim() || null,
+      delivery_sector:
+        method === "pickup" ? null : input.deliverySector?.trim() || null,
+      delivery_cell:
+        method === "pickup" ? null : input.deliveryCell?.trim() || null,
+      delivery_village:
+        method === "pickup" ? null : input.deliveryVillage?.trim() || null,
+      delivery_directions:
+        method === "pickup" ? null : input.deliveryDirections?.trim() || null,
+      delivery_instructions:
+        method === "pickup"
+          ? null
+          : input.deliveryInstructions?.trim() || null,
       customer_notes: input.customerNotes?.trim() || null,
-      delivery_zone_id: zone?.id ?? null,
+      delivery_zone_id: method === "pickup" ? null : (zone?.id ?? null),
       idempotency_key: input.idempotencyKey,
       stock_reserved: false,
       stock_committed: false,
@@ -539,7 +559,11 @@ export async function transitionFulfilmentDurable(
 
   const order = await fetchOrderBundle(orderId);
   if (!order) throw new Error("Order not found");
-  assertFulfilmentTransition(order.fulfilmentStatus, to);
+  assertFulfilmentTransition(
+    order.fulfilmentStatus,
+    to,
+    order.fulfillmentMethod,
+  );
   if (order.fulfilmentStatus === to) return order;
 
   if (to === "cancelled") {
@@ -576,7 +600,11 @@ export async function cancelOrderDurable(
 
   const order = await fetchOrderBundle(orderId);
   if (!order) throw new Error("Order not found");
-  assertFulfilmentTransition(order.fulfilmentStatus, "cancelled");
+  assertFulfilmentTransition(
+    order.fulfilmentStatus,
+    "cancelled",
+    order.fulfillmentMethod,
+  );
   if (order.fulfilmentStatus === "cancelled") return order;
 
   await restoreOrderStockDurable(orderId);

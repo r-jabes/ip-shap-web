@@ -176,6 +176,29 @@ export function adminUpsertBrandMemory(
   return next;
 }
 
+export function adminDeleteBrandMemory(
+  actor: AdminSession,
+  slug: string,
+): { name: string; productsCleared: number } {
+  const store = getStore();
+  const index = store.brands.findIndex((row) => row.slug === slug);
+  if (index < 0) throw new Error("Brand not found.");
+  const [removed] = store.brands.splice(index, 1);
+  let productsCleared = 0;
+  for (const product of store.products) {
+    if (product.brandSlug === slug) {
+      product.brandSlug = "";
+      product.brandName = "";
+      productsCleared += 1;
+    }
+  }
+  writeAudit(actor, "brand.delete", "brand", slug, {
+    name: removed!.name,
+    productsCleared,
+  });
+  return { name: removed!.name, productsCleared };
+}
+
 export function adminUpsertProduct(
   actor: AdminSession,
   input: AdminProductInput,

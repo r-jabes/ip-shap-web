@@ -6,7 +6,11 @@ import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import { getRestockStore } from "@/lib/stock/restock-requests";
 
 const MAX_ORDERS_SCANNED = 5000;
-const FINISHED: StoredOrder["fulfilmentStatus"][] = ["delivered", "cancelled"];
+const FINISHED: StoredOrder["fulfilmentStatus"][] = [
+  "delivered",
+  "picked_up",
+  "cancelled",
+];
 
 export type CustomerDataSummary = {
   orders: number;

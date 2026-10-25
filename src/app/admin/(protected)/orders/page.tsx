@@ -32,13 +32,17 @@ import { nextFulfilmentStatuses } from "@/lib/orders/transitions";
 
 /** Change an order's status straight from the list, jumping to any valid step. */
 function QuickStatusButton({ order }: { order: StoredOrder }) {
-  const options = nextFulfilmentStatuses(order.fulfilmentStatus);
+  const options = nextFulfilmentStatuses(
+    order.fulfilmentStatus,
+    order.fulfillmentMethod,
+  );
   if (options.length === 0) return null;
   return (
     <FulfilmentModal
       orderId={order.id}
       reference={order.reference}
       current={order.fulfilmentStatus}
+      method={order.fulfillmentMethod}
       options={options}
       triggerLabel="Change status"
       triggerVariant="secondary"

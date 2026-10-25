@@ -1,8 +1,19 @@
 import { formatFulfilmentLabel } from "@/lib/admin/orders-query";
-import { FULFILMENT_FLOW, type FulfilmentStatus } from "@/lib/orders/transitions";
+import {
+  fulfilmentFlowFor,
+  isTerminalFulfilment,
+  type FulfilmentStatus,
+  type FulfillmentMethod,
+} from "@/lib/orders/transitions";
 
 /** Where the order is on its journey. Cancelled orders show a clear banner instead. */
-export function OrderProgress({ status }: { status: FulfilmentStatus }) {
+export function OrderProgress({
+  status,
+  method = "delivery",
+}: {
+  status: FulfilmentStatus;
+  method?: FulfillmentMethod;
+}) {
   if (status === "cancelled") {
     return (
       <p
@@ -14,15 +25,21 @@ export function OrderProgress({ status }: { status: FulfilmentStatus }) {
     );
   }
 
-  const currentIndex = FULFILMENT_FLOW.indexOf(status);
+  const flow = fulfilmentFlowFor(method);
+  const terminalDone = isTerminalFulfilment(status);
+  const currentIndex = flow.indexOf(status);
+  const cols =
+    method === "pickup"
+      ? "grid-cols-2 sm:grid-cols-4"
+      : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
+
   return (
-    <ol
-      aria-label="Order progress"
-      className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"
-    >
-      {FULFILMENT_FLOW.map((step, index) => {
-        const done = index < currentIndex || status === "delivered";
-        const current = index === currentIndex && status !== "delivered";
+    <ol aria-label="Order progress" className={`grid gap-2 ${cols}`}>
+      {flow.map((step, index) => {
+        const done =
+          (currentIndex >= 0 && index < currentIndex) ||
+          (terminalDone && step === status);
+        const current = index === currentIndex && !terminalDone;
         return (
           <li
             key={step}

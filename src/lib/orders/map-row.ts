@@ -6,6 +6,7 @@ import type {
 } from "@/lib/orders/store";
 import type {
   FulfilmentStatus,
+  FulfillmentMethod,
   PaymentStatus,
 } from "@/lib/orders/transitions";
 
@@ -14,6 +15,7 @@ export type OrderRow = {
   reference: string;
   lookup_token: string;
   channel: CheckoutChannel;
+  fulfillment_method?: FulfillmentMethod | null;
   fulfilment_status: FulfilmentStatus;
   payment_status: PaymentStatus;
   subtotal_rwf: number;
@@ -78,6 +80,8 @@ export function mapOrderRow(
     reference: row.reference,
     lookupToken: row.lookup_token,
     channel: row.channel,
+    fulfillmentMethod:
+      row.fulfillment_method === "pickup" ? "pickup" : "delivery",
     fulfilmentStatus: row.fulfilment_status,
     paymentStatus: row.payment_status,
     subtotal: moneyRwf(row.subtotal_rwf),

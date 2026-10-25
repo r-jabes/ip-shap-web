@@ -1,3 +1,4 @@
+import { deleteBrandAction } from "@/app/admin/actions";
 import {
   AdminCard,
   AdminPageHeader,
@@ -7,8 +8,25 @@ import {
 } from "@/components/admin/admin-ui";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { BrandModal } from "@/components/admin/CatalogueModals";
+import { ConfirmActionModal } from "@/components/admin/ConfirmActionModal";
 import { adminListBrandsDurable } from "@/lib/admin/catalogue-durable";
 import { paginateItems, parseAdminPage } from "@/lib/admin/pagination";
+
+function BrandActions({ brand }: { brand: { slug: string; name: string } }) {
+  return (
+    <div className="flex flex-wrap justify-end gap-2">
+      <BrandModal brand={brand} />
+      <ConfirmActionModal
+        triggerLabel="Delete"
+        title={`Delete ${brand.name}?`}
+        description="Products that use this brand stay in the shop; they simply stop showing a brand name. This cannot be undone."
+        confirmLabel="Delete brand"
+        action={deleteBrandAction}
+        fields={{ slug: brand.slug }}
+      />
+    </div>
+  );
+}
 
 export default async function AdminBrandsPage({
   searchParams,
@@ -44,7 +62,7 @@ export default async function AdminBrandsPage({
                   {brand.slug}
                 </p>
                 <div className="mt-3">
-                  <BrandModal brand={brand} />
+                  <BrandActions brand={brand} />
                 </div>
               </AdminCard>
             ))}
@@ -64,7 +82,7 @@ export default async function AdminBrandsPage({
                   <AdminTd className="font-medium">{brand.name}</AdminTd>
                   <AdminTd className="font-mono text-xs">{brand.slug}</AdminTd>
                   <AdminTd className="text-right">
-                    <BrandModal brand={brand} />
+                    <BrandActions brand={brand} />
                   </AdminTd>
                 </tr>
               ))}

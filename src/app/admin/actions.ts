@@ -42,6 +42,7 @@ import {
 } from "@/lib/admin/session";
 import {
   adminApplyBulkImportDurable,
+  adminDeleteBrandDurable,
   adminArchiveProductDurable,
   adminExistingSlugsDurable,
   adminGetProductDurable,
@@ -162,6 +163,125 @@ export async function adminLoginAction(formData: FormData): Promise<{
 export async function adminLogoutAction() {
   await clearAdminSessionCookie();
   redirect("/admin/login");
+}
+
+// ───────────────────────── Own account ──────────────────────────
+
+/** Any signed-in admin may update their display name. */
+export async function updateOwnProfileAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession();
+    if (session.sub.startsWith("bootstrap:")) {
+      return actionError(
+        "This emergency login cannot change a profile. Sign in with your email account instead.",
+      );
+    }
+    const displayName = text(formData, "displayName");
+    if (!displayName) return actionError("Enter your name.");
+    if (displayName.length > 120) {
+      return actionError("Keep your name under 120 characters.");
+    }
+
+    const client = getSupabaseServiceClient();
+    if (!client) return actionError("Account updates are not available right now.");
+
+    const { error } = await client
+      .from("admin_profiles")
+      .update({
+        display_name: displayName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", session.sub)
+      .eq("is_active", true);
+    if (error) return actionError(error.message);
+
+    await client.from("audit_events").insert({
+      actor_user_id: session.sub,
+      action: "admin.self_update",
+      entity_type: "admin_profiles",
+      entity_id: session.sub,
+      metadata: { field: "display_name" },
+    });
+
+    refreshAdmin();
+    return actionOk("Your name was saved.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/** Any signed-in Auth admin may change their own password. */
+export async function changeOwnPasswordAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession();
+    if (session.sub.startsWith("bootstrap:")) {
+      return actionError(
+        "This emergency login cannot change a password. Sign in with your email account instead.",
+      );
+    }
+
+    const currentPassword = String(formData.get("currentPassword") ?? "");
+    const newPassword = String(formData.get("newPassword") ?? "");
+    const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+    if (!currentPassword || !newPassword) {
+      return actionError("Enter your current password and a new one.");
+    }
+    if (newPassword.length < 8) {
+      return actionError("Use at least 8 characters for the new password.");
+    }
+    if (newPassword !== confirmPassword) {
+      return actionError("The new passwords do not match.");
+    }
+    if (currentPassword === newPassword) {
+      return actionError("Choose a new password that is different from the current one.");
+    }
+
+    const limit = await consumeRateLimit(
+      `admin-password:${session.sub}`,
+      8,
+      60 * 60 * 1000,
+    );
+    if (!limit.ok) return actionError("Too many attempts. Try again later.");
+
+    const verified = await resolveAdminLogin({
+      email: session.email,
+      password: currentPassword,
+      bootstrapToken: "",
+    });
+    if (!verified.ok || verified.session.sub !== session.sub) {
+      return actionError("Current password is incorrect.");
+    }
+
+    const client = getSupabaseServiceClient();
+    if (!client) return actionError("Password changes are not available right now.");
+
+    const { error } = await client.auth.admin.updateUserById(session.sub, {
+      password: newPassword,
+    });
+    if (error) {
+      console.error(
+        JSON.stringify({ type: "admin_password_change_error", message: error.message }),
+      );
+      return actionError("Could not update the password. Please try again.");
+    }
+
+    await client.from("audit_events").insert({
+      actor_user_id: session.sub,
+      action: "admin.self_update",
+      entity_type: "admin_profiles",
+      entity_id: session.sub,
+      metadata: { field: "password" },
+    });
+
+    return actionOk("Your password was changed.");
+  } catch (error) {
+    return toActionError(error);
+  }
 }
 
 // ───────────────────────────── Team ─────────────────────────────
@@ -703,6 +823,25 @@ export async function saveBrandAction(
     await adminUpsertBrandDurable(session, { slug, name });
     refreshAdmin();
     return actionOk(existingSlug ? "Brand saved." : "Brand added.");
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function deleteBrandAction(
+  formData: FormData,
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSession("products:write");
+    const slug = text(formData, "slug").toLowerCase();
+    if (!slug) return actionError("Brand is required.");
+    const result = await adminDeleteBrandDurable(session, slug);
+    refreshAdmin();
+    return actionOk(
+      result.productsCleared > 0
+        ? `Deleted ${result.name}. ${result.productsCleared} product${result.productsCleared === 1 ? "" : "s"} no longer show a brand.`
+        : `Deleted ${result.name}.`,
+    );
   } catch (error) {
     return toActionError(error);
   }
