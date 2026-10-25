@@ -15,6 +15,8 @@ export const ORDER_FULFILMENT_FILTERS: ReadonlyArray<{
   { value: "ready_for_dispatch", label: "Ready for dispatch" },
   { value: "out_for_delivery", label: "Out for delivery" },
   { value: "delivered", label: "Delivered" },
+  { value: "ready_for_pickup", label: "Ready for pickup" },
+  { value: "picked_up", label: "Picked up" },
   { value: "cancelled", label: "Cancelled" },
 ];
 

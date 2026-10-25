@@ -10,6 +10,7 @@ function order(partial: Partial<StoredOrder> & Pick<StoredOrder, "id" | "referen
   return {
     lookupToken: "token",
     channel: "whatsapp_assisted",
+    fulfillmentMethod: "delivery",
     fulfilmentStatus: "awaiting_confirmation",
     paymentStatus: "unpaid",
     subtotal: moneyRwf(10000),

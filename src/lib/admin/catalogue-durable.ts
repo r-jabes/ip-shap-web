@@ -6,6 +6,7 @@ import {
   adminExistingSlugs,
   adminGetProduct,
   adminListProducts,
+  adminDeleteBrandMemory,
   adminUpsertBrandMemory,
   adminUpsertCategoryMemory,
   adminUpsertProduct,
@@ -195,6 +196,48 @@ export async function adminUpsertBrandDurable(
     metadata: { name: data.name },
   });
   return { slug: data.slug, name: data.name };
+}
+
+/** Deletes a brand. Products that used it keep selling; their brand link is cleared. */
+export async function adminDeleteBrandDurable(
+  actor: AdminSession,
+  slug: string,
+): Promise<{ name: string; productsCleared: number }> {
+  if (!isDurableCatalogueEnabled()) {
+    return adminDeleteBrandMemory(actor, slug);
+  }
+
+  const client = getSupabaseServiceClient()!;
+  const { data: brand, error: findError } = await client
+    .from("brands")
+    .select("id, slug, name")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (findError) throw new Error(findError.message);
+  if (!brand) throw new Error("Brand not found.");
+
+  const { count, error: countError } = await client
+    .from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("brand_id", brand.id);
+  if (countError) throw new Error(countError.message);
+  const productsCleared = count ?? 0;
+
+  // brand_id is on delete set null — products stay, brand link drops.
+  const { error: deleteError } = await client
+    .from("brands")
+    .delete()
+    .eq("id", brand.id);
+  if (deleteError) throw new Error(deleteError.message);
+
+  await client.from("audit_events").insert({
+    actor_user_id: actor.sub.startsWith("bootstrap:") ? null : actor.sub,
+    action: "brand.delete",
+    entity_type: "brands",
+    entity_id: brand.slug,
+    metadata: { name: brand.name, productsCleared },
+  });
+  return { name: brand.name as string, productsCleared };
 }
 
 export async function adminUpsertProductDurable(

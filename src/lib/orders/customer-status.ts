@@ -8,6 +8,8 @@ const LABELS: Record<FulfilmentStatus, string> = {
   ready_for_dispatch: "Ready to go",
   out_for_delivery: "Out for delivery",
   delivered: "Delivered",
+  ready_for_pickup: "Ready for pickup",
+  picked_up: "Picked up",
   cancelled: "Cancelled",
 };
 

@@ -12,8 +12,9 @@ import { Field, Input, Select } from "@/components/ui/Field";
 import { formatFulfilmentLabel } from "@/lib/admin/orders-query";
 import { formatRwf } from "@/lib/money";
 import {
-  FULFILMENT_FLOW,
+  fulfilmentFlowFor,
   type FulfilmentStatus,
+  type FulfillmentMethod,
 } from "@/lib/orders/transitions";
 
 type TriggerProps = {
@@ -26,11 +27,13 @@ type TriggerProps = {
 function skippedSteps(
   from: FulfilmentStatus,
   to: FulfilmentStatus,
+  method: FulfillmentMethod,
 ): FulfilmentStatus[] {
-  const fromIndex = FULFILMENT_FLOW.indexOf(from);
-  const toIndex = FULFILMENT_FLOW.indexOf(to);
+  const flow = fulfilmentFlowFor(method);
+  const fromIndex = flow.indexOf(from);
+  const toIndex = flow.indexOf(to);
   if (fromIndex < 0 || toIndex < 0) return [];
-  return FULFILMENT_FLOW.slice(fromIndex + 1, toIndex);
+  return flow.slice(fromIndex + 1, toIndex);
 }
 
 function joinList(items: string[]): string {
@@ -43,6 +46,7 @@ export function FulfilmentModal({
   reference,
   current,
   options,
+  method = "delivery",
   triggerLabel = "Update order status",
   triggerVariant = "secondary",
   triggerSize = "sm",
@@ -52,6 +56,7 @@ export function FulfilmentModal({
   current: FulfilmentStatus;
   /** Every status this order may move to, in journey order, "cancelled" last. */
   options: FulfilmentStatus[];
+  method?: FulfillmentMethod;
 } & TriggerProps) {
   return (
     <AdminModal
@@ -72,6 +77,7 @@ export function FulfilmentModal({
             orderId={orderId}
             current={current}
             options={options}
+            method={method}
             onClose={close}
           />
         )
@@ -84,18 +90,20 @@ function FulfilmentForm({
   orderId,
   current,
   options,
+  method,
   onClose,
 }: {
   orderId: string;
   current: FulfilmentStatus;
   options: FulfilmentStatus[];
+  method: FulfillmentMethod;
   onClose: () => void;
 }) {
-  const [to, setTo] = useState<FulfilmentStatus>(options[0]);
+  const [to, setTo] = useState<FulfilmentStatus>(options[0]!);
   // Controlled so a failed save does not wipe what was typed.
   const [reason, setReason] = useState("");
   const cancelling = to === "cancelled";
-  const skipped = skippedSteps(current, to);
+  const skipped = skippedSteps(current, to, method);
   const fieldId = `fulfilment-${orderId}`;
 
   return (

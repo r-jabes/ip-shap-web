@@ -8,6 +8,7 @@ function sampleOrder(): StoredOrder {
     reference: "IPS-TESTORDER00001",
     lookupToken: "tok",
     channel: "whatsapp_assisted",
+    fulfillmentMethod: "delivery",
     fulfilmentStatus: "awaiting_confirmation",
     paymentStatus: "not_applicable",
     subtotal: moneyRwf(1000),

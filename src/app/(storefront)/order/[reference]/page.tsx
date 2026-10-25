@@ -60,16 +60,21 @@ export default async function OrderConfirmationPage({
         <span className="font-semibold text-brand-charcoal">
           {order.reference}
         </span>
-        . Our team will reach out to you shortly to confirm availability,
-        delivery and payment. Need it sooner? Use the Message us button below
-        and we will look at your order straight away.
+        {order.fulfillmentMethod === "pickup"
+          ? ". Our team will confirm availability and payment, then tell you when it is ready to collect."
+          : ". Our team will reach out to you shortly to confirm availability, delivery and payment."}{" "}
+        Need it sooner? Use the Message us button below and we will look at your
+        order straight away.
       </p>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start lg:gap-12">
         <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal bg-brand-warm-white p-6 shadow-[6px_6px_0_0_var(--brand-charcoal)]">
           <h2 className="font-display text-2xl">Status</h2>
           <div className="mt-5">
-            <OrderStatusTimeline status={order.fulfilmentStatus} />
+            <OrderStatusTimeline
+              status={order.fulfilmentStatus}
+              method={order.fulfillmentMethod}
+            />
           </div>
         </section>
 
@@ -82,16 +87,27 @@ export default async function OrderConfirmationPage({
                 <dd className="font-semibold tabular">{order.reference}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-brand-charcoal/10 pb-2">
+                <dt className="text-ink-muted">Collection</dt>
+                <dd>
+                  {order.fulfillmentMethod === "pickup"
+                    ? "Pickup"
+                    : "Delivery"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 border-b border-brand-charcoal/10 pb-2">
                 <dt className="text-ink-muted">Payment</dt>
                 <dd className="capitalize">
-                  {order.paymentStatus.replaceAll("_", " ")}
+                  {order.paymentStatus === "unpaid"
+                    ? "Awaiting payment"
+                    : order.paymentStatus.replaceAll("_", " ")}
                 </dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-brand-charcoal/10 pb-2">
                 <dt className="text-ink-muted">Total</dt>
                 <dd className="font-display text-xl tabular text-brand-burnt-orange">
                   {formatRwf(order.total.amount)}
-                  {order.deliveryFee === null ? (
+                  {order.fulfillmentMethod === "delivery" &&
+                  order.deliveryFee === null ? (
                     <span className="ml-1 text-sm font-sans font-normal text-ink-muted">
                       + delivery
                     </span>

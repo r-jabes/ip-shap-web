@@ -35,6 +35,8 @@ const AUDIT_LABELS: Record<string, string> = {
   "product.bulk_status": "Changed several products at once",
   "category.upsert": "Saved a category",
   "brand.upsert": "Saved a brand",
+  "brand.delete": "Deleted a brand",
+  "admin.self_update": "Updated their own profile",
   "inventory.adjust": "Adjusted stock",
   "catalogue.bulk_import": "Imported products",
   "privacy.erase": "Removed a customer's personal details",

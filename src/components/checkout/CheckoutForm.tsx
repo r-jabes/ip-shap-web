@@ -52,6 +52,9 @@ export function CheckoutForm({
   );
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [zoneId, setZoneId] = useState("");
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<
+    "delivery" | "pickup"
+  >("delivery");
   const [channel, setChannel] = useState<"whatsapp_assisted" | "online_payment">(
     "whatsapp_assisted",
   );
@@ -181,8 +184,63 @@ export function CheckoutForm({
         <input type="hidden" name="itemsJson" value={itemsJson} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <input type="hidden" name="channel" value={channel} />
+        <input type="hidden" name="fulfillmentMethod" value={fulfillmentMethod} />
 
         <div className="min-w-0 space-y-8">
+          <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
+            <h2 className="font-display text-2xl">How will you get your order?</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Choose delivery to your address, or collect from us when it is
+              ready.
+            </p>
+            <div
+              className="mt-5 grid gap-3 sm:grid-cols-2"
+              role="radiogroup"
+              aria-label="Delivery or pickup"
+            >
+              {(
+                [
+                  {
+                    value: "delivery" as const,
+                    title: "Delivery",
+                    hint: "We bring it to you. Fee and timing are confirmed with you.",
+                  },
+                  {
+                    value: "pickup" as const,
+                    title: "Pickup",
+                    hint: "Collect from us when we say it is ready. No delivery fee.",
+                  },
+                ] as const
+              ).map((option) => {
+                const selected = fulfillmentMethod === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => {
+                      setFulfillmentMethod(option.value);
+                      if (option.value === "pickup") setZoneId("");
+                    }}
+                    className={`rounded-[var(--radius-frame)] border-2 px-4 py-3 text-left transition-colors ${
+                      selected
+                        ? "border-brand-charcoal bg-brand-burnt-orange/20 shadow-[3px_3px_0_0_var(--brand-charcoal)]"
+                        : "border-brand-charcoal/20 bg-white/60 hover:border-brand-charcoal/40"
+                    }`}
+                  >
+                    <span className="block font-semibold text-brand-charcoal">
+                      {option.title}
+                    </span>
+                    <span className="mt-1 block text-sm text-ink-muted">
+                      {option.hint}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
             <h2 className="font-display text-2xl">Contact</h2>
             <p className="mt-1 text-sm text-ink-muted">
@@ -269,11 +327,20 @@ export function CheckoutForm({
           </section>
 
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
-            <h2 className="font-display text-2xl">Delivery</h2>
+            <h2 className="font-display text-2xl">
+              {fulfillmentMethod === "pickup" ? "Pickup" : "Delivery"}
+            </h2>
             <p className="mt-1 text-sm text-ink-muted">
-              Fee and timing are finalised with you before the order is locked
-              in.
+              {fulfillmentMethod === "pickup"
+                ? "We will confirm when your order is ready to collect. Bring a valid ID if we ask for proof of age."
+                : "Fee and timing are finalised with you before the order is locked in."}
             </p>
+            {fulfillmentMethod === "pickup" ? (
+              <p className="mt-5 rounded-2xl bg-paper-2 px-4 py-3 text-sm text-ink-muted">
+                No delivery address needed. Pay when you collect (or as we agree
+                when we confirm the order).
+              </p>
+            ) : (
             <div className="mt-5 space-y-4">
               {zones.length === 0 ? (
                 <p className="rounded-2xl bg-paper-2 px-4 py-3 text-sm text-ink-muted">
@@ -376,13 +443,15 @@ export function CheckoutForm({
                 />
               </Field>
             </div>
+            )}
           </section>
 
           <section className="rounded-[var(--radius-panel)] border-2 border-brand-charcoal/15 p-5 sm:p-6">
             <h2 className="font-display text-2xl">How to finish</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              Place the order on this site. We confirm availability, delivery
-              and payment with you afterwards.
+              {fulfillmentMethod === "pickup"
+                ? "Place the order on this site. We confirm availability and payment with you, then tell you when it is ready to collect."
+                : "Place the order on this site. We confirm availability, delivery and payment with you afterwards."}
             </p>
             <div className="mt-5 grid gap-3">
               <ChannelOption
@@ -444,18 +513,22 @@ export function CheckoutForm({
               <dd className="tabular">{formatRwf(subtotal)}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-ink-muted">Delivery</dt>
+              <dt className="text-ink-muted">
+                {fulfillmentMethod === "pickup" ? "Collection" : "Delivery"}
+              </dt>
               <dd className="tabular">
-                {deliveryFee === null
-                  ? "Confirm with us"
-                  : formatRwf(deliveryFee)}
+                {fulfillmentMethod === "pickup"
+                  ? "Pickup"
+                  : deliveryFee === null
+                    ? "Confirm with us"
+                    : formatRwf(deliveryFee)}
               </dd>
             </div>
             <div className="flex items-baseline justify-between gap-3 pt-2">
               <dt className="font-semibold">Total</dt>
               <dd className="font-display text-2xl tabular text-brand-burnt-orange">
                 {formatRwf(total)}
-                {deliveryFee === null ? (
+                {fulfillmentMethod === "delivery" && deliveryFee === null ? (
                   <span className="ml-1 text-sm font-sans font-normal text-ink-muted">
                     + delivery
                   </span>

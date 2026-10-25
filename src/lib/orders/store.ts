@@ -19,6 +19,7 @@ import {
 import {
   assertFulfilmentTransition,
   type FulfilmentStatus,
+  type FulfillmentMethod,
   type PaymentStatus,
 } from "@/lib/orders/transitions";
 import {
@@ -44,6 +45,7 @@ export type StoredOrder = {
   reference: string;
   lookupToken: string;
   channel: CheckoutChannel;
+  fulfillmentMethod: FulfillmentMethod;
   fulfilmentStatus: FulfilmentStatus;
   paymentStatus: PaymentStatus;
   subtotal: MoneyRwf;
@@ -79,6 +81,8 @@ export type StoredOrder = {
 
 export type CreateOrderInput = {
   channel: CheckoutChannel;
+  /** Defaults to delivery when omitted (older callers / demos). */
+  fulfillmentMethod?: FulfillmentMethod;
   items: Array<{ productId: string; quantity: number }>;
   customerName: string;
   customerPhone: string;
@@ -250,8 +254,12 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     throw new Error("Cart is empty.");
   }
 
-  const zone = getDeliveryZone(input.deliveryZoneId);
-  if (input.deliveryZoneId && !zone) {
+  const method: FulfillmentMethod =
+    input.fulfillmentMethod === "pickup" ? "pickup" : "delivery";
+
+  const zone =
+    method === "pickup" ? undefined : getDeliveryZone(input.deliveryZoneId);
+  if (method === "delivery" && input.deliveryZoneId && !zone) {
     throw new Error("Selected delivery zone is not available.");
   }
 
@@ -310,7 +318,7 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     hasCountedStockLines = true;
   }
 
-  const deliveryFeeAmount = zone?.feeRwf ?? null;
+  const deliveryFeeAmount = method === "pickup" ? null : (zone?.feeRwf ?? null);
   const totalAmount = subtotalAmount + (deliveryFeeAmount ?? 0);
 
   const now = new Date();
@@ -318,14 +326,21 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     now.getTime() + 48 * 60 * 60 * 1000,
   ).toISOString();
 
+  // Pickup always tracks payment (awaiting payment → paid). Delivery via the
+  // assisted channel stays not_applicable until staff records cash later if needed.
+  const paymentStatus: PaymentStatus =
+    method === "pickup" || input.channel === "online_payment"
+      ? "unpaid"
+      : "not_applicable";
+
   const order: StoredOrder = {
     id: randomUUID(),
     reference: makeReference(),
     lookupToken: makeLookupToken(),
     channel: input.channel,
+    fulfillmentMethod: method,
     fulfilmentStatus: "awaiting_confirmation",
-    paymentStatus:
-      input.channel === "online_payment" ? "unpaid" : "not_applicable",
+    paymentStatus,
     subtotal: moneyRwf(subtotalAmount),
     deliveryFee:
       deliveryFeeAmount === null ? null : moneyRwf(deliveryFeeAmount),
@@ -334,14 +349,28 @@ export function createOrder(input: CreateOrderInput): StoredOrder {
     items: snapshots,
     customerName: input.customerName.trim(),
     customerPhone: normalizePhone(input.customerPhone),
-    deliveryDistrict: input.deliveryDistrict?.trim() || undefined,
-    deliverySector: input.deliverySector?.trim() || undefined,
-    deliveryCell: input.deliveryCell?.trim() || undefined,
-    deliveryVillage: input.deliveryVillage?.trim() || undefined,
-    deliveryDirections: input.deliveryDirections?.trim() || undefined,
-    deliveryInstructions: input.deliveryInstructions?.trim() || undefined,
+    deliveryDistrict:
+      method === "pickup"
+        ? undefined
+        : input.deliveryDistrict?.trim() || undefined,
+    deliverySector:
+      method === "pickup" ? undefined : input.deliverySector?.trim() || undefined,
+    deliveryCell:
+      method === "pickup" ? undefined : input.deliveryCell?.trim() || undefined,
+    deliveryVillage:
+      method === "pickup"
+        ? undefined
+        : input.deliveryVillage?.trim() || undefined,
+    deliveryDirections:
+      method === "pickup"
+        ? undefined
+        : input.deliveryDirections?.trim() || undefined,
+    deliveryInstructions:
+      method === "pickup"
+        ? undefined
+        : input.deliveryInstructions?.trim() || undefined,
     customerNotes: input.customerNotes?.trim() || undefined,
-    deliveryZoneId: zone?.id,
+    deliveryZoneId: method === "pickup" ? undefined : zone?.id,
     idempotencyKey: input.idempotencyKey,
     stockReserved: false,
     stockCommitted: false,
@@ -381,7 +410,11 @@ export function cancelOrder(orderId: string, reason: string): StoredOrder {
   const store = getStore();
   const order = store.orders.find((row) => row.id === orderId);
   if (!order) throw new Error("Order not found");
-  assertFulfilmentTransition(order.fulfilmentStatus, "cancelled");
+  assertFulfilmentTransition(
+    order.fulfilmentStatus,
+    "cancelled",
+    order.fulfillmentMethod,
+  );
   if (order.fulfilmentStatus === "cancelled") return order;
 
   restoreReservedStock(order);
@@ -404,6 +437,7 @@ export function toOrderSummary(order: StoredOrder) {
     lookupToken: order.lookupToken,
     fulfilmentStatus: order.fulfilmentStatus,
     paymentStatus: order.paymentStatus,
+    fulfillmentMethod: order.fulfillmentMethod,
     channel: order.channel,
     currency: "RWF" as const,
     subtotal: order.subtotal,
@@ -445,7 +479,11 @@ export function transitionFulfilment(
 ): StoredOrder {
   const order = getOrderById(orderId);
   if (!order) throw new Error("Order not found");
-  assertFulfilmentTransition(order.fulfilmentStatus, to);
+  assertFulfilmentTransition(
+    order.fulfilmentStatus,
+    to,
+    order.fulfillmentMethod,
+  );
   if (order.fulfilmentStatus === to) return order;
 
   if (to === "cancelled") {

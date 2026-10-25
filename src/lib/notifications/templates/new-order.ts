@@ -57,10 +57,18 @@ export function buildNewOrderStaffEmail(input: {
   const preheader = `${order.customerName} · ${formatRwf(order.total.amount)} · awaiting confirmation`;
   const when = formatWhen(order.createdAt);
   const channel = channelLabel(order.channel);
+  const methodLabel =
+    order.fulfillmentMethod === "pickup" ? "Pickup" : "Delivery";
   const delivery =
-    order.deliveryFee === null
-      ? "To confirm"
-      : formatRwf(order.deliveryFee.amount);
+    order.fulfillmentMethod === "pickup"
+      ? "Customer pickup"
+      : order.deliveryFee === null
+        ? "To confirm"
+        : formatRwf(order.deliveryFee.amount);
+  const paymentLabel =
+    order.paymentStatus === "unpaid"
+      ? "Awaiting payment"
+      : order.paymentStatus.replaceAll("_", " ");
 
   const textLines = [
     `${SHORT_BRAND} — new order`,
@@ -70,8 +78,9 @@ export function buildNewOrderStaffEmail(input: {
     `Customer: ${order.customerName}`,
     `Phone: ${order.customerPhone}`,
     `Channel: ${channel}`,
+    `Method: ${methodLabel}`,
     `Fulfilment: ${order.fulfilmentStatus.replaceAll("_", " ")}`,
-    `Payment: ${order.paymentStatus.replaceAll("_", " ")}`,
+    `Payment: ${paymentLabel}`,
     "",
     "Items",
     ...order.items.map(
@@ -80,7 +89,7 @@ export function buildNewOrderStaffEmail(input: {
     ),
     "",
     `Subtotal: ${formatRwf(order.subtotal.amount)}`,
-    `Delivery: ${delivery}`,
+    `${methodLabel}: ${delivery}`,
     `Total: ${formatRwf(order.total.amount)}`,
     "",
     `Open in admin: ${adminUrl}`,
@@ -112,8 +121,9 @@ export function buildNewOrderStaffEmail(input: {
     ["Customer", order.customerName],
     ["Phone", order.customerPhone],
     ["Channel", channel],
+    ["Method", methodLabel],
     ["Fulfilment", order.fulfilmentStatus.replaceAll("_", " ")],
-    ["Payment", order.paymentStatus.replaceAll("_", " ")],
+    ["Payment", paymentLabel],
   ]
     .map(
       ([label, value]) => `
@@ -183,7 +193,7 @@ export function buildNewOrderStaffEmail(input: {
                   <td align="right" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${EMAIL_BRAND.charcoal};padding:4px 0;">${escapeHtml(formatRwf(order.subtotal.amount))}</td>
                 </tr>
                 <tr>
-                  <td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${EMAIL_BRAND.muted};padding:4px 0;">Delivery</td>
+                  <td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${EMAIL_BRAND.muted};padding:4px 0;">${escapeHtml(methodLabel)}</td>
                   <td align="right" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:${EMAIL_BRAND.charcoal};padding:4px 0;">${escapeHtml(delivery)}</td>
                 </tr>
                 <tr>

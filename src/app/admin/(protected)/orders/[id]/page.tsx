@@ -51,7 +51,7 @@ export default async function AdminOrderDetailPage({
     <div className="space-y-8">
       <AdminPageHeader
         title={order.reference}
-        description={`${order.customerName} · ${order.customerPhone} · ${order.channel}`}
+        description={`${order.customerName} · ${order.customerPhone} · ${order.fulfillmentMethod === "pickup" ? "Pickup" : "Delivery"}`}
         actions={
           <>
             <Button href={`/admin/print/${order.id}`} variant="ghost" size="sm">
@@ -79,7 +79,11 @@ export default async function AdminOrderDetailPage({
               orderId={order.id}
               reference={order.reference}
               current={order.fulfilmentStatus}
-              options={nextFulfilmentStatuses(order.fulfilmentStatus)}
+              method={order.fulfillmentMethod}
+              options={nextFulfilmentStatuses(
+                order.fulfilmentStatus,
+                order.fulfillmentMethod,
+              )}
             />
             <PaymentModal
               orderId={order.id}
@@ -89,8 +93,18 @@ export default async function AdminOrderDetailPage({
             />
           </div>
         </div>
+        {order.fulfillmentMethod === "pickup" &&
+        order.paymentStatus === "unpaid" ? (
+          <p className="mt-4 rounded-2xl border-2 border-orange-300 bg-orange-50 px-4 py-3 text-sm text-orange-950">
+            Pickup order — awaiting payment. Record payment when the customer
+            pays, then mark ready for pickup when the order can be collected.
+          </p>
+        ) : null}
         <div className="mt-5">
-          <OrderProgress status={order.fulfilmentStatus} />
+          <OrderProgress
+            status={order.fulfilmentStatus}
+            method={order.fulfillmentMethod}
+          />
         </div>
       </AdminPanel>
 
@@ -104,13 +118,17 @@ export default async function AdminOrderDetailPage({
                 ? formatDemoPrice(order.amountPaid)
                 : order.paymentStatus === "paid"
                   ? "Not recorded"
-                  : "Nothing yet",
+                  : order.paymentStatus === "unpaid"
+                    ? "Awaiting payment"
+                    : "Nothing yet",
             ],
             [
-              "Delivery fee",
-              order.deliveryFee
-                ? formatDemoPrice(order.deliveryFee)
-                : "To be confirmed",
+              order.fulfillmentMethod === "pickup" ? "Collection" : "Delivery fee",
+              order.fulfillmentMethod === "pickup"
+                ? "Customer pickup"
+                : order.deliveryFee
+                  ? formatDemoPrice(order.deliveryFee)
+                  : "To be confirmed",
             ],
             ["Placed", formatAdminDateTime(order.createdAt)],
           ] as const
