@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Avoid picking up unrelated lockfiles higher in the user profile tree.
   outputFileTracingRoot: path.join(__dirname),
+  // Product photos are attached to the save-product server action. Phone camera
+  // JPEGs are often 2–8 MB; the Next default (1 MB) rejects those before our
+  // 10 MB image validator runs, and the UI only shows a generic network error.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   images: {
     // Prefer modern formats when the optimizer can produce them; JPEG/PNG remain fallbacks.
     formats: ["image/avif", "image/webp"],
