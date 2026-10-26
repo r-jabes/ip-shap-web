@@ -19,13 +19,13 @@ export function StockNote({
   const tone = TONE[stock.tone];
   return (
     <p
-      className={`inline-flex items-center gap-1.5 text-xs font-semibold ${tone.text} ${className}`}
+      className={`flex items-center gap-1.5 text-xs font-semibold leading-snug ${tone.text} ${className}`}
     >
       <span
         aria-hidden="true"
         className={`h-1.5 w-1.5 shrink-0 rounded-full ${tone.dot}`}
       />
-      {stock.label}
+      <span className="min-w-0">{stock.label}</span>
     </p>
   );
 }

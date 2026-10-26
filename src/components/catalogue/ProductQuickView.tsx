@@ -82,12 +82,14 @@ function QuickViewBody({
               {product.name}
             </h2>
           </div>
-          <PriceTag
-            price={product.price}
-            compareAt={product.compareAtPrice}
-            size="lg"
-          />
-          <StockNote stock={stock} className="-mt-2 text-sm" />
+          <div className="flex flex-col gap-1.5">
+            <PriceTag
+              price={product.price}
+              compareAt={product.compareAtPrice}
+              size="lg"
+            />
+            <StockNote stock={stock} className="text-sm" />
+          </div>
           <p className="line-clamp-4 text-sm text-ink-muted">
             {product.description}
           </p>
