@@ -115,13 +115,13 @@ export function ProductCard({
             className="-mt-1.5 -mr-2"
           />
         </div>
-        <div className="mt-auto pt-2">
+        <div className="mt-auto flex flex-col gap-1.5 pt-2">
           <PriceTag
             price={product.price}
             compareAt={product.compareAtPrice}
             size="sm"
           />
-          <StockNote stock={stock} className="mt-1" />
+          <StockNote stock={stock} />
         </div>
       </div>
 

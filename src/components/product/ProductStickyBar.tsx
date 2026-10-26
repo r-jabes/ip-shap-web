@@ -28,7 +28,7 @@ export function ProductStickyBar({
           <p className="truncate text-sm font-semibold text-brand-charcoal">
             {product.name}
           </p>
-          <div className="flex flex-wrap items-center gap-x-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <PriceTag
               price={product.price}
               compareAt={product.compareAtPrice}
