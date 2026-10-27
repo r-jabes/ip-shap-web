@@ -20,11 +20,11 @@ export function HomeCollections({ tiles }: { tiles: HomeCollectionTile[] }) {
             index="02"
             eyebrow="Collections"
             title="Shop by range"
-            intro="Three shelves to start with. Whisky leads above; gin has its own story below."
+            intro="Three main groups, wholesale prices. Pick one to see what's on the shelf."
           />
         </Reveal>
 
-        {/* Bento: Wine is tall on the left (both rows); Sparkling + Vodka stack on the right. */}
+        {/* Bento: Wines & Spirits is tall on the left (both rows); Beer + Soft drinks stack on the right. */}
         <ul className="mt-8 grid gap-4 md:grid-cols-2 md:grid-rows-2 md:gap-5 md:auto-rows-[minmax(11rem,1fr)]">
           {lead ? (
             <li className="h-full md:row-span-2">
@@ -70,6 +70,7 @@ function CollectionTile({
             ? "(max-width: 768px) 100vw, 50vw"
             : "(max-width: 768px) 100vw, 25vw"
         }
+        style={{ objectPosition: tile.position }}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-[var(--motion-editorial)] ease-[var(--ease-out)] group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
       />
       <div

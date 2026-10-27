@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: LEGAL_NAME,
     short_name: SHORT_BRAND,
     description:
-      "Wines, spirits and more from THE IP SHAP BUSINESS LTD in Rwanda.",
+      "Wholesale wines, spirits, beer and soft drinks from THE IP SHAP BUSINESS LTD in Rwanda.",
     start_url: "/shop",
     display: "standalone",
     background_color: "#f5f1e8",

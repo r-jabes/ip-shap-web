@@ -157,10 +157,21 @@ export function lowestPrice(
   index: CatalogueIndexEntry[],
   categorySlug: string,
 ): number | null {
+  return lowestPriceAcross(index, [categorySlug]);
+}
+
+/** Lowest visible price across several categories (a home "range" can span a few). */
+export function lowestPriceAcross(
+  index: CatalogueIndexEntry[],
+  categorySlugs: readonly string[],
+): number | null {
+  const wanted = new Set(categorySlugs);
   const amounts = index
     .filter(
       (entry) =>
-        isStorefrontVisible(entry) && entry.categorySlug === categorySlug,
+        isStorefrontVisible(entry) &&
+        entry.categorySlug !== undefined &&
+        wanted.has(entry.categorySlug),
     )
     .map((entry) => entry.price.amount);
   return amounts.length ? Math.min(...amounts) : null;

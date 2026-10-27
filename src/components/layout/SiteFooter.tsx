@@ -63,7 +63,7 @@ export function SiteFooter({ nav }: { nav: NavData }) {
           <div>
             <BrandLogo tone="on-ink" height={48} />
             <p className="mt-5 max-w-xs text-[0.95rem] text-brand-warm-white/70">
-              Wines, spirits and more from a retailer based in {SITE.country}.
+              Wholesale wines, spirits, beer and soft drinks from {SITE.country}.
               Browse online, check out on this site, then contact us if you need
               help.
             </p>

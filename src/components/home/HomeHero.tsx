@@ -9,7 +9,7 @@ import { RANGE_MEDIA } from "@/lib/range-media";
 import { chatHref } from "@/lib/site-config";
 
 export function HomeHero() {
-  const photo = RANGE_MEDIA.whisky;
+  const photo = RANGE_MEDIA.hero;
 
   return (
     <section className="relative overflow-hidden bg-brand-warm-white">
@@ -23,14 +23,14 @@ export function HomeHero() {
                 aria-hidden="true"
                 className="h-px w-8 bg-brand-charcoal/40"
               />
-              Rwanda · wines &amp; spirits
+              Rwanda · wholesale drinks
             </p>
             <h1 className="font-display-hero font-display-hero--home mt-3 text-brand-charcoal">
               {SHORT_BRAND}
             </h1>
             <p className="mt-3 max-w-md text-sm text-ink-muted sm:text-base">
-              Whisky, wine and more — pick your bottles and check out on this
-              site.
+              Wines, spirits, beer and soft drinks at wholesale prices — pick
+              what you need and check out on this site.
             </p>
             <div className="mt-5 flex flex-wrap gap-3 sm:mt-6">
               <Button href="/shop" variant="primary" size="lg">

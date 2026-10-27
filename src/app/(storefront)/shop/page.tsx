@@ -100,7 +100,7 @@ export default async function ShopPage({
         </h1>
         <p className="mt-2 text-sm text-ink-muted sm:text-base">
           {activeCategory?.description ??
-            "Spirits and wine, ready to order. Pick what you like and check out on this site."}
+            "Wines, spirits, beer and soft drinks, ready to order. Pick what you need and check out on this site."}
         </p>
       </header>
 
