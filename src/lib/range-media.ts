@@ -36,7 +36,7 @@ export const RANGE_MEDIA = {
   /** Contact band: the shop itself. */
   contact: {
     src: "/home/contact.webp",
-    alt: "Inside the shop: shelves of wine and spirits, beer crates and a soft-drinks fridge",
+    alt: "Shelves of wine and spirits, crates of beer and a soft-drinks fridge behind a shop counter",
     width: 900,
     height: 1200,
   },
