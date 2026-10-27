@@ -43,7 +43,7 @@ function productToSlide(product: DemoProduct, index: number): HomeFeaturedSlide 
         width: image.width,
         height: image.height,
       }
-    : RANGE_MEDIA.whisky;
+    : RANGE_MEDIA.hero;
 
   return {
     id: product.id,

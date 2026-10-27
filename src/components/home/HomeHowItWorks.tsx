@@ -5,7 +5,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 const STEPS = [
   {
     title: "Browse",
-    body: "Pick bottles from whisky, wine, sparkling, vodka and gin.",
+    body: "Pick from wines, spirits, beer and soft drinks.",
   },
   {
     title: "Add to cart",

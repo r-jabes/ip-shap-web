@@ -11,6 +11,7 @@ import {
   applyFilters,
   computeFacets,
   lowestPrice,
+  lowestPriceAcross,
   paginate,
   relatedCandidateIds,
   siblingIds,
@@ -18,7 +19,12 @@ import {
 import { moneyRwf, type MoneyRwf } from "@/lib/money";
 import { buildNavDataFromIndex, type NavData } from "@/lib/navigation";
 import { primaryCatalogueImage } from "@/lib/product-image";
-import { getHomeCollections, type HomeCollectionTile } from "@/lib/range-media";
+import {
+  getHomeCollections,
+  HOME_RANGE_GROUPS,
+  type HomeCollectionTile,
+  type HomeRangeGroupSlug,
+} from "@/lib/range-media";
 
 /**
  * Storefront reads. Everything comes from the cached slim index; full product rows are loaded
@@ -122,12 +128,19 @@ export async function getLowestPrice(
 export async function getHomeCollectionsDurable(): Promise<
   HomeCollectionTile[]
 > {
-  const [wine, sparkling, vodka] = await Promise.all([
-    getLowestPrice("wine"),
-    getLowestPrice("sparkling"),
-    getLowestPrice("vodka"),
+  const [index, categories] = await Promise.all([
+    getCachedIndex(),
+    getCachedCategories(),
   ]);
-  return getHomeCollections({ wine, sparkling, vodka });
+  const existingCategories = new Set(categories.map((c) => c.slug));
+  const price = (slugs: readonly string[]): MoneyRwf | null => {
+    const amount = lowestPriceAcross(index, slugs);
+    return amount === null ? null : moneyRwf(amount);
+  };
+  const prices = Object.fromEntries(
+    HOME_RANGE_GROUPS.map((group) => [group.slug, price(group.categorySlugs)]),
+  ) as Partial<Record<HomeRangeGroupSlug, MoneyRwf | null>>;
+  return getHomeCollections({ prices, existingCategories });
 }
 
 /** Every public product address, for the sitemap and static generation. */

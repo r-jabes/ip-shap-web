@@ -24,10 +24,10 @@ import { SITE } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: {
-    absolute: `${SHORT_BRAND} | Wines & spirits in Rwanda`,
+    absolute: `${SHORT_BRAND} | Wholesale drinks in Rwanda`,
   },
   description:
-    "Browse whisky, wine, sparkling, vodka and gin from THE IP SHAP BUSINESS LTD. Add bottles to your cart and check out on this site.",
+    "Wholesale wines, spirits, beer and soft drinks from THE IP SHAP BUSINESS LTD in Rwanda. Competitive prices — add to your cart and check out on this site.",
 };
 
 export const revalidate = 3600;

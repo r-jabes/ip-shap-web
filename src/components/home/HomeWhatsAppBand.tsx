@@ -7,7 +7,7 @@ import { RANGE_MEDIA } from "@/lib/range-media";
 import { chatHref, SITE } from "@/lib/site-config";
 
 export function HomeWhatsAppBand() {
-  const photo = RANGE_MEDIA.order;
+  const photo = RANGE_MEDIA.contact;
 
   return (
     <section className="on-ink bg-brand-charcoal py-16 text-brand-warm-white sm:py-20">
@@ -21,7 +21,7 @@ export function HomeWhatsAppBand() {
               height={photo.height}
               sizes="(max-width: 1024px) 80vw, 36vw"
               tone="ink"
-              position="50% 35%"
+              position="50% 55%"
               className="mx-auto w-full max-w-xs shadow-[6px_6px_0_0_var(--brand-burnt-orange)] lg:max-w-sm"
             />
           </Reveal>
@@ -42,9 +42,9 @@ export function HomeWhatsAppBand() {
               Questions? Say hello.
             </h2>
             <p className="mt-4 max-w-lg text-brand-warm-white/75">
-              Wines and spirits from a retailer based in {SITE.country}. Place
-              orders on this site — WhatsApp is for Contact us if you need a
-              hand.
+              Wholesale wines, spirits, beer and soft drinks from {SITE.country}.
+              Place your order on this site, visit the shop, or reach out if you
+              need a hand.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button href="/shop" variant="on-dark" size="lg">

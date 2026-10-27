@@ -159,7 +159,7 @@ export function SearchOverlay({
           value={query}
           autoComplete="off"
           enterKeyHint="search"
-          placeholder="Search whisky, wine, gin…"
+          placeholder="Search wine, whisky, beer, soda…"
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") moveFocus(event, 1);

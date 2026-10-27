@@ -33,11 +33,11 @@ export const metadata: Metadata = {
     template: `%s | ${SHORT_BRAND}`,
   },
   description:
-    "Wines, spirits and more from THE IP SHAP BUSINESS LTD in Rwanda. Browse the range and place your order on this site.",
+    "Wholesale wines, spirits, beer and soft drinks from THE IP SHAP BUSINESS LTD in Rwanda. Browse the range and place your order on this site.",
   openGraph: {
     title: `${SHORT_BRAND} | ${LEGAL_NAME}`,
     description:
-      "Wines, spirits and more from THE IP SHAP BUSINESS LTD in Rwanda. Browse the range and place your order on this site.",
+      "Wholesale wines, spirits, beer and soft drinks from THE IP SHAP BUSINESS LTD in Rwanda. Browse the range and place your order on this site.",
     url: appUrl,
     siteName: SHORT_BRAND,
     locale: "en_RW",
