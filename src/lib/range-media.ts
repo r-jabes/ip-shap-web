@@ -8,10 +8,10 @@ import { buildShopHref } from "@/lib/shop-query";
  * per page — these paths are the only sources the home page should use.
  */
 export const RANGE_MEDIA = {
-  /** Hero arch: wine and spirits on a bar top. */
+  /** Hero arch: well-known wine and spirits brands lined up on a bar top. */
   hero: {
     src: "/home/hero.webp",
-    alt: "Red wine, white wine, whisky and cognac bottles on a bar top",
+    alt: "Nederburg, Chivas Regal, Johnnie Walker Double Black, Jameson Black Barrel, Hennessy and Don Julio bottles on a bar top",
     width: 900,
     height: 1200,
   },

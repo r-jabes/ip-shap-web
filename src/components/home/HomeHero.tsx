@@ -53,6 +53,7 @@ export function HomeHero() {
           <div className="relative order-1 z-10 mx-auto w-full max-w-[17rem] sm:max-w-xs lg:order-2 lg:mx-0 lg:max-w-none">
             <ProductArchStage
               photo={photo}
+              position="50% 62%"
               priority
               sizes="(max-width: 1024px) 70vw, 32rem"
               imageClassName="hero-media"
