@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Button } from "@/components/ui/Button";
@@ -7,6 +8,7 @@ import {
   PinIcon,
   WhatsAppIcon,
 } from "@/components/ui/icons";
+import { DEVELOPER } from "@/lib/brand";
 import type { NavData } from "@/lib/navigation";
 import { SITE, chatHref, formatPhoneDisplay } from "@/lib/site-config";
 
@@ -202,6 +204,24 @@ export function SiteFooter({ nav }: { nav: NavData }) {
               </li>
             ))}
           </ul>
+        </div>
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-2 border-t border-brand-warm-white/10 px-4 py-3 text-xs text-brand-warm-white/50 sm:px-6 lg:px-8">
+          <span>Designed &amp; built by</span>
+          <a
+            href={DEVELOPER.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${DEVELOPER.name} (opens in a new tab)`}
+            className="inline-flex items-center opacity-80 transition-opacity duration-[var(--motion-fast)] hover:opacity-100"
+          >
+            <Image
+              src={DEVELOPER.logoOnDark}
+              alt={DEVELOPER.name}
+              width={DEVELOPER.logoOnDarkSize.width}
+              height={DEVELOPER.logoOnDarkSize.height}
+              className="h-8 w-auto"
+            />
+          </a>
         </div>
       </div>
     </footer>
