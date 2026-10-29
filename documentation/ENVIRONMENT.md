@@ -17,7 +17,7 @@ Local UI-only: `NEXT_PUBLIC_DEMO_MODE=true` is fine. Hosted staging: use **`fals
 
 | Variable | Where | Value / notes |
 | -------- | ----- | ------------- |
-| `NEXT_PUBLIC_APP_URL` | Public | Staging URL, e.g. `https://….vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | Public | Must match the **canonical host** browsers land on. Production: `https://www.the-ipshap.com` (apex redirects to www). Staging: e.g. `https://….vercel.app` |
 | `NEXT_PUBLIC_DEMO_MODE` | Public | Staging/prod: **`false`**. Local only: `true` OK |
 | `GOOGLE_SITE_VERIFICATION` | Public (build) | Google Search Console meta-tag token. Optional; omit until you verify the domain. Not a secret — safe in Vercel env. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Public | Staging project URL |

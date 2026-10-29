@@ -23,8 +23,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/policies/terms", changeFrequency: "yearly", priority: 0.2 },
   ];
 
+  // Never 500 the sitemap if catalogue reads fail — static routes must still publish.
   const [slugs, categories] = await Promise.all([
-    getAllProductSlugs(),
+    getAllProductSlugs().catch(() => [] as string[]),
     getCachedCategories().catch(() => [] as Awaited<
       ReturnType<typeof getCachedCategories>
     >),
