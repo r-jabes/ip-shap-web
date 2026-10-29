@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
 import { InfoPage } from "@/components/content/InfoPage";
 import { Button } from "@/components/ui/Button";
 import { LEGAL_NAME } from "@/lib/brand";
+import { pageMetadata } from "@/lib/seo";
 import { formatPhoneDisplay, SITE } from "@/lib/site-config";
 
-export const metadata: Metadata = { title: "Privacy policy" };
+export const metadata = pageMetadata({
+  title: "Privacy policy",
+  description: `How ${LEGAL_NAME} handles order and contact details. We only use information you give us to fulfil and support your orders.`,
+  path: "/policies/privacy",
+});
 
 function questionsBody(): string {
   const parts: string[] = [

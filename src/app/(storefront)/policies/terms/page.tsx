@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
 import { InfoPage } from "@/components/content/InfoPage";
 import { Button } from "@/components/ui/Button";
 import { LEGAL_NAME } from "@/lib/brand";
+import { pageMetadata } from "@/lib/seo";
 import { SITE } from "@/lib/site-config";
 
-export const metadata: Metadata = { title: "Terms of sale" };
+export const metadata = pageMetadata({
+  title: "Terms of sale",
+  description: `Terms for ordering wholesale drinks from ${LEGAL_NAME}. Orders are confirmed with you before payment; legal drinking age applies.`,
+  path: "/policies/terms",
+});
 
 export default function TermsPage() {
   const hoursNote = SITE.hours

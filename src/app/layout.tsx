@@ -42,9 +42,15 @@ export const metadata: Metadata = {
     siteName: SHORT_BRAND,
     locale: "en_RW",
     type: "website",
-    images: [{ url: "/branding/main-logo.png", alt: LEGAL_NAME }],
+    images: [{ url: "/home/hero.webp", alt: LEGAL_NAME }],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SHORT_BRAND} | ${LEGAL_NAME}`,
+    description:
+      "Wholesale wines, spirits, beer and soft drinks from THE IP SHAP BUSINESS LTD in Rwanda. Browse the range and place your order on this site.",
+    images: [{ url: "/home/hero.webp", alt: LEGAL_NAME }],
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48" },
@@ -53,6 +59,13 @@ export const metadata: Metadata = {
     apple: [{ url: "/branding/app-icon.png", type: "image/png" }],
   },
   robots: defaultRobots(),
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.GOOGLE_SITE_VERIFICATION,
+        },
+      }
+    : {}),
 };
 
 export default function RootLayout({
