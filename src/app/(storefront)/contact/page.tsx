@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { ContactEnquiryForm } from "@/components/content/ContactEnquiryForm";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -9,6 +8,7 @@ import {
   WhatsAppIcon,
 } from "@/components/ui/icons";
 import { LEGAL_NAME } from "@/lib/brand";
+import { pageMetadata } from "@/lib/seo";
 import {
   formatPhoneDisplay,
   mapsLink,
@@ -17,7 +17,11 @@ import {
 } from "@/lib/site-config";
 import { turnstileSiteKey } from "@/lib/security/turnstile";
 
-export const metadata: Metadata = { title: "Contact" };
+export const metadata = pageMetadata({
+  title: "Contact",
+  description: `Contact ${LEGAL_NAME} in Kigali for wholesale wines, spirits, beer and soft drinks. Call, WhatsApp, email or visit the shop.`,
+  path: "/contact",
+});
 
 export default function ContactPage() {
   const whatsapp = whatsappLink("Hello, I would like to ask about an order.");

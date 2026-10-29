@@ -1,10 +1,15 @@
-import type { Metadata } from "next";
 import { InfoPage } from "@/components/content/InfoPage";
 import { Button } from "@/components/ui/Button";
 import { WhatsAppIcon } from "@/components/ui/icons";
+import { pageMetadata } from "@/lib/seo";
 import { chatHref } from "@/lib/site-config";
 
-export const metadata: Metadata = { title: "Delivery" };
+export const metadata = pageMetadata({
+  title: "Delivery",
+  description:
+    "Delivery across Rwanda from IP SHAP. Fee, timing and coverage are confirmed with you when you place an order — nothing is charged on this website.",
+  path: "/delivery",
+});
 
 export default function DeliveryPage() {
   return (

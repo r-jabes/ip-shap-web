@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
 import { InfoPage } from "@/components/content/InfoPage";
 import { Button } from "@/components/ui/Button";
 import { LEGAL_NAME, SHORT_BRAND } from "@/lib/brand";
+import { pageMetadata } from "@/lib/seo";
 import { SITE } from "@/lib/site-config";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "About",
   description: `${LEGAL_NAME} is a wholesale drinks supplier in ${SITE.country}: wines, spirits, beer and soft drinks at competitive prices.`,
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

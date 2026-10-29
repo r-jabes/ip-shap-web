@@ -19,16 +19,16 @@ import {
   type HomeFeaturedSlide,
 } from "@/lib/home-featured";
 import { getHomeCollections, type HomeCollectionTile } from "@/lib/range-media";
-import { organizationJsonLd } from "@/lib/seo";
+import { organizationJsonLd, pageMetadata, websiteJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/site-config";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: `${SHORT_BRAND} | Wholesale drinks in Rwanda`,
-  },
+export const metadata: Metadata = pageMetadata({
+  title: "Wholesale drinks in Rwanda",
+  absoluteTitle: `${SHORT_BRAND} | Wholesale drinks in Rwanda`,
   description:
     "Wholesale wines, spirits, beer and soft drinks from THE IP SHAP BUSINESS LTD in Rwanda. Competitive prices — add to your cart and check out on this site.",
-};
+  path: "/",
+});
 
 export const revalidate = 3600;
 
@@ -83,6 +83,7 @@ export default async function HomePage() {
           address: SITE.address,
         })}
       />
+      <JsonLd data={websiteJsonLd()} />
       <HomeHero />
       <HomeRangeTicker items={tickerItems} />
       <HomeCollections tiles={collections} />

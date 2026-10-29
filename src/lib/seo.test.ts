@@ -28,13 +28,22 @@ const product: CatalogueProduct = {
   ],
 };
 
+async function loadSeo() {
+  vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
+  vi.stubEnv("NEXT_PUBLIC_DEMO_MODE", "false");
+  const { resetEnvCacheForTests } = await import("./env");
+  resetEnvCacheForTests();
+  return import("./seo");
+}
+
 describe("organizationJsonLd", () => {
-  it("includes legal name and optional contact", async () => {
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
-    vi.stubEnv("NEXT_PUBLIC_DEMO_MODE", "false");
-    const { resetEnvCacheForTests } = await import("./env");
-    resetEnvCacheForTests();
-    const { organizationJsonLd } = await import("./seo");
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it("includes legal name, image and optional contact", async () => {
+    const { organizationJsonLd } = await loadSeo();
     const json = organizationJsonLd({
       telephone: "250788937270",
       email: "patrickiradukunda505@gmail.com",
@@ -43,6 +52,102 @@ describe("organizationJsonLd", () => {
     expect(json.legalName).toBe("THE IP SHAP BUSINESS LTD");
     expect(json.telephone).toBe("+250788937270");
     expect(json.email).toBe("patrickiradukunda505@gmail.com");
+    expect(json.image).toBe("http://localhost:3000/home/hero.webp");
+  });
+});
+
+describe("websiteJsonLd", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it("exposes SearchAction to the shop query string", async () => {
+    const { websiteJsonLd } = await loadSeo();
+    const json = websiteJsonLd();
+    expect(json["@type"]).toBe("WebSite");
+    expect(json.potentialAction["@type"]).toBe("SearchAction");
+    expect(json.potentialAction.target.urlTemplate).toBe(
+      "http://localhost:3000/shop?q={search_term_string}",
+    );
+  });
+});
+
+describe("faqPageJsonLd", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it("mirrors the visible Q&A only", async () => {
+    const { faqPageJsonLd } = await loadSeo();
+    const json = faqPageJsonLd([
+      { question: "How do I order?", answer: "Add bottles to your cart." },
+    ]);
+    expect(json["@type"]).toBe("FAQPage");
+    expect(json.mainEntity).toHaveLength(1);
+    expect(json.mainEntity[0].name).toBe("How do I order?");
+    expect(json.mainEntity[0].acceptedAnswer.text).toBe(
+      "Add bottles to your cart.",
+    );
+  });
+});
+
+describe("shopMetadata", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it("uses a category canonical for single-category landings", async () => {
+    const { shopMetadata } = await loadSeo();
+    const meta = shopMetadata({
+      category: {
+        slug: "wine",
+        name: "Wine",
+        description: "Red, white and sparkling.",
+      },
+      hasExtraFilters: false,
+    });
+    expect(meta.alternates?.canonical).toBe(
+      "http://localhost:3000/shop?category=wine",
+    );
+    expect(meta.title).toBe("Wholesale Wine in Rwanda");
+    expect(meta.robots).toEqual({ index: true, follow: true });
+  });
+
+  it("keeps /shop canonical and noindex when filters are applied", async () => {
+    const { shopMetadata } = await loadSeo();
+    const meta = shopMetadata({
+      category: {
+        slug: "wine",
+        name: "Wine",
+        description: "Red, white and sparkling.",
+      },
+      hasExtraFilters: true,
+    });
+    expect(meta.alternates?.canonical).toBe("http://localhost:3000/shop");
+    expect(meta.robots).toEqual({ index: false, follow: true });
+  });
+});
+
+describe("pageMetadata", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it("sets canonical and share image for marketing pages", async () => {
+    const { pageMetadata } = await loadSeo();
+    const meta = pageMetadata({
+      title: "Contact",
+      description: "Reach IP SHAP in Kigali.",
+      path: "/contact",
+    });
+    expect(meta.alternates?.canonical).toBe("http://localhost:3000/contact");
+    expect(meta.openGraph?.images).toEqual([
+      { url: "/home/hero.webp", alt: "THE IP SHAP BUSINESS LTD" },
+    ]);
   });
 });
 
