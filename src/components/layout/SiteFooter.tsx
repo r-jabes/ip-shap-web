@@ -22,6 +22,7 @@ const helpLinks = [
 const legalLinks = [
   { href: "/policies/privacy", label: "Privacy" },
   { href: "/policies/terms", label: "Terms" },
+  { href: "/admin", label: "Admin" },
 ];
 
 const headingClass =
