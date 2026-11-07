@@ -1,4 +1,4 @@
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { getPublicEnv } from "@/lib/env";
 import { formatRwf } from "@/lib/money";
 import { getWebPushConfig } from "@/lib/notifications/push/config";
