@@ -8,9 +8,9 @@ import {
 import type { StoredOrder } from "@/lib/orders/store";
 
 /**
- * Queues the staff "new order" email and tries to send it straight away.
+ * Queues staff "new order" email + web push and tries to send them straight away.
  *
- * The email goes through the outbox, so a failed send is retried later instead of being lost.
+ * Both go through the outbox, so a failed send is retried later instead of being lost.
  * Nothing here may fail the order — it is already saved by the time this runs.
  */
 export async function notifyNewOrder(order: StoredOrder): Promise<void> {
@@ -28,10 +28,16 @@ export async function notifyNewOrder(order: StoredOrder): Promise<void> {
       dedupeKey: `staff_new_order:${order.id}`,
       payload: { orderId: order.id },
     });
+    await enqueueNotification({
+      channel: "web_push",
+      kind: "staff_new_order",
+      dedupeKey: `staff_new_order:push:${order.id}`,
+      payload: { orderId: order.id },
+    });
     await processDueNotifications({ limit: 10 });
   } catch (error) {
-    // The outbox itself is unavailable (for example its table is not created yet): send directly
-    // so the team still hears about the order.
+    // The outbox itself is unavailable (for example its table is not created yet): send email
+    // directly so the team still hears about the order. Push waits until the outbox is healthy.
     logger.warn("Notification outbox unavailable, sending email directly", {
       orderReference: order.reference,
       reason: error instanceof Error ? error.message : "unknown",

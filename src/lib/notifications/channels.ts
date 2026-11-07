@@ -9,6 +9,7 @@ import {
   sendLowStockStaffEmail,
   sendNewOrderStaffEmail,
 } from "@/lib/notifications/email";
+import { sendNewOrderStaffPush } from "@/lib/notifications/push/send";
 import type { StockLine } from "@/lib/notifications/templates/low-stock";
 import { getOrderByIdDurable } from "@/lib/orders/durable";
 
@@ -53,9 +54,24 @@ const emailChannel: NotificationChannel = {
   },
 };
 
+const webPushChannel: NotificationChannel = {
+  id: "web_push",
+  async deliver(message: OutboxMessage): Promise<DeliveryResult> {
+    if (message.kind !== "staff_new_order") {
+      return { ok: true, skipped: "unsupported_kind" };
+    }
+    const orderId = String(message.payload.orderId ?? "");
+    const order = orderId ? await getOrderByIdDurable(orderId) : undefined;
+    if (!order) return { ok: true, skipped: "order_not_found" };
+    const result = await sendNewOrderStaffPush(order);
+    if (!result.ok) return { ok: false, error: result.error };
+    return result.skipped ? { ok: true, skipped: result.skipped } : { ok: true };
+  },
+};
+
 const channels: Partial<Record<NotificationChannelId, NotificationChannel>> = {
   email: emailChannel,
-  // web_push: registered in a later phase (subscribe API + send on new order).
+  web_push: webPushChannel,
   // whatsapp / sms: register here once online payments exist and the client opts in.
 };
 
