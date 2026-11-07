@@ -14,11 +14,13 @@ One-page baseline. Update when trust boundaries change.
     │  Holds: service role, session secrets, email API key
     ├──────────► [Supabase Postgres + Auth + Storage]
     │              RLS for anon; service role only here
-    └──────────► [Transactional email — Resend]
-                   New-order notify to staff inboxes
+    ├──────────► [Transactional email — Resend]
+    │              New-order notify to staff inboxes
+    └──────────► [Browser push services — FCM / Mozilla / APNs]
+                   Staff Web Push (VAPID); subscriptions in Supabase
 ```
 
-**Out of scope for current launch:** payment PSPs, WhatsApp Cloud API outbound.
+**Out of scope for current launch:** payment PSPs, WhatsApp Cloud API outbound, customer marketing push.
 
 ## Assets
 
@@ -39,6 +41,7 @@ One-page baseline. Update when trust boundaries change.
 | Admin | Phishing | — | — | Login rate limit | **Permission on every action** |
 | Image upload | — | Malicious file → **MIME + re-encode** | — | Size limits | — |
 | Email notify | — | — | BCC mistake → **fixed recipient list** | — | — |
+| Web Push subscribe | Stolen session | Fake endpoint → **host allowlist** | — | Rate via admin session | **Session user id only** |
 | Supabase anon | Stolen anon key | — | RLS must deny private rows | — | No service role in browser |
 
 ## Explicit deferred items
@@ -46,7 +49,8 @@ One-page baseline. Update when trust boundaries change.
 | Item | Status |
 | ---- | ------ |
 | MoMo / card capture | Keep `ONLINE_PAYMENT_ENABLED` false |
-| WhatsApp Cloud API staff alerts | Deferred — email is primary |
+| WhatsApp Cloud API staff alerts | Deferred — email + Web Push are primary staff channels |
+| Customer / marketing Web Push | Out of scope |
 | CSP without unsafe-inline | Waiver until Next nonces — see `HARDENING.md` |
 
 ## Controls in place

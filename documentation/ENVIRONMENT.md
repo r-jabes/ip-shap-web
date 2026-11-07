@@ -34,6 +34,9 @@ Local UI-only: `NEXT_PUBLIC_DEMO_MODE=true` is fine. Hosted staging: use **`fals
 | `ORDER_NOTIFY_EMAILS` | Server | **Who gets new-order Resend alerts** (comma-separated). Staging: your email; production: owners |
 | `EMAIL_FROM` | Server | `IP SHAP Orders <orders@verified-domain>` after Resend domain verify |
 | `RESEND_API_KEY` | Server | Resend API key (orders still place without email if unset) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Public | Web Push public key (staff device alerts). Optional until push is enabled. Generate with `npx web-push generate-vapid-keys` |
+| `VAPID_PRIVATE_KEY` | Server | Matching VAPID private key — **never** `NEXT_PUBLIC_*`. Omit until push is enabled |
+| `VAPID_SUBJECT` | Server | `mailto:…` or `https://…` contact for VAPID (RFC 8292). e.g. `mailto:hello@the-ipshap.com` |
 | `ONLINE_PAYMENT_ENABLED` | Server | `false` |
 | `PAYMENT_PROVIDER` | Server | `unselected` |
 
@@ -47,6 +50,18 @@ Template: `.env.example` → `cp .env.example .env.local`.
 | Inbox for “new order” staff emails | `ORDER_NOTIFY_EMAILS` |
 
 Staging tip: set both to your address so the site shows your contact and order tests land with you. On **Production** Vercel, switch contact + notify back to the business owners.
+
+## Web Push (staff order alerts)
+
+Omit all three VAPID variables until the subscribe UI and send path are live. When enabling:
+
+1. Run `npx web-push generate-vapid-keys` once.
+2. Put the **public** key in `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and the **private** key in `VAPID_PRIVATE_KEY`.
+3. Set `VAPID_SUBJECT` to a stable `mailto:` for the business.
+4. Apply migration `20261107120000_push_subscriptions.sql` (`db:push`) before storing subscriptions.
+5. **Do not rotate** VAPID keys casually — rotation invalidates every existing device subscription.
+
+Email alerts (`ORDER_NOTIFY_EMAILS`) stay the backup channel. Operator steps and QA: [`PUSH_NOTIFICATIONS.md`](./PUSH_NOTIFICATIONS.md).
 
 ## Not needed yet (omit until you enable them)
 

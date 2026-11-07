@@ -7,8 +7,10 @@ import {
   AdminPageHeader,
   AdminPanel,
 } from "@/components/admin/admin-ui";
+import { PushOrderAlertsCard } from "@/components/admin/PushOrderAlertsCard";
 import { fetchActiveAdminProfile } from "@/lib/admin/profiles";
 import { getAdminSession } from "@/lib/admin/session";
+import { getPublicEnv } from "@/lib/env";
 
 export default async function AdminAccountPage() {
   const session = await getAdminSession();
@@ -18,23 +20,27 @@ export default async function AdminAccountPage() {
   const profile = isBootstrap
     ? null
     : await fetchActiveAdminProfile(session.sub);
+  const vapidPublicKey =
+    getPublicEnv().NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || null;
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Your account"
-        description="Update the name teammates see, and change your password."
+        description="Update the name teammates see, change your password, and manage order alerts on this device."
       />
 
       {isBootstrap ? (
         <AdminPanel>
           <p className="text-sm text-ink-muted">
             You are using an emergency login. Sign in with your normal email
-            account to change your name or password.
+            account to change your name or password, and to enable order
+            alerts on this device.
           </p>
         </AdminPanel>
       ) : (
         <>
+          <PushOrderAlertsCard vapidPublicKey={vapidPublicKey} />
           <AdminPanel className="max-w-xl space-y-4">
             <h2 className="font-display text-xl">Profile</h2>
             <UpdateNameForm

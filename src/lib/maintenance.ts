@@ -4,6 +4,7 @@ import {
   processDueNotifications,
   purgeOldNotifications,
 } from "@/lib/notifications/outbox";
+import { purgeDisabledPushSubscriptions } from "@/lib/notifications/push/subscriptions";
 import { queueStockAlert } from "@/lib/notifications/stock-alerts";
 import { releaseExpiredHolds } from "@/lib/orders/holds";
 import { purgeOldHistory } from "@/lib/privacy/retention";
@@ -14,6 +15,7 @@ export type MaintenanceReport = {
   backInStockQueued: number | null;
   notifications: Awaited<ReturnType<typeof processDueNotifications>> | null;
   notificationsPurged: number | null;
+  pushSubscriptionsPurged: number | null;
   restockRequestsPurged: number | null;
   history: Awaited<ReturnType<typeof purgeOldHistory>> | null;
   holds: Awaited<ReturnType<typeof releaseExpiredHolds>> | null;
@@ -31,6 +33,7 @@ export async function runMaintenance(now = new Date()): Promise<MaintenanceRepor
     backInStockQueued: null,
     notifications: null,
     notificationsPurged: null,
+    pushSubscriptionsPurged: null,
     restockRequestsPurged: null,
     history: null,
     holds: null,
@@ -62,6 +65,9 @@ export async function runMaintenance(now = new Date()): Promise<MaintenanceRepor
   });
   await task("notification-cleanup", async () => {
     report.notificationsPurged = await purgeOldNotifications(now);
+  });
+  await task("push-subscription-cleanup", async () => {
+    report.pushSubscriptionsPurged = await purgeDisabledPushSubscriptions(now);
   });
   await task("restock-cleanup", async () => {
     report.restockRequestsPurged = await getRestockStore().purge(now);
