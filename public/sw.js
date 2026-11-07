@@ -1,4 +1,4 @@
-/* IP SHAP staff Web Push — keep payloads tiny; always show a visible notification (Safari). */
+/* IP SHAP staff Web Push v2 — keep payloads tiny; always show a visible notification (Safari). */
 /* eslint-disable no-undef */
 
 self.addEventListener("install", (event) => {
@@ -38,12 +38,19 @@ self.addEventListener("push", (event) => {
   const options = {
     body: String(payload.body || ""),
     tag: String(payload.tag || "ip-shap-admin"),
+    icon: "/branding/app-icon.png",
+    badge: "/branding/app-icon.png",
+    vibrate: [200, 100, 200],
+    silent: false,
     data: {
       url: String(payload.url || "/admin/orders"),
     },
     renotify: true,
+    // Stay on screen until dismissed — Windows/Android often hide quiet toasts.
+    requireInteraction: true,
   };
 
+  // Always show — Safari revokes push if a push event does not display a notification.
   event.waitUntil(self.registration.showNotification(title, options));
 });
 

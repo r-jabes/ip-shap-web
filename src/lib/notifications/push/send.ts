@@ -54,12 +54,20 @@ async function mapPool<T>(
   await Promise.all(runners);
 }
 
+export type SendWebPushOptions = {
+  /** If set, only these endpoints are targeted (e.g. a device test ping). */
+  endpoints?: string[];
+  /** If set, only this admin's devices (used by the test ping). */
+  adminUserId?: string;
+};
+
 /**
- * Fan-out a visible notification to every active staff device subscription.
+ * Fan-out a visible notification to active staff device subscriptions.
  * Dead endpoints (404/410) are deleted. Empty subscription list is a successful skip.
  */
 export async function sendWebPushToStaff(
   payload: StaffPushPayload,
+  options: SendWebPushOptions = {},
 ): Promise<{ ok: true; skipped?: string; summary: PushSendSummary } | { ok: false; error: string }> {
   const config = getWebPushConfig();
   if (!config) {
@@ -73,7 +81,13 @@ export async function sendWebPushToStaff(
   webpush.setVapidDetails(config.subject, config.publicKey, config.privateKey);
 
   const store = getPushSubscriptionStore();
-  const subscriptions = await store.listAllActive();
+  let subscriptions = options.adminUserId
+    ? await store.listActiveByAdmin(options.adminUserId)
+    : await store.listAllActive();
+  if (options.endpoints?.length) {
+    const allow = new Set(options.endpoints);
+    subscriptions = subscriptions.filter((row) => allow.has(row.endpoint));
+  }
   if (subscriptions.length === 0) {
     return {
       ok: true,

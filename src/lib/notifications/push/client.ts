@@ -116,3 +116,27 @@ export async function postUnsubscribe(endpoint: string): Promise<void> {
     throw new Error(body?.error ?? "unsubscribe_failed");
   }
 }
+
+/** Ping only this browser so staff can confirm banners before waiting for a real order. */
+export async function postTestPush(): Promise<{ delivered: number; skipped?: string }> {
+  const subscription = await getCurrentPushSubscription();
+  const res = await fetch("/api/admin/push/test", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ endpoint: subscription?.endpoint }),
+  });
+  const body = (await res.json().catch(() => null)) as {
+    ok?: boolean;
+    error?: string;
+    delivered?: number;
+    skipped?: string;
+  } | null;
+  if (!res.ok) {
+    throw new Error(body?.error ?? "test_failed");
+  }
+  return {
+    delivered: body?.delivered ?? 0,
+    skipped: body?.skipped,
+  };
+}

@@ -76,6 +76,35 @@ describe("sendWebPushToStaff", () => {
     expect(sendNotification).not.toHaveBeenCalled();
   });
 
+  it("can target a single endpoint (device test ping)", async () => {
+    await store.upsert({
+      adminUserId: "11111111-1111-4111-8111-111111111111",
+      endpoint: "https://fcm.googleapis.com/fcm/send/keep",
+      ...keys,
+    });
+    await store.upsert({
+      adminUserId: "11111111-1111-4111-8111-111111111111",
+      endpoint: "https://fcm.googleapis.com/fcm/send/skip",
+      ...keys,
+    });
+    sendNotification.mockResolvedValue(undefined);
+
+    const result = await sendWebPushToStaff(
+      { title: "Test", body: "ping", url: "/admin/account" },
+      {
+        adminUserId: "11111111-1111-4111-8111-111111111111",
+        endpoints: ["https://fcm.googleapis.com/fcm/send/keep"],
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(sendNotification).toHaveBeenCalledTimes(1);
+    expect(sendNotification.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        endpoint: "https://fcm.googleapis.com/fcm/send/keep",
+      }),
+    );
+  });
+
   it("delivers to active devices and prunes 410 Gone endpoints", async () => {
     await store.upsert({
       adminUserId: "11111111-1111-4111-8111-111111111111",

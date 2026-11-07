@@ -17,13 +17,32 @@ Standards-based Web Push (VAPID + service worker) for **admin staff** when a new
 
 ## How staff use it
 
+Each device is separate. Enabling on a laptop does **not** enable the phone.
+
 | Platform | Notes |
 | -------- | ----- |
-| Desktop Chrome / Edge / Firefox | Enable on `/admin/account` |
-| Android Chrome | Same |
+| Desktop Chrome / Edge / Firefox | Enable on `/admin/account`, then **Send a test alert** |
+| Android Chrome | Open **staging/production in Chrome** (not WhatsApp in-app browser). Enable + test. Android Settings → Apps → Chrome → Notifications = On |
 | iPhone / iPad (16.4+) | Safari → Share → **Add to Home Screen** → open the icon → sign in → Enable. A normal Safari tab cannot subscribe. |
 
 Disable on the same page when leaving a shared computer.
+
+### Windows banners + sound (laptop)
+
+If the alert only appears in the notification panel and is silent:
+
+1. Windows Settings → System → Notifications → **Google Chrome** → On
+2. Turn on **Show notification banners** and **Play a sound**
+3. Turn off Focus assist / Do not disturb
+4. Chrome padlock on the site → Site settings → Notifications = Allow (not “Use quieter messaging”)
+
+### Phone checklist
+
+1. Open the **same host** you enabled (staging vs www) **on the phone itself**
+2. Sign in → Account → Enable (then Allow)
+3. Tap **Send a test alert** while still on the phone — you should feel/see it without opening the site
+4. Android: Settings → Apps → Chrome → Notifications → all channels on; battery unrestricted
+5. iPhone: only the Home Screen web app can receive push; Settings → Notifications → IP SHAP → Allow + Sounds + Lock Screen + Banners
 
 ## What gets sent
 

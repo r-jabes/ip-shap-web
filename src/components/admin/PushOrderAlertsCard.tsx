@@ -7,6 +7,7 @@ import {
   getCurrentPushSubscription,
   getPushSupport,
   postSubscribe,
+  postTestPush,
   postUnsubscribe,
   subscribeToPush,
   unsubscribeFromPush,
@@ -76,7 +77,9 @@ export function PushOrderAlertsCard({
         const subscription = await subscribeToPush(vapidPublicKey);
         await postSubscribe(subscription);
         setStatus("on");
-        setMessage("This device will get a banner when a new order arrives.");
+        setMessage(
+          "This device is registered. Tap “Send a test alert” to confirm a banner + sound.",
+        );
       } catch (error) {
         const code = error instanceof Error ? error.message : "failed";
         if (code === "permission_denied") {
@@ -103,12 +106,37 @@ export function PushOrderAlertsCard({
     });
   }
 
+  function sendTest() {
+    setMessage(null);
+    startTransition(async () => {
+      try {
+        const result = await postTestPush();
+        if (result.skipped === "web_push_not_configured") {
+          setMessage("Push is not configured on this deployment yet.");
+          return;
+        }
+        if (!result.delivered) {
+          setMessage(
+            "Server did not deliver to this browser. Disable, Enable again, then retry.",
+          );
+          return;
+        }
+        setMessage(
+          "Test sent. You should get a banner on THIS device — check the lock screen / notification shade, not only the laptop.",
+        );
+      } catch {
+        setMessage("Could not send a test. Stay signed in and try again.");
+      }
+    });
+  }
+
   return (
     <AdminPanel className="max-w-xl space-y-4">
       <h2 className="font-display text-xl">Order alerts on this device</h2>
       <p className="text-sm text-ink-muted">
-        Get a phone or desktop notification when a customer places an order.
-        Email alerts still work as a backup.
+        Each phone and computer must Enable separately. Open Admin on the
+        phone (Chrome on Android, or the Home Screen icon on iPhone), then
+        Enable here. Email alerts still work as a backup.
       </p>
 
       {status === "loading" ? (
@@ -158,15 +186,26 @@ export function PushOrderAlertsCard({
               {pending ? "Enabling…" : "Enable on this device"}
             </Button>
           ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={pending}
-              onClick={disable}
-            >
-              {pending ? "Turning off…" : "Disable on this device"}
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={pending}
+                onClick={sendTest}
+              >
+                {pending ? "Sending…" : "Send a test alert"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={disable}
+              >
+                Disable on this device
+              </Button>
+            </>
           )}
           <p className="text-sm text-ink-muted">
             {status === "on" ? "Alerts are on for this browser." : "Alerts are off here."}
