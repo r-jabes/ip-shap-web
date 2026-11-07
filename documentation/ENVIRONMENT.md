@@ -61,7 +61,7 @@ Omit all three VAPID variables until the subscribe UI and send path are live. Wh
 4. Apply migration `20261107120000_push_subscriptions.sql` (`db:push`) before storing subscriptions.
 5. **Do not rotate** VAPID keys casually — rotation invalidates every existing device subscription.
 
-Email alerts (`ORDER_NOTIFY_EMAILS`) stay the backup channel.
+Email alerts (`ORDER_NOTIFY_EMAILS`) stay the backup channel. Operator steps and QA: [`PUSH_NOTIFICATIONS.md`](./PUSH_NOTIFICATIONS.md).
 
 ## Not needed yet (omit until you enable them)
 

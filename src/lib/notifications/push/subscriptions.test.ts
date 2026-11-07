@@ -66,4 +66,12 @@ describe("memory push subscription store", () => {
     expect(await store.deleteByEndpoint(endpoint)).toBe(false);
     expect(store.rows).toHaveLength(0);
   });
+
+  it("purges soft-disabled rows older than the cutoff", async () => {
+    const endpoint = "https://fcm.googleapis.com/fcm/send/old";
+    await store.upsert({ adminUserId: adminA, endpoint, ...keys });
+    await store.disableForAdmin(adminA, endpoint, new Date("2026-01-01T00:00:00Z"));
+    expect(await store.purgeDisabled(new Date("2026-02-01T00:00:00Z"))).toBe(1);
+    expect(store.rows).toHaveLength(0);
+  });
 });

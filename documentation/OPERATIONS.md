@@ -5,11 +5,17 @@
 Operators sign in at **`/admin/login`** with Supabase Auth email/password (must have an active `admin_profiles` row). Seed owners from the backend (`npm run db:seed:admins`).
 
 **How operators find admin (normal practice):**
-- Bookmark `https://your-domain/admin` (or `…/admin/login`)
+- Footer **Admin** link (subtle, next to Privacy / Terms) → `/admin`
+- Bookmark `https://www.the-ipshap.com/admin` (or `…/admin/login`)
 - Optional later: `admin.your-domain.com` → same app `/admin` (DNS + Vercel domain)
-- Do **not** put a public “Admin” link in the storefront footer
 
 **Required for sessions:** `ADMIN_SESSION_SECRET` (≥ 32 chars) in Vercel. After adding env vars, **Redeploy** — “Needs Attention” means the live deployment has not picked them up yet.
+
+## Staff order alerts (Web Push)
+
+Instant phone/desktop banners for signed-in admins. Full runbook: [`PUSH_NOTIFICATIONS.md`](./PUSH_NOTIFICATIONS.md).
+
+Summary: set VAPID env vars + push migration → each owner enables once on **Admin → Your account**. Keep `ORDER_NOTIFY_EMAILS` as email backup. iPhone requires Add to Home Screen first.
 
 **Password reset:** `/admin/forgot-password` uses Supabase Auth email. In Supabase → Authentication → URL configuration, allow redirect `https://your-domain/admin/reset-password` (and staging URL).
 

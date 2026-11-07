@@ -21,6 +21,8 @@ export interface PushSubscriptionStore {
   listAllActive(): Promise<StoredPushSubscription[]>;
   /** Hard-delete by endpoint after push service returns 404/410 (any owner). */
   deleteByEndpoint(endpoint: string): Promise<boolean>;
+  /** Remove soft-disabled rows older than `before` (maintenance hygiene). */
+  purgeDisabled(before: Date): Promise<number>;
 }
 
 type MemoryRow = StoredPushSubscription;
@@ -110,6 +112,20 @@ export function createMemoryPushSubscriptionStore(): PushSubscriptionStore & {
       if (index < 0) return false;
       rows.splice(index, 1);
       return true;
+    },
+    async purgeDisabled(before) {
+      const keep: MemoryRow[] = [];
+      let removed = 0;
+      for (const row of rows) {
+        if (row.disabledAt && new Date(row.disabledAt) < before) {
+          removed += 1;
+        } else {
+          keep.push(row);
+        }
+      }
+      rows.length = 0;
+      rows.push(...keep);
+      return removed;
     },
   };
 }
@@ -203,7 +219,31 @@ function createSupabasePushSubscriptionStore(): PushSubscriptionStore {
       if (error) throw new Error(error.message);
       return Boolean(data);
     },
+
+    async purgeDisabled(before) {
+      const { data, error } = await client()
+        .from("push_subscriptions")
+        .delete()
+        .not("disabled_at", "is", null)
+        .lt("disabled_at", before.toISOString())
+        .select("id");
+
+      if (error) throw new Error(error.message);
+      return data?.length ?? 0;
+    },
   };
+}
+
+/** Soft-disabled device rows older than this are hard-deleted by maintenance. */
+export const PUSH_DISABLED_RETENTION_DAYS = 30;
+
+export async function purgeDisabledPushSubscriptions(
+  now = new Date(),
+): Promise<number> {
+  const before = new Date(
+    now.getTime() - PUSH_DISABLED_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  );
+  return getPushSubscriptionStore().purgeDisabled(before);
 }
 
 let storeOverride: PushSubscriptionStore | undefined;
