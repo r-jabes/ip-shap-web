@@ -12,6 +12,11 @@ const publicEnvSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((value) => value === "true"),
+  /**
+   * VAPID public key for Web Push subscribe (staff admin alerts).
+   * Pair with server `VAPID_PRIVATE_KEY`. Optional until push is enabled.
+   */
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().min(20).optional(),
 });
 
 /**
@@ -67,6 +72,22 @@ const serverEnvSchema = z.object({
    * it automatically as `Authorization: Bearer <value>`. At least 16 characters.
    */
   CRON_SECRET: z.string().min(16).optional(),
+  /**
+   * VAPID private key for signing Web Push to browser push services. Server only.
+   * Generate with `npx web-push generate-vapid-keys`. Never commit or expose to the client.
+   */
+  VAPID_PRIVATE_KEY: z.string().min(20).optional(),
+  /**
+   * VAPID contact subject — usually `mailto:ops@…` or an HTTPS URL identifying the app server.
+   * Required by RFC 8292 when sending; omit with the keys until push is enabled.
+   */
+  VAPID_SUBJECT: z
+    .string()
+    .refine(
+      (value) => value.startsWith("mailto:") || value.startsWith("https://"),
+      "VAPID_SUBJECT must be a mailto: or https: URI",
+    )
+    .optional(),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -81,6 +102,7 @@ function readPublicEnv(): PublicEnv {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE ?? "true",
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   });
 }
 
@@ -100,6 +122,8 @@ function readServerEnv(): ServerEnv {
     TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
     SENTRY_DSN: process.env.SENTRY_DSN,
     CRON_SECRET: process.env.CRON_SECRET,
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT,
     NODE_ENV: process.env.NODE_ENV,
   });
 }

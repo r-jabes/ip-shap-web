@@ -55,6 +55,7 @@ const emailChannel: NotificationChannel = {
 
 const channels: Partial<Record<NotificationChannelId, NotificationChannel>> = {
   email: emailChannel,
+  // web_push: registered in a later phase (subscribe API + send on new order).
   // whatsapp / sms: register here once online payments exist and the client opts in.
 };
 

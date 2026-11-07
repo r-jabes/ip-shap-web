@@ -1,8 +1,9 @@
 /**
- * Notification channels. Email is live today; WhatsApp and SMS slot in later by implementing
- * `NotificationChannel` and registering it in `channels.ts` — nothing else has to change.
+ * Notification channels. Email is live today; `web_push` is registered when delivery ships.
+ * WhatsApp and SMS slot in later by implementing `NotificationChannel` and registering it
+ * in `channels.ts` — nothing else has to change.
  */
-export type NotificationChannelId = "email" | "whatsapp" | "sms";
+export type NotificationChannelId = "email" | "whatsapp" | "sms" | "web_push";
 
 /** What a notification is about. Each kind is rendered by the channel that sends it. */
 export type NotificationKind =
